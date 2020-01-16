@@ -83,8 +83,8 @@ class Log {
     vsprintf(str_buf, format, val);
 #endif
     va_end(val);
-    fprintf(stderr, "[LightGBM] [Fatal] %s\n", str_buf);
-    fflush(stderr);
+    // fprintf(stderr, "[LightGBM] [Fatal] %s\n", str_buf);
+    // fflush(stderr);
     throw std::runtime_error(std::string(str_buf));
   }
 

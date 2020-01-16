@@ -21,7 +21,7 @@
 #include <LightGBM/json11.hpp>
 
 #include <limits>
-#include <cassert>
+// #include <cassert>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -624,7 +624,7 @@ struct JsonParser final {
      * the input and return res. If not, flag an error.
      */
     Json expect(const string &expected, Json res) {
-        assert(i != 0);
+        // assert(i != 0);
         i--;
         if (str.compare(i, expected.length(), expected) == 0) {
             i += expected.length();
