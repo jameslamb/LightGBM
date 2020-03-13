@@ -156,8 +156,6 @@ if (!use_precompile) {
 dest <- file.path(R_PACKAGE_DIR, paste0("libs", R_ARCH), fsep = "/")
 dir.create(dest, recursive = TRUE, showWarnings = FALSE)
 if (file.exists(src)) {
-  x <- list.files(R_PACKAGE_SOURCE, recursive = TRUE, full.names = FALSE)
-  writeLines(x, con = '/Users/jlamb/Desktop/check-files.txt', sep = "\n")
 
   cat("Found library file: ", src, " to move to ", dest, sep = "")
   file.copy(src, dest, overwrite = TRUE)
@@ -166,6 +164,7 @@ if (file.exists(src)) {
   if (file.exists(symbols_file)){
     file.copy(symbols_file, dest, overwrite = TRUE)
   }
+
 } else {
   stop(paste0("Cannot find lib_lightgbm", SHLIB_EXT))
 }
