@@ -161,7 +161,7 @@ if (file.exists(src)) {
   file.copy(src, dest, overwrite = TRUE)
 
   symbols_file <- file.path(R_PACKAGE_SOURCE, "src", "symbols.rds")
-  if (file.exists(symbols_file)){
+  if (file.exists(symbols_file)) {
     file.copy(symbols_file, dest, overwrite = TRUE)
   }
 
