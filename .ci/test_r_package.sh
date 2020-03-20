@@ -69,7 +69,7 @@ packages="c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat')"
 if [[ $OS_NAME == "macos" ]]; then
     packages+=", type = 'binary'"
 fi
-Rscript -e "install.packages(${packages})" || exit -1
+Rscript -e "install.packages(${packages}, ${dependencies})" || exit -1
 
 cd ${BUILD_DIRECTORY}
 Rscript build_r.R || exit -1
@@ -77,8 +77,9 @@ Rscript build_r.R || exit -1
 PKG_TARBALL="lightgbm_${LGB_VER}.tar.gz"
 LOG_FILE_NAME="lightgbm.Rcheck/00check.log"
 
-# suppress R CMD check warning from Suggests dependencies not being available
-export _R_CHECK_FORCE_SUGGESTS_=0
+# suppress R CMD check warning from Suggests dependencies not being available.
+# these will be available on CRAN, and we don't need to spend time installing them
+export R_CHECK_FORCE_SUGGESTS=0
 
 # fails tests if either ERRORs or WARNINGs are thrown by
 # R CMD CHECK
