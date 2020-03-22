@@ -16,6 +16,7 @@ Write-Output "PYTHON_VERSION: '$env:PYTHON_VERSION'"
 
 # setup for Python
 Write-Output "PATH: $env:PATH"
+conda init powershell
 activate
 conda config --set always_yes yes --set changeps1 no
 conda update -q -y conda
@@ -23,7 +24,7 @@ conda create -q -y -n $env:CONDA_ENV python=$env:PYTHON_VERSION joblib matplotli
 
 Write-Output "conda envs here"
 conda env list
-activate $env:CONDA_ENV
+activate $env:CONDA_ENV 
 Write-Output "conda envs after activating"
 conda env list
 Write-Output "test-env contents"
