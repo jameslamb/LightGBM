@@ -32,9 +32,9 @@ install:
       $env:PATH="$env:MINICONDA;$env:MINICONDA\Scripts;$env:PATH"
   - ps: $env:LGB_VER = (Get-Content VERSION.txt).trim()
   - ps: Write-Output("custom install scribbity bibbity")
-  - .\.ci\setup_windows.bat
 
 build: false
 
 test_script:
+  - conda init powershell
   - powershell.exe -ExecutionPolicy Bypass -File .\.ci\test_windows.ps1

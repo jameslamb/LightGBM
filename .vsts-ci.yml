@@ -136,7 +136,7 @@ jobs:
   # cmd /c 'activate & conda config --set always_yes yes --set changeps1 no & conda update -q -y conda & conda create -q -y -n %CONDA_ENV% python=%PYTHON_VERSION% joblib matplotlib numpy pandas psutil pytest python-graphviz "scikit-learn<=0.21.3" scipy'
   # cmd /c "activate %CONDA_ENV% & powershell -ExecutionPolicy Bypass -File %BUILD_SOURCESDIRECTORY%/.ci/test_windows.ps1"
   - script: |
-      cmd /c "%BUILD_SOURCESDIRECTORY%/.ci/setup_windows.bat"
+      cmd /c "conda init powershell"
       cmd /c "powershell -ExecutionPolicy Bypass -File %BUILD_SOURCESDIRECTORY%/.ci/test_windows.ps1"
     displayName: Test
   - task: PublishBuildArtifacts@1

@@ -11,16 +11,16 @@ if (Test-Path env:APPVEYOR) {
   $env:BUILD_SOURCESDIRECTORY = $env:APPVEYOR_BUILD_FOLDER
 }
 
-# Write-Output "CONDA_ENV: '$env:CONDA_ENV'"
-# Write-Output "PYTHON_VERSION: '$env:PYTHON_VERSION'"
+Write-Output "CONDA_ENV: '$env:CONDA_ENV'"
+Write-Output "PYTHON_VERSION: '$env:PYTHON_VERSION'"
 
-# # setup for Python
-# Write-Output "PATH: $env:PATH"
-# conda init powershell
-# activate
-# conda config --set always_yes yes --set changeps1 no
-# conda update -q -y conda
-# conda create -q -y -n $env:CONDA_ENV python=$env:PYTHON_VERSION joblib matplotlib numpy pandas psutil pytest python-graphviz "scikit-learn<=0.21.3" scipy wheel ; Check-Output $?
+# setup for Python
+Write-Output "PATH: $env:PATH"
+conda init powershell
+activate
+conda config --set always_yes yes --set changeps1 no
+conda update -q -y conda
+conda create -q -y -n $env:CONDA_ENV python=$env:PYTHON_VERSION joblib matplotlib numpy pandas psutil pytest python-graphviz "scikit-learn<=0.21.3" scipy wheel ; Check-Output $?
 
 Write-Output "conda envs here"
 conda env list
