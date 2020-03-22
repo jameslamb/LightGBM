@@ -31,9 +31,13 @@ if (Test-Path env:APPVEYOR){
   }
 }
 
-Write-Output "Fixing path"
-pytest ; Check-Output $?
-Write-Output "hey it works"
+activate $env:CONDA_ENV
+if (Test-Path pytest){
+  Write-Output "Found pytest. Pretty big"
+} else {
+  Write-Output "pytest not fond"
+  Check-Output $False
+}
 
 if ($env:TASK -eq "regular") {
   mkdir $env:BUILD_SOURCESDIRECTORY/build; cd $env:BUILD_SOURCESDIRECTORY/build

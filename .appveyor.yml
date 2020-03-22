@@ -33,8 +33,7 @@ install:
   - ps: $env:LGB_VER = (Get-Content VERSION.txt).trim()
   - ps: Write-Output("custom install scribbity bibbity")
 
-build_script:
-  - ps: Write-Output("custom build script")
+build: false
 
 test_script:
   - powershell.exe -ExecutionPolicy Bypass -File .\.ci\test_windows.ps1
