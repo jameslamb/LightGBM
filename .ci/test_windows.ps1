@@ -31,12 +31,8 @@ if (Test-Path env:APPVEYOR){
   }
 }
 
-activate $env:CONDA_ENV
-if (Test-Path pytest){
-  Write-Output "Found pytest. Pretty big"
-} else {
-  Write-Output "pytest not fond"
-  Check-Output $False
+if (Test-Path env:APPVEYOR){
+  pytest ; Check-Output $?
 }
 
 if ($env:TASK -eq "regular") {
