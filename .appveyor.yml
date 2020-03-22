@@ -29,7 +29,7 @@ install:
           "3.7" {$env:MINICONDA = "C:\Miniconda37-x64"}
           default {$env:MINICONDA = "C:\Miniconda37-x64"}
       }
-  - set PATH=%MINICONDA%;%MINICONDA%\Scripts;%PATH%
+      $env:PATH="$env:MINICONDA;$env:MINICONDA\Scripts;$env:PATH"
   - ps: $env:LGB_VER = (Get-Content VERSION.txt).trim()
   - ps: Write-Output("custom install scribbity bibbity")
 
