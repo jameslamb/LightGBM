@@ -131,9 +131,10 @@ jobs:
   steps:
   - powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
     displayName: Enable conda
+    # cmd /c 'activate & conda config --set always_yes yes --set changeps1 no & conda update -q -y conda & conda create -q -y -n %CONDA_ENV% python=%PYTHON_VERSION% joblib matplotlib numpy pandas psutil pytest python-graphviz "scikit-learn<=0.21.3" scipy'
+    # cmd /c "activate %CONDA_ENV% & powershell -ExecutionPolicy Bypass -File %BUILD_SOURCESDIRECTORY%/.ci/test_windows.ps1"
   - script: |
-      cmd /c 'activate & conda config --set always_yes yes --set changeps1 no & conda update -q -y conda & conda create -q -y -n %CONDA_ENV% python=%PYTHON_VERSION% joblib matplotlib numpy pandas psutil pytest python-graphviz "scikit-learn<=0.21.3" scipy'
-      cmd /c "activate %CONDA_ENV% & powershell -ExecutionPolicy Bypass -File %BUILD_SOURCESDIRECTORY%/.ci/test_windows.ps1"
+      cmd /c "powershell -ExecutionPolicy Bypass -File %BUILD_SOURCESDIRECTORY%/.ci/test_windows.ps1"
     displayName: Test
   - task: PublishBuildArtifacts@1
     condition: and(succeeded(), in(variables['TASK'], 'regular', 'sdist', 'bdist'), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
