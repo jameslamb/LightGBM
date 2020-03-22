@@ -9,8 +9,10 @@ environment:
   matrix:
     - COMPILER: MSVC
       TASK: sdist
+      CONDA_ENV: test-env
     - COMPILER: MINGW
       TASK: sdist
+      CONDA_ENV: test-env
 
 clone_depth: 5
 

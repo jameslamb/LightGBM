@@ -60,6 +60,7 @@ elseif ($env:TASK -eq "bdist") {
   cp @(Get-ChildItem *.whl) $env:BUILD_ARTIFACTSTAGINGDIRECTORY
 }
 
+activate $env:CONDA_ENV
 $tests = $env:BUILD_SOURCESDIRECTORY + $(If ($env:TASK -eq "sdist") {"/tests/python_package_test"} Else {"/tests"})  # cannot test C API with "sdist" task
 pytest $tests ; Check-Output $?
 
