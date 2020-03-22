@@ -15,6 +15,20 @@ environment:
 clone_depth: 5
 
 install:
+  - git submodule update --init --recursive  # get `compute` folder
+  - set PATH=%PATH:C:\Program Files\Git\usr\bin;=%  # delete sh.exe from PATH (mingw32-make fix)
+  - set PATH=C:\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0\mingw64\bin;%PATH%
+  - set PYTHON_VERSION=%CONFIGURATION%
+  - ps: >-
+      switch ($env:PYTHON_VERSION) {
+          "2.7" {$env:MINICONDA = """C:\Miniconda-x64"""}
+          "3.5" {$env:MINICONDA = """C:\Miniconda35-x64"""}
+          "3.6" {$env:MINICONDA = """C:\Miniconda36-x64"""}
+          "3.7" {$env:MINICONDA = """C:\Miniconda37-x64"""}
+          default {$env:MINICONDA = """C:\Miniconda37-x64"""}
+      }
+  - set PATH=%MINICONDA%;%MINICONDA%\Scripts;%PATH%
+  - ps: $env:LGB_VER = (Get-Content VERSION.txt).trim()
   - ps: Write-Output("custom install scribbity bibbity")
 
 build_script:
