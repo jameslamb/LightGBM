@@ -31,10 +31,6 @@ Write-Output "test-env contents"
 conda env export
 
 if (Test-Path env:APPVEYOR){
-  # activate
-  # conda config --set always_yes yes --set changeps1 no
-  # conda update -q -y conda
-  # conda create -q -y -n $env:CONDA_ENV python=$env:PYTHON_VERSION joblib matplotlib numpy pandas psutil pytest python-graphviz "scikit-learn<=0.21.3" scipy wheel ; Check-Output $?
   conda activate $env:CONDA_ENV
   cd $env:BUILD_SOURCESDIRECTORY\python-package
   Write-Output "Using compiler: '$env:COMPILER'"
@@ -43,12 +39,6 @@ if (Test-Path env:APPVEYOR){
   } else {
     python setup.py install
   }
-}
-
-Write-Output "checking pytest"
-if (Test-Path env:APPVEYOR){
-  conda activate $env:CONDA_ENV
-  pytest ; Check-Output $?
 }
 
 if ($env:TASK -eq "regular") {
