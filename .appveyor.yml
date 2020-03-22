@@ -32,6 +32,7 @@ install:
       $env:PATH="$env:MINICONDA;$env:MINICONDA\Scripts;$env:PATH"
   - ps: $env:LGB_VER = (Get-Content VERSION.txt).trim()
   - ps: Write-Output("custom install scribbity bibbity")
+  - .\.ci\setup_windows.bat
 
 build: false
 
