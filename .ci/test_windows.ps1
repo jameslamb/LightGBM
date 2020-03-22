@@ -17,30 +17,25 @@ Write-Output "PYTHON_VERSION: '$env:PYTHON_VERSION'"
 # setup for Python
 Write-Output "PATH: $env:PATH"
 conda init powershell
-activate
+conda activate
 conda config --set always_yes yes --set changeps1 no
 conda update -q -y conda
 conda create -q -y -n $env:CONDA_ENV python=$env:PYTHON_VERSION joblib matplotlib numpy pandas psutil pytest python-graphviz "scikit-learn<=0.21.3" scipy wheel ; Check-Output $?
 
 Write-Output "conda envs here"
 conda env list
-activate $env:CONDA_ENV 
+conda activate $env:CONDA_ENV
 Write-Output "conda envs after activating"
 conda env list
 Write-Output "test-env contents"
 conda env export
-
-activate 'test-env'
-Write-Output "test-env contents after explicit activation"
-conda env export
-
 
 if (Test-Path env:APPVEYOR){
   # activate
   # conda config --set always_yes yes --set changeps1 no
   # conda update -q -y conda
   # conda create -q -y -n $env:CONDA_ENV python=$env:PYTHON_VERSION joblib matplotlib numpy pandas psutil pytest python-graphviz "scikit-learn<=0.21.3" scipy wheel ; Check-Output $?
-  activate $env:CONDA_ENV
+  conda activate $env:CONDA_ENV
   cd $env:BUILD_SOURCESDIRECTORY\python-package
   Write-Output "Using compiler: '$env:COMPILER'"
   if ($env:COMPILER -eq "MINGW") {
@@ -52,7 +47,7 @@ if (Test-Path env:APPVEYOR){
 
 Write-Output "checking pytest"
 if (Test-Path env:APPVEYOR){
-  activate $env:CONDA_ENV
+  conda activate $env:CONDA_ENV
   pytest ; Check-Output $?
 }
 
@@ -85,6 +80,7 @@ elseif ($env:TASK -eq "bdist") {
   cp @(Get-ChildItem *.whl) $env:BUILD_ARTIFACTSTAGINGDIRECTORY
 }
 
+conda activate $env:CONDA_ENV
 $tests = $env:BUILD_SOURCESDIRECTORY + $(If ($env:TASK -eq "sdist") {"/tests/python_package_test"} Else {"/tests"})  # cannot test C API with "sdist" task
 pytest $tests ; Check-Output $?
 
