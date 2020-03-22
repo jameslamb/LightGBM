@@ -6,6 +6,25 @@ function Check-Output {
   }
 }
 
+# AppVeyor-specific setup
+if (Test-Path env:APPVEYOR) {
+    Write-Output "Running AppVeyor-specific setup"
+    git submodule update --init --recursive  # get `compute` folder
+    $env:PATH = "$env:PATH;C:\Program Files\Git\usr\bin;="  # delete sh.exe from PATH (mingw32-make fix)
+    $env:PATH = "C:\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0\mingw64\bin;$env:PATH"
+    $env:PYTHON_VERSION=$env:CONFIGURATION
+    switch ($env:PYTHON_VERSION) {
+        "2.7" {$env:MINICONDA = "C:\Miniconda-x64"}
+        "3.5" {$env:MINICONDA = "C:\Miniconda35-x64"}
+        "3.6" {$env:MINICONDA = "C:\Miniconda36-x64"}
+        "3.7" {$env:MINICONDA = "C:\Miniconda37-x64"}
+        default {$env:MINICONDA = "C:\Miniconda37-x64"}
+    }
+    $env:PATH = "$env:MINICONDA;$env:MINICONDA\Scripts;$env:MINICONDA\bin;$env:PATH"
+    $env:LGB_VER = (Get-Content VERSION.txt).trim()
+}
+Write-Output "PATH: $env:PATH"
+
 if ($env:TASK -eq "regular") {
   mkdir $env:BUILD_SOURCESDIRECTORY/build; cd $env:BUILD_SOURCESDIRECTORY/build
   cmake -A x64 .. ; cmake --build . --target ALL_BUILD --config Release ; Check-Output $?
