@@ -7,8 +7,10 @@
 \.o$
 \.so$
 \.dll$
+\.dylib$
 \.out$
 \.bin$
+^libs/.*$
 
 # Code copied in at build time
 ^src/CMakeLists.txt$
