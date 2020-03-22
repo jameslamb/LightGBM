@@ -24,7 +24,13 @@ conda create -q -y -n $env:CONDA_ENV python=$env:PYTHON_VERSION joblib matplotli
 Write-Output "conda envs here"
 conda env list
 activate $env:CONDA_ENV
+Write-Output "conda envs after activating"
+conda env list
 Write-Output "test-env contents"
+conda env export
+
+activate 'test-env'
+Write-Output "test-env contents after explicit activation"
 conda env export
 
 
