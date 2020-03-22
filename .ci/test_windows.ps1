@@ -25,6 +25,23 @@ if (Test-Path env:APPVEYOR) {
 }
 Write-Output "PATH: $env:PATH"
 
+# setup for Python
+activate
+conda config --set always_yes yes --set changeps1 no
+conda update -q -y conda
+conda create -q -y -n $env:CONDA_ENV python=$env:PYTHON_VERSION joblib matplotlib numpy pandas psutil pytest python-graphviz "scikit-learn<=0.21.3" scipy wheel
+activate $env:CONDA_ENV
+Write-Output "Fixing path"
+pytest
+Write-Output "hey it works"
+cd $env:BUILD_SOURCESDIRECTORY\python-package
+Write-Output "Using compiler: '$env:COMPILER'"
+if ($env:COMPILER -eq "MINGW") {
+  python setup.py install --mingw
+} else {
+  python setup.py install
+}
+
 if ($env:TASK -eq "regular") {
   mkdir $env:BUILD_SOURCESDIRECTORY/build; cd $env:BUILD_SOURCESDIRECTORY/build
   cmake -A x64 .. ; cmake --build . --target ALL_BUILD --config Release ; Check-Output $?
