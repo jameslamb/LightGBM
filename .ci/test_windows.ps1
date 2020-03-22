@@ -7,7 +7,7 @@ function Check-Output {
 }
 
 # unify environment variables for Azure devops and AppVeyor
-if (Test-Path env:APPVEYOR) {
+if (Test-Path $env:APPVEYOR) {
   $env:BUILD_SOURCESDIRECTORY = $env:APPVEYOR_BUILD_FOLDER
 }
 
@@ -15,21 +15,23 @@ Write-Output "CONDA_ENV: '$env:CONDA_ENV'"
 Write-Output "PYTHON_VERSION: '$env:PYTHON_VERSION'"
 
 # setup for Python
-Write-Output "PATH: $env:PATH"
-activate
-conda config --set always_yes yes --set changeps1 no
-conda update -q -y conda
-conda create -q -y -n $env:CONDA_ENV python=$env:PYTHON_VERSION joblib matplotlib numpy pandas psutil pytest python-graphviz "scikit-learn<=0.21.3" scipy wheel ; Check-Output $?
-activate $env:CONDA_ENV
-Write-Output "Fixing path"
-pytest ; Check-Output $?
-Write-Output "hey it works"
-cd $env:BUILD_SOURCESDIRECTORY\python-package
-Write-Output "Using compiler: '$env:COMPILER'"
-if ($env:COMPILER -eq "MINGW") {
-  python setup.py install --mingw
-} else {
-  python setup.py install
+if (Test-PatH $env:APPVEYOR){
+  Write-Output "PATH: $env:PATH"
+  activate
+  conda config --set always_yes yes --set changeps1 no
+  conda update -q -y conda
+  conda create -q -y -n $env:CONDA_ENV python=$env:PYTHON_VERSION joblib matplotlib numpy pandas psutil pytest python-graphviz "scikit-learn<=0.21.3" scipy wheel ; Check-Output $?
+  activate $env:CONDA_ENV
+  Write-Output "Fixing path"
+  pytest ; Check-Output $?
+  Write-Output "hey it works"
+  cd $env:BUILD_SOURCESDIRECTORY\python-package
+  Write-Output "Using compiler: '$env:COMPILER'"
+  if ($env:COMPILER -eq "MINGW") {
+    python setup.py install --mingw
+  } else {
+    python setup.py install
+  }
 }
 
 if ($env:TASK -eq "regular") {
