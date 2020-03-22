@@ -21,6 +21,13 @@ conda config --set always_yes yes --set changeps1 no
 conda update -q -y conda
 conda create -q -y -n $env:CONDA_ENV python=$env:PYTHON_VERSION joblib matplotlib numpy pandas psutil pytest python-graphviz "scikit-learn<=0.21.3" scipy wheel ; Check-Output $?
 
+Write-Output "conda envs here"
+conda env list
+activate $env:CONDA_ENV
+Write-Output "test-env contents"
+conda env export
+
+
 if (Test-Path env:APPVEYOR){
   # activate
   # conda config --set always_yes yes --set changeps1 no
@@ -71,7 +78,6 @@ elseif ($env:TASK -eq "bdist") {
   cp @(Get-ChildItem *.whl) $env:BUILD_ARTIFACTSTAGINGDIRECTORY
 }
 
-activate $env:CONDA_ENV
 $tests = $env:BUILD_SOURCESDIRECTORY + $(If ($env:TASK -eq "sdist") {"/tests/python_package_test"} Else {"/tests"})  # cannot test C API with "sdist" task
 pytest $tests ; Check-Output $?
 
