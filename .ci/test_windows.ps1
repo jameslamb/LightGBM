@@ -16,11 +16,16 @@ Write-Output "PYTHON_VERSION: '$env:PYTHON_VERSION'"
 
 # setup for Python
 Write-Output "PATH: $env:PATH"
+activate
+conda config --set always_yes yes --set changeps1 no
+conda update -q -y conda
+conda create -q -y -n $env:CONDA_ENV python=$env:PYTHON_VERSION joblib matplotlib numpy pandas psutil pytest python-graphviz "scikit-learn<=0.21.3" scipy wheel ; Check-Output $?
+
 if (Test-Path env:APPVEYOR){
-  activate
-  conda config --set always_yes yes --set changeps1 no
-  conda update -q -y conda
-  conda create -q -y -n $env:CONDA_ENV python=$env:PYTHON_VERSION joblib matplotlib numpy pandas psutil pytest python-graphviz "scikit-learn<=0.21.3" scipy wheel ; Check-Output $?
+  # activate
+  # conda config --set always_yes yes --set changeps1 no
+  # conda update -q -y conda
+  # conda create -q -y -n $env:CONDA_ENV python=$env:PYTHON_VERSION joblib matplotlib numpy pandas psutil pytest python-graphviz "scikit-learn<=0.21.3" scipy wheel ; Check-Output $?
   activate $env:CONDA_ENV
   cd $env:BUILD_SOURCESDIRECTORY\python-package
   Write-Output "Using compiler: '$env:COMPILER'"
@@ -31,7 +36,9 @@ if (Test-Path env:APPVEYOR){
   }
 }
 
+Write-Output "checking pytest"
 if (Test-Path env:APPVEYOR){
+  activate $env:CONDA_ENV
   pytest ; Check-Output $?
 }
 
