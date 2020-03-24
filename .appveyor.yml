@@ -13,10 +13,10 @@ environment:
     # - COMPILER: MINGW
     #   TASK: appveyor-python
     #   CONDA_ENV: test-env
-    - COMPILER: MSVC
+    - COMPILER: MINGW
       TASK: r-package
       R_WINDOWS_VERSION: 3.6.3
-    - COMPILER: MINGW
+    - COMPILER: MSVC
       TASK: r-package
       R_WINDOWS_VERSION: 3.6.3
 

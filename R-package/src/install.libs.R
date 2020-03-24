@@ -15,6 +15,20 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
   print("Warning: unmatched R_INTERNALS_UUID, may cannot run normally.")
 }
 
+# system() will not raise an R exception if the process called
+# fails. Wrapping it here to get that behavior
+.run_shell_command <- function(cmd, ...) {
+    exit_code <- system(
+      cmd
+      , ignore.stdout = FALSE
+      , ignore.stderr = FALSE
+      , ...
+    )
+    if (exit_code != 0L) {
+        stop(paste0("Command failed with exit code: ", exit_code))
+    }
+}
+
 # Move in CMakeLists.txt
 write_succeeded <- file.copy(
   "../inst/bin/CMakeLists.txt"
@@ -69,7 +83,7 @@ if (!use_precompile) {
     if (use_mingw) {
       cmake_cmd <- paste0(cmake_cmd, " -G \"MinGW Makefiles\" ")
       build_cmd <- "mingw32-make.exe _lightgbm"
-      system(paste0(cmake_cmd, " ..")) # Must build twice for Windows due sh.exe in Rtools
+      .run_shell_command(paste0(cmake_cmd, " ..")) # Must build twice for Windows due sh.exe in Rtools
     } else {
       local_vs_def <- ""
       vs_versions <- c(
@@ -93,7 +107,7 @@ if (!use_precompile) {
       if (try_vs == 1L) {
         print("Building with Visual Studio failed. Attempted with MinGW")
         cmake_cmd <- paste0(cmake_cmd, " -G \"MinGW Makefiles\" ")
-        system(paste0(cmake_cmd, " ..")) # Must build twice for Windows due sh.exe in Rtools
+        .run_shell_command(paste0(cmake_cmd, " ..")) # Must build twice for Windows due sh.exe in Rtools
         build_cmd <- "mingw32-make.exe _lightgbm"
       } else {
         cmake_cmd <- paste0(cmake_cmd, local_vs_def)
@@ -104,7 +118,7 @@ if (!use_precompile) {
   }
 
   # Install
-  system(paste0(cmake_cmd, " .."))
+  .run_shell_command(paste0(cmake_cmd, " .."))
 
   # R CMD check complains about the .NOTPARALLEL directive created in the cmake
   # Makefile. We don't need it here anyway since targets are built serially, so trying
@@ -131,7 +145,7 @@ if (!use_precompile) {
     )
   }
 
-  system(build_cmd)
+  .run_shell_command(build_cmd)
   src <- file.path(lib_folder, paste0("lib_lightgbm", SHLIB_EXT), fsep = "/")
 
 } else {
