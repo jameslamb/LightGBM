@@ -183,7 +183,7 @@ execute_process(
 find_library(
   LIBR_CORE_LIBRARY
   NAMES R
-  HINTS "${CMAKE_CURRENT_BINARY_DIR}" "${LIBR_LIB_DIR}" "${LIBR_HOME}/bin" "${LIBR_LIBRARIES}"
+  HINTS "${CMAKE_CURRENT_BINARY_DIR}" "${LIBR_LIB_DIR}" "${LIBR_HOME}/bin" "${LIBR_LIBRARIES}" "${LIBR_HOME}/bin/${R_ARCH}"
 )
 
 set(LIBR_HOME ${LIBR_HOME} CACHE PATH "R home directory")
