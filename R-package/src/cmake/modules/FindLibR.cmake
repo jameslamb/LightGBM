@@ -36,8 +36,12 @@ function(create_rlib_for_msvc)
     message(FATAL_ERROR "create_rlib_for_msvc() can only be used with MSVC")
   endif()
 
-  if(NOT EXISTS "${LIBR_LIB_DIR}")
-    message(FATAL_ERROR "LIBR_LIB_DIR, '${LIBR_LIB_DIR}', not found")
+  # if(NOT EXISTS "${LIBR_LIB_DIR}")
+  #   message(FATAL_ERROR "LIBR_LIB_DIR, '${LIBR_LIB_DIR}', not found")
+  # endif()
+
+  if(NOT EXISTS "${LIBR_CORE_LIBRARY}")
+    message(FATAL_ERROR "LIBR_CORE_LIBRARY, '${LIBR_CORE_LIBRARY}', not found")
   endif()
 
   find_program(GENDEF_EXE gendef)
@@ -50,7 +54,8 @@ function(create_rlib_for_msvc)
 
   # extract symbols from R.dll into R.def and R.lib import library
   execute_process(COMMAND ${GENDEF_EXE}
-    "-" "${LIBR_LIB_DIR}/R.dll"
+    #"-" "${LIBR_LIB_DIR}/R.dll"
+    "-" "${LIBR_CORE_LIBRARY}"
     OUTPUT_FILE "${CMAKE_CURRENT_BINARY_DIR}/R.def"
   )
   execute_process(COMMAND ${DLLTOOL_EXE}
