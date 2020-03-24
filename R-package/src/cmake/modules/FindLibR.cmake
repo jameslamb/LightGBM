@@ -179,6 +179,11 @@ execute_process(
 #   OUTPUT_VARIABLE LIBR_LIB_DIR
 # )
 
+set(LIBR_HOME ${LIBR_HOME} CACHE PATH "R home directory")
+set(LIBR_EXECUTABLE ${LIBR_EXECUTABLE} CACHE PATH "R executable")
+set(LIBR_INCLUDE_DIRS ${LIBR_INCLUDE_DIRS} CACHE PATH "R include directory")
+#set(LIBR_LIB_DIR ${LIBR_LIB_DIR} CACHE PATH "R shared libraries directory")
+
 # look for the core R library
 find_library(
   LIBR_CORE_LIBRARY
@@ -186,10 +191,6 @@ find_library(
   HINTS "${CMAKE_CURRENT_BINARY_DIR}" "${LIBR_HOME}/lib" "${LIBR_HOME}/bin/${R_ARCH}" "${LIBR_HOME}/bin" "${LIBR_LIBRARIES}"
 )
 
-set(LIBR_HOME ${LIBR_HOME} CACHE PATH "R home directory")
-set(LIBR_EXECUTABLE ${LIBR_EXECUTABLE} CACHE PATH "R executable")
-set(LIBR_INCLUDE_DIRS ${LIBR_INCLUDE_DIRS} CACHE PATH "R include directory")
-#set(LIBR_LIB_DIR ${LIBR_LIB_DIR} CACHE PATH "R shared libraries directory")
 set(LIBR_CORE_LIBRARY ${LIBR_CORE_LIBRARY} CACHE PATH "R core shared library")
 
 message(STATUS "LIBR_EXECUTABLE: ${LIBR_EXECUTABLE}")
