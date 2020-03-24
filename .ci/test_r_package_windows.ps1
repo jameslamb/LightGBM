@@ -1,9 +1,11 @@
+# Download a file and retry upon failure. This looks like
+# an infinite looop 
 function Download-File-With-Retries {
   param(
     [string]$url
     [string]$destfile
   )
-  do{
+  do {
     sleep 5;
     (New-Object System.Net.WebClient).DownloadFile($url, $destfile)
   } while(!$?);
