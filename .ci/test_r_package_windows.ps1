@@ -82,3 +82,5 @@ if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "WARNING" -Quiet) {
     echo "WARNINGS have been found by R CMD check!"
     Check-Output $False
 }
+
+Exit 0
