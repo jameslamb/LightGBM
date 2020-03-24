@@ -6,6 +6,7 @@ function Download-File-With-Retries {
     [string]$destfile
   )
   do {
+    Write-Output "Downloading '${url}'"
     sleep 5;
     (New-Object System.Net.WebClient).DownloadFile($url, $destfile)
   } while(!$?);
