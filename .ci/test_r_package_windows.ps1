@@ -67,8 +67,8 @@ Add-Content .Rprofile "options(install.packages.check.source = 'no')"
 Write-Output "Installing dependencies"
 Rscript.exe -e "install.packages(c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo'), lib = '$env:R_LIB_PATH')" ; Check-Output $?
 
-Write-Output "-------"
-Get-ChildItem -Recurse C:/RLibrary/R
+Write-Output "---- ls ---"
+Get-ChildItem -Recurse C:/RLibrary/R/bin/x64
 Write-Output "-------"
 
 Write-Output "Building R package"
