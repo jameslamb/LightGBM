@@ -119,15 +119,15 @@ jobs:
   strategy:
     maxParallel: 3
     matrix:
-      regular:
-        TASK: regular
-        PYTHON_VERSION: 3.7
-      sdist:
-        TASK: sdist
-        PYTHON_VERSION: 2.7
-      bdist:
-        TASK: bdist
-        PYTHON_VERSION: 3.5
+      # regular:
+      #   TASK: regular
+      #   PYTHON_VERSION: 3.7
+      # sdist:
+      #   TASK: sdist
+      #   PYTHON_VERSION: 2.7
+      # bdist:
+      #   TASK: bdist
+      #   PYTHON_VERSION: 3.5
       rpkg:
         TASK: r-package
         R_WINDOWS_VERSION: 3.6.3

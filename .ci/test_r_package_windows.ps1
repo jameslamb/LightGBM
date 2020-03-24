@@ -2,7 +2,7 @@
 # an infinite looop 
 function Download-File-With-Retries {
   param(
-    [string]$url
+    [string]$url,
     [string]$destfile
   )
   do {
