@@ -192,6 +192,10 @@ set(LIBR_INCLUDE_DIRS ${LIBR_INCLUDE_DIRS} CACHE PATH "R include directory")
 set(LIBR_LIB_DIR ${LIBR_LIB_DIR} CACHE PATH "R shared libraries directory")
 set(LIBR_CORE_LIBRARY ${LIBR_CORE_LIBRARY} CACHE PATH "R core shared library")
 
+message(STATUS "LIBR_EXECUTABLE: ${LIBR_EXECUTABLE}")
+message(STATUS "LIBR_INCLUDE_DIRS: ${LIBR_INCLUDE_DIRS}")
+message(STATUS "LIBR_CORE_LIBRARY: ${LIBR_CORE_LIBRARY}")
+
 if(WIN32 AND MSVC)
 
   # create a local R.lib import library for R.dll if it doesn't exist
