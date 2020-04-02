@@ -15,7 +15,7 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
   print("Warning: unmatched R_INTERNALS_UUID, may cannot run normally.")
 }
 
-.find_vs_version <- function(){
+.find_vs_version <- function() {
   current_working_dir <- getwd()
   on.exit({
     setwd(current_working_dir)
@@ -26,7 +26,7 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
     , "Visual Studio 14 2015"
   )
   working_vs_version <- NULL
-  for (vs_version in vs_versions){
+  for (vs_version in vs_versions) {
     print(sprintf("Trying '%s'", vs_version))
     build_dir <- tempdir()
     setwd(build_dir)
@@ -40,7 +40,7 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
       , " ."
     )
     exitCode <- system(cmake_cmd)
-    if (exitCode == 0){
+    if (exitCode == 0L) {
       working_vs_version <- vs_version
       break
     }
