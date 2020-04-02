@@ -15,6 +15,39 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
   print("Warning: unmatched R_INTERNALS_UUID, may cannot run normally.")
 }
 
+.find_vs_version <- function(){
+  current_working_dir <- getwd()
+  on.exit({
+    setwd(current_working_dir)
+  })
+  vs_versions <- c(
+    "Visual Studio 16 2019"
+    , "Visual Studio 15 2017"
+    , "Visual Studio 14 2015"
+  )
+  working_vs_version <- NULL
+  for (vs_version in vs_versions){
+    print(sprintf("Trying '%s'", vs_version))
+    build_dir <- tempdir()
+    setwd(build_dir)
+    writeLines(
+      text = "PROJECT(testing)"
+      , con = file.path(build_dir, "CMakeLists.txt")
+    )
+    cmake_cmd <- paste0(
+      "cmake -Wno-dev -G "
+      , shQuote(vs_version)
+      , " ."
+    )
+    exitCode <- system(cmake_cmd)
+    if (exitCode == 0){
+      working_vs_version <- vs_version
+      break
+    }
+  }
+  return(working_vs_version)
+}
+
 # Move in CMakeLists.txt
 write_succeeded <- file.copy(
   "../inst/bin/CMakeLists.txt"
@@ -72,27 +105,9 @@ if (!use_precompile) {
       build_cmd <- "mingw32-make.exe _lightgbm"
       system(paste0(cmake_cmd, " ..")) # Must build twice for Windows due sh.exe in Rtools
     } else {
-      local_vs_def <- ""
-      vs_versions <- c(
-        "Visual Studio 16 2019"
-        , "Visual Studio 15 2017"
-        , "Visual Studio 14 2015"
-      )
-      for (vs in vs_versions) {
-        print(paste0("Trying to build with: '", vs, "'"))
-        vs_def <- paste0(" -G \"", vs, "\" -A x64")
-        tmp_cmake_cmd <- paste0(cmake_cmd, vs_def)
-        try_vs <- system(paste0(tmp_cmake_cmd, " .."))
-        if (try_vs == 0L) {
-          local_vs_def <- vs_def
-          print(paste0("Building with '", vs, "' succeeded"))
-          break
-        } else {
-          unlink("./*", recursive = TRUE) # Clean up build directory
-        }
-      }
-      if (try_vs == 1L) {
-        print("Building with Visual Studio failed. Attempted with MinGW")
+      local_vs_def <- .find_vs_version()
+      if (is.null(local_vs_def)) {
+        print("Building with Visual Studio failed. Attempting with MinGW")
         cmake_cmd <- paste0(cmake_cmd, " -G \"MinGW Makefiles\" ")
         system(paste0(cmake_cmd, " ..")) # Must build twice for Windows due sh.exe in Rtools
         build_cmd <- "mingw32-make.exe _lightgbm"
