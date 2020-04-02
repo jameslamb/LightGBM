@@ -67,7 +67,7 @@ $packages = "c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat'), dependenci
 Rscript --vanilla -e "install.packages($packages, repos = '$env:CRAN_MIRROR', pkgType = 'binary', lib = '$env:R_LIB_PATH', install.packages.check.source = 'no')" ; Check-Output $?
 
 Write-Output "Building R package"
-Rscript build_r.R --skip-install ; Check-Output $?
+Rscript build_r.R ; Check-Output $?
 
 $PKG_FILE_NAME = Get-Item *.tar.gz
 $LOG_FILE_NAME = "lightgbm.Rcheck/00check.log"
