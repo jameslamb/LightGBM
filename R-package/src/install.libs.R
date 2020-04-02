@@ -113,7 +113,7 @@ if (!use_precompile) {
         build_cmd <- "mingw32-make.exe _lightgbm"
       } else {
         print(paste0("Building with ", shQuote(local_vs_def)))
-        cmake_cmd <- paste0(cmake_cmd, local_vs_def)
+        cmake_cmd <- paste0(cmake_cmd, " -G ", shQuote(local_vs_def), " -A x64")
         build_cmd <- "cmake --build . --target _lightgbm --config Release"
         lib_folder <- file.path(source_dir, "Release", fsep = "/")
       }
