@@ -38,7 +38,7 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
     setwd(build_dir)
     writeLines(
       text = "PROJECT(testing)"
-      , con = file.path(build_dir, "CMakeLists.txt")
+      , con = "CMakeLists.txt"
     )
     cmake_cmd <- paste0(
       "cmake -Wno-dev -G \""
