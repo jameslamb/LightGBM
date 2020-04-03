@@ -28,12 +28,13 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
   working_vs_version <- NULL
   for (vs_version in vs_versions) {
     print(sprintf("Trying '%s'", vs_version))
-    build_dir <- tempdir()
+    build_dir <- file.path(tempdir(), "test")
     if (dir.exists(build_dir)){
       print(sprintf("Directory '%s' already exists, removing it", build_dir))
       unlink(build_dir, recursive = TRUE, force = TRUE)
-      build_dir <- tempdir()
+      build_dir <- file.path(tempdir(), "test")
     }
+    dir.create(build_dir)
     setwd(build_dir)
     writeLines(
       text = "PROJECT(testing)"
