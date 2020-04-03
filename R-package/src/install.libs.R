@@ -17,9 +17,9 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
 
 .find_vs_version <- function() {
   current_working_dir <- getwd()
-  on.exit({
-    setwd(current_working_dir)
-  })
+  # on.exit({
+  #   setwd(current_working_dir)
+  # })
   vs_versions <- c(
     "Visual Studio 16 2019"
     , "Visual Studio 15 2017"
