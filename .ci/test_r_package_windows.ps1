@@ -82,7 +82,7 @@ if ($env:AZURE -eq "true") {
 }
 
 Write-Output "R CMD check build logs:"
-Get-Content -File $env:BUILD_SOURCESDIRECTORY\lightgbm.Rcheck\00install.out
+Get-Content -Path $env:BUILD_SOURCESDIRECTORY\lightgbm.Rcheck\00install.out
 
 Write-Output "Looking for issues with R CMD check results"
 if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "WARNING" -Quiet) {
