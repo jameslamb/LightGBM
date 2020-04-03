@@ -67,7 +67,7 @@ $packages = "c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat'), dependenci
 Rscript --vanilla -e "install.packages($packages, repos = '$env:CRAN_MIRROR', pkgType = 'binary', lib = '$env:R_LIB_PATH', install.packages.check.source = 'no')" ; Check-Output $?
 
 Write-Output "Building R package"
-Rscript build_r.R ; Check-Output $?
+Rscript build_r.R --skip-install ; Check-Output $?
 
 $PKG_FILE_NAME = Get-Item *.tar.gz
 $LOG_FILE_NAME = "lightgbm.Rcheck/00check.log"
@@ -80,6 +80,9 @@ if ($env:AZURE -eq "true") {
   Write-Output "Running R CMD check as CRAN"
   R.exe CMD check --no-multiarch --as-cran ${PKG_FILE_NAME} ; Check-Output $?
 }
+
+Write-Output "R CMD check build logs:"
+Get-Content -File $env:BUILD_SOURCESDIRECTORY\lightgbm.Rcheck\00install.out
 
 Write-Output "Looking for issues with R CMD check results"
 if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "WARNING" -Quiet) {
