@@ -11,11 +11,9 @@ environment:
       TASK: r-package
       R_WINDOWS_VERSION: 3.6.3
     - COMPILER: MSVC
-      TASK: appveyor-python
-      CONDA_ENV: test-env
+      TASK: python
     - COMPILER: MINGW
-      TASK: appveyor-python
-      CONDA_ENV: test-env
+      TASK: python
 
 clone_depth: 5
 
@@ -33,10 +31,10 @@ install:
           default {$env:MINICONDA = "C:\Miniconda37-x64"}
       }
       $env:PATH="$env:MINICONDA;$env:MINICONDA\Scripts;$env:PATH"
-  - ps: $env:LGB_VER = (Get-Content VERSION.txt).trim()
+  - ps: $env:LGB_VER = (Get-Content $env:APPVEYOR_BUILD_FOLDER\VERSION.txt).trim()
 
 build: false
 
 test_script:
   - conda init powershell
-  - powershell.exe -ExecutionPolicy Bypass -File .\.ci\test_windows.ps1
+  - powershell.exe -ExecutionPolicy Bypass -File %APPVEYOR_BUILD_FOLDER%\.ci\test_windows.ps1
