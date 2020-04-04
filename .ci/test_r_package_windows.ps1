@@ -44,6 +44,11 @@ if (!(Get-Command R.exe -errorAction SilentlyContinue)) {
     Write-Output "Installing Rtools"
     Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH/Rtools" ; Check-Output $?
     Write-Output "Done installing Rtools"
+}
+
+# MiKTeX and pandoc can be skipped on Azure builds, since we don't
+# build the package documentation there
+if ($env:AZURE -ne "true") {
 
     # download Miktex
     Write-Output "Downloading MiKTeX"
@@ -55,10 +60,10 @@ if (!(Get-Command R.exe -errorAction SilentlyContinue)) {
     Write-Output "Installing MiKTeX"
     .\miktex\download\miktexsetup.exe --portable="$env:R_LIB_PATH/miktex" --quiet install ; Check-Output $?
     Write-Output "Done installing R, Rtools, and MiKTeX"
-}
 
-initexmf --set-config-value [MPM]AutoInstall=1
-conda install -y --no-deps pandoc
+    initexmf --set-config-value [MPM]AutoInstall=1
+    conda install -y --no-deps pandoc
+}
 
 Add-Content .Renviron "R_LIBS=$env:R_LIB_PATH"
 
@@ -75,7 +80,7 @@ $LOG_FILE_NAME = "lightgbm.Rcheck/00check.log"
 $env:_R_CHECK_FORCE_SUGGESTS_=0
 if ($env:AZURE -eq "true") {
   Write-Output "Running R CMD check without checking documentation"
-  R.exe CMD check --no-multiarch --no-manual --ignore-vignettes ${PKG_FILE_NAME} ; Check-Output $?
+  R.exe CMD check --no-examples --no-multiarch --no-manual --ignore-vignettes ${PKG_FILE_NAME} ; Check-Output $?
 } else {
   Write-Output "Running R CMD check as CRAN"
   R.exe CMD check --no-multiarch --as-cran ${PKG_FILE_NAME} ; Check-Output $?
