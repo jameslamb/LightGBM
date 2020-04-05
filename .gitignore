@@ -405,6 +405,7 @@ R-package/src-i386
 lightgbm_r/*
 lightgbm*.tar.gz
 lightgbm.Rcheck/
+**/autom4te.cache/
 
 # Files from interactive R sessions
 .Rproj.user

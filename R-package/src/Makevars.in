@@ -1,0 +1,20 @@
+CXX_STD = CXX11
+
+PKGROOT=.
+LGB_RFLAGS = -DBUILD_FOR_R=ON -DUSE_R35=ON
+
+# disable the use of thread_local for 32 bit windows:
+# ifeq ($(R_OSTYPE)$(WIN),windows)
+#     XGB_RFLAGS += -DDMLC_CXX11_THREAD_LOCAL=0
+# endif
+# $(foreach v, $(XGB_RFLAGS), $(warning $(v)))
+
+PKG_CPPFLAGS = -I$(PKGROOT)/src/include -I$(PKGROOT)/include $(LGB_RFLAGS)
+PKG_CXXFLAGS= @OPENMP_CXXFLAGS@ @ENDIAN_FLAG@ -pthread
+PKG_LIBS = @OPENMP_CXXFLAGS@ @OPENMP_LIB@ @ENDIAN_FLAG@ @BACKTRACE_LIB@ -pthread
+
+# OBJECTS = src/c_api.o src/lightgbm_R.o src/main.o
+
+# ./xgboost_R.o ./xgboost_custom.o ./xgboost_assert.o ./init.o\
+#          $(PKGROOT)/amalgamation/xgboost-all0.o $(PKGROOT)/amalgamation/dmlc-minimum0.o\
+#          $(PKGROOT)/rabit/src/engine_empty.o $(PKGROOT)/rabit/src/c_api.o
