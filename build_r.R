@@ -62,12 +62,16 @@ result <- file.copy(
 )
 .handle_result(result)
 
-result <- file.copy(
-  from = "CMakeLists.txt"
-  , to = file.path("lightgbm_r", "inst", "bin/")
-  , overwrite = TRUE
+# result <- file.copy(
+#   from = "CMakeLists.txt"
+#   , to = file.path("lightgbm_r", "inst", "bin/")
+#   , overwrite = TRUE
+# )
+# .handle_result(result)
+
+file.remove(
+  file.path("lightgbm_r", "src", "install.libs.R")
 )
-.handle_result(result)
 
 # Build the package (do not touch this line!)
 # NOTE: --keep-empty-dirs is necessary to keep the deep paths expected
