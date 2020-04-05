@@ -48,7 +48,8 @@ result <- file.copy(
 
 result <- file.copy(
   from = "src/"
-  , to = file.path("lightgbm_r", "src/")
+  #, to = file.path("lightgbm_r", "src/")
+  , to = file.path("lightgbm_r", "")
   , recursive = TRUE
   , overwrite = TRUE
 )

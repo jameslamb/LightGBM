@@ -157,6 +157,16 @@ Rscript -e " \
     "
 ```
 
+Creating configure files with `autoconf`
+----------------------------------------
+
+```shell
+autoconf \
+  --verbose \
+  --output configure \
+  configure.ac
+```
+
 External (Unofficial) Repositories
 ----------------------------------
 

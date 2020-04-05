@@ -179,7 +179,7 @@ NULL
 # Various imports
 #' @import methods
 #' @importFrom R6 R6Class
-#' @useDynLib lib_lightgbm , .registration = TRUE
+#' @useDynLib lightgbm , .registration = TRUE
 NULL
 
 # Suppress false positive warnings from R CMD CHECK about

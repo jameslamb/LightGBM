@@ -27,17 +27,24 @@
 #include <vector>
 
 #if defined(_MSC_VER)
-#include <malloc.h>
+  #include <malloc.h>
 #elif MM_MALLOC
-#include <mm_malloc.h>
+  #include <mm_malloc.h>
 #elif defined(__GNUC__)
-#include <malloc.h>
-#define _mm_malloc(a, b) memalign(b, a)
-#define _mm_free(a) free(a)
+  // https://gcc.gnu.org/onlinedocs/cpp/Common-Predefined-Macros.html
+  #include <stdlib.h>
+  #ifdef HAVE_MALLOC_H
+    #include <malloc.h>
+    #define _mm_malloc(a, b) memalign(b, a)
+    #define _mm_free(a) free(a)
+  #else
+    #define _mm_malloc(a, b) malloc(a)
+    #define _mm_free(a) free(a)
+  #endif
 #else
-#include <stdlib.h>
-#define _mm_malloc(a, b) malloc(a)
-#define _mm_free(a) free(a)
+  #include <stdlib.h>
+  #define _mm_malloc(a, b) malloc(a)
+  #define _mm_free(a) free(a)
 #endif
 
 namespace LightGBM {
