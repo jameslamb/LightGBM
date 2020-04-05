@@ -6,7 +6,7 @@
 
 AC_PREREQ(2.69)
 
-AC_INIT([lightgbm],[2.3.2], [], [lib_lightgbm], [])
+AC_INIT([lightgbm],[2.3.2], [], [lightgbm], [])
 
 # Find the compiler and compiler flags used by R.
 : ${R_HOME=`R RHOME`}

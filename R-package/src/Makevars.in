@@ -13,7 +13,7 @@ PKG_CPPFLAGS = -I$(PKGROOT)/src/include -I$(PKGROOT)/include $(LGB_RFLAGS)
 PKG_CXXFLAGS= @OPENMP_CXXFLAGS@ @ENDIAN_FLAG@ -pthread
 PKG_LIBS = @OPENMP_CXXFLAGS@ @OPENMP_LIB@ @ENDIAN_FLAG@ @BACKTRACE_LIB@ -pthread
 
-# OBJECTS = src/c_api.o src/lightgbm_R.o src/main.o
+OBJECTS = lightgbm_R.o src/c_api.o src/lightgbm_R.o src/main.o
 
 # ./xgboost_R.o ./xgboost_custom.o ./xgboost_assert.o ./init.o\
 #          $(PKGROOT)/amalgamation/xgboost-all0.o $(PKGROOT)/amalgamation/dmlc-minimum0.o\
