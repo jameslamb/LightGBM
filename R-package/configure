@@ -1666,6 +1666,16 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 
+# Find the compiler and compiler flags used by R.
+: ${R_HOME=`R RHOME`}
+if test -z "${R_HOME}"; then
+  echo "could not determine R_HOME"
+  exit 1
+fi
+CC=`"${R_HOME}/bin/R" CMD config CC`
+CFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
+CPPFLAGS=`"${R_HOME}/bin/R" CMD config CPPFLAGS`
+
 
 
 

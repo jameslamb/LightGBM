@@ -29,7 +29,7 @@ lgb.last_error <- function() {
     , buf_len
     , act_len
     , err_msg
-    , PACKAGE = "lib_lightgbm"
+    , PACKAGE = "ightgbm"
   )
 
   # Check error buffer
@@ -41,7 +41,7 @@ lgb.last_error <- function() {
       , buf_len
       , act_len
       , err_msg
-      , PACKAGE = "lib_lightgbm"
+      , PACKAGE = "lightgbm"
     )
   }
 
@@ -60,14 +60,14 @@ lgb.call <- function(fun_name, ret, ...) {
       , ...
       , ret
       , call_state
-      , PACKAGE = "lib_lightgbm"
+      , PACKAGE = "lightgbm"
     )
   } else {
     call_state <- .Call(
       fun_name
       , ...
       , call_state
-      , PACKAGE = "lib_lightgbm"
+      , PACKAGE = "lightgbm"
     )
   }
   call_state <- as.integer(call_state)

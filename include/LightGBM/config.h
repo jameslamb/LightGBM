@@ -81,9 +81,9 @@ struct Config {
   static void KV2Map(std::unordered_map<std::string, std::string>* params, const char* kv);
   static std::unordered_map<std::string, std::string> Str2Map(const char* parameters);
 
-  #pragma region Parameters
+  // #pragma region Parameters
 
-  #pragma region Core Parameters
+  // #pragma region Core Parameters
 
   // [no-save]
   // [doc-only]
@@ -217,9 +217,9 @@ struct Config {
   // desc = this seed has lower priority in comparison with other seeds, which means that it will be overridden, if you set other seeds explicitly
   int seed = 0;
 
-  #pragma endregion
+  // #pragma endregion
 
-  #pragma region Learning Control Parameters
+  // #pragma region Learning Control Parameters
 
   // desc = used only with ``cpu`` device type
   // desc = set this to ``true`` to force col-wise histogram building
@@ -521,11 +521,11 @@ struct Config {
   // desc = **Note**: can be used only in CLI version
   int snapshot_freq = -1;
 
-  #pragma endregion
+  // #pragma endregion
 
-  #pragma region IO Parameters
+  // #pragma region IO Parameters
 
-  #pragma region Dataset Parameters
+  // #pragma region Dataset Parameters
 
   // check = >1
   // desc = max number of bins that feature values will be bucketed in
@@ -654,9 +654,9 @@ struct Config {
   // desc = **Note**: can be used only in CLI version; for language-specific packages you can use the correspondent function
   bool save_binary = false;
 
-  #pragma endregion
+  // #pragma endregion
 
-  #pragma region Predict Parameters
+  // #pragma region Predict Parameters
 
   // [no-save]
   // desc = used only in ``prediction`` task
@@ -716,9 +716,9 @@ struct Config {
   // desc = **Note**: can be used only in CLI version
   std::string output_result = "LightGBM_predict_result.txt";
 
-  #pragma endregion
+  // #pragma endregion
 
-  #pragma region Convert Parameters
+  // #pragma region Convert Parameters
 
   // [no-save]
   // desc = used only in ``convert_model`` task
@@ -734,11 +734,11 @@ struct Config {
   // desc = **Note**: can be used only in CLI version
   std::string convert_model = "gbdt_prediction.cpp";
 
-  #pragma endregion
+  // #pragma endregion
 
-  #pragma endregion
+  // #pragma endregion
 
-  #pragma region Objective Parameters
+  // #pragma region Objective Parameters
 
   // desc = used only in ``rank_xendcg`` objective
   // desc = random seed for objectives, if random process is needed
@@ -817,9 +817,9 @@ struct Config {
   // desc = separate by ``,``
   std::vector<double> label_gain;
 
-  #pragma endregion
+  // #pragma endregion
 
-  #pragma region Metric Parameters
+  // #pragma region Metric Parameters
 
   // [doc-only]
   // alias = metrics, metric_types
@@ -890,9 +890,9 @@ struct Config {
   // desc = if not specified, will use equal weights for all classes
   std::vector<double> auc_mu_weights;
 
-  #pragma endregion
+  // #pragma endregion
 
-  #pragma region Network Parameters
+  // #pragma region Network Parameters
 
   // check = >0
   // alias = num_machine
@@ -919,9 +919,9 @@ struct Config {
   // desc = list of machines in the following format: ``ip1:port1,ip2:port2``
   std::string machines = "";
 
-  #pragma endregion
+  // #pragma endregion
 
-  #pragma region GPU Parameters
+  // #pragma region GPU Parameters
 
   // desc = OpenCL platform ID. Usually each GPU vendor exposes one OpenCL platform
   // desc = ``-1`` means the system-wide default platform
@@ -936,9 +936,9 @@ struct Config {
   // desc = set this to ``true`` to use double precision math on GPU (by default single precision is used)
   bool gpu_use_dp = false;
 
-  #pragma endregion
+  // #pragma endregion
 
-  #pragma endregion
+  // #pragma endregion
 
   size_t file_load_progress_interval_bytes = size_t(10) * 1024 * 1024 * 1024;
 

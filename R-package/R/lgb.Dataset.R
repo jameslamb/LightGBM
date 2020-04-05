@@ -542,7 +542,7 @@ Dataset <- R6::R6Class(
           , lgb.params2str(private$params)
           , lgb.params2str(params)
           , call_state
-          , PACKAGE = "lib_lightgbm"
+          , PACKAGE = "lightgbm"
         )
         call_state <- as.integer(call_state)
         if (call_state != 0L) {
