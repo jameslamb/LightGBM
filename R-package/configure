@@ -583,8 +583,7 @@ PACKAGE_URL=''
 
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
-BACKTRACE_LIB
-ENDIAN_FLAG
+LGB_RFLAGS
 OPENMP_LIB
 OPENMP_CXXFLAGS
 target_alias
@@ -628,6 +627,7 @@ SHELL'
 ac_subst_files=''
 ac_user_opts='
 enable_option_checking
+enable_gpu
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1237,6 +1237,13 @@ if test -n "$ac_init_help"; then
    esac
   cat <<\_ACEOF
 
+Optional Features:
+  --disable-option-checking  ignore unrecognized --enable/--with options
+  --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
+  --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
+  --enable-gpu            Pass this flag to install the R package for usage
+                          with GPU
+
 Report bugs to the package provider.
 _ACEOF
 ac_status=$?
@@ -1666,6 +1673,7 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 
+# set up CPP flags
 # Find the compiler and compiler flags used by R.
 : ${R_HOME=`R RHOME`}
 if test -z "${R_HOME}"; then
@@ -1676,12 +1684,25 @@ CC=`"${R_HOME}/bin/R" CMD config CC`
 CFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
 CPPFLAGS=`"${R_HOME}/bin/R" CMD config CPPFLAGS`
 
+# Compile for GPU?
+LGB_RFLAGS=""
+# Check whether --enable-gpu was given.
+if test "${enable_gpu+set}" = set; then :
+  enableval=$enable_gpu;
+        LGB_RFLAGS+=" -DUSE_GPU"
 
+
+fi
+
+
+# substitute variables from this script into Makevars.in
 
 
 
 ac_config_files="$ac_config_files src/Makevars"
 
+
+# write out Autoconf output
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
 # tests run on this system so they can be shared between configure

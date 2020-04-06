@@ -5,22 +5,23 @@ PKGROOT=.
 # USE_SOCKET: should only be used if not using MPI
 # -Wno-known-pragmas: only used witgh Clang or gcc
 LGB_RFLAGS = \
+    @LGB_RFLAGS@ \
+    -DR_VER_ABOVE_35 \
+    -DUSE_SOCKET \
     -fPIC \
     -funroll-loops \
     -DLGB_R_BUILD \
-    -DR_VER_ABOVE_35 \
-    -DUSE_SOCKET \
     -Wno-unknown-pragmas
 
-# disable the use of thread_local for 32 bit windows:
-# ifeq ($(R_OSTYPE)$(WIN),windows)
-#     XGB_RFLAGS += -DDMLC_CXX11_THREAD_LOCAL=0
-# endif
-# $(foreach v, $(XGB_RFLAGS), $(warning $(v)))
+PKG_CPPFLAGS = \
+    -I$(PKGROOT)/include \
+    $(LGB_RFLAGS)
 
-PKG_CPPFLAGS = -I$(PKGROOT)/src/include -I$(PKGROOT)/include $(LGB_RFLAGS)
-PKG_CXXFLAGS= @OPENMP_CXXFLAGS@ @ENDIAN_FLAG@ -pthread
-PKG_LIBS = @OPENMP_CXXFLAGS@ @OPENMP_LIB@ @ENDIAN_FLAG@ @BACKTRACE_LIB@ -pthread
+PKG_CXXFLAGS = \
+    -pthread
+
+PKG_LIBS = \
+    -pthread
 
 OBJECTS = \
     application/application.o \
@@ -54,7 +55,3 @@ OBJECTS = \
     treelearner/voting_parallel_tree_learner.o \
     c_api.o \
     lightgbm_R.o
-
-# ./xgboost_R.o ./xgboost_custom.o ./xgboost_assert.o ./init.o\
-#          $(PKGROOT)/amalgamation/xgboost-all0.o $(PKGROOT)/amalgamation/dmlc-minimum0.o\
-#          $(PKGROOT)/rabit/src/engine_empty.o $(PKGROOT)/rabit/src/c_api.o

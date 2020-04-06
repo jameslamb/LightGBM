@@ -167,6 +167,16 @@ autoconf \
   configure.ac
 ```
 
+Install from source with GPU
+
+```shell
+Rscript build_r.R --skip-install
+
+R CMD INSTALL \
+    --configure-args='--enable-gpu' \
+    lightgbm_2.3.2.tar.gz
+```
+
 External (Unofficial) Repositories
 ----------------------------------
 
