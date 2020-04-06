@@ -6,11 +6,10 @@ PKGROOT=.
 # -Wno-known-pragmas: only used witgh Clang or gcc
 LGB_RFLAGS = \
     @LGB_RFLAGS@ \
-    -DR_VER_ABOVE_35 \
     -DUSE_SOCKET \
+    -DLGB_R_BUILD \
     -fPIC \
     -funroll-loops \
-    -DLGB_R_BUILD \
     -Wno-unknown-pragmas
 
 PKG_CPPFLAGS = \
@@ -18,9 +17,12 @@ PKG_CPPFLAGS = \
     $(LGB_RFLAGS)
 
 PKG_CXXFLAGS = \
+    @OPENMP_CXXFLAGS@ \
     -pthread
 
 PKG_LIBS = \
+    @OPENMP_CXXFLAGS@ \
+    @OPENMP_LIB@ \
     -pthread
 
 OBJECTS = \

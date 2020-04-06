@@ -1684,8 +1684,29 @@ CC=`"${R_HOME}/bin/R" CMD config CC`
 CFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
 CPPFLAGS=`"${R_HOME}/bin/R" CMD config CPPFLAGS`
 
-# Compile for GPU?
+##############
+# LGB_RFLAGS #
+##############
 LGB_RFLAGS=""
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether using R version 3.5.0 or later" >&5
+$as_echo_n "checking whether using R version 3.5.0 or later... " >&6; }
+ac_pkg_r35=no
+R_35_OR_ABOVE=$(
+    ${R_HOME}/bin/Rscript -e "
+        R_ver <- as.double(R.version['major']) + as.double(R.version['minor']) / 10.0;
+        cat(as.character(R_ver > 3.5))
+    "
+)
+if test ${R_35_OR_ABOVE} = "TRUE"
+then
+    ac_pkg_r35=yes
+    LGB_RFLAGS+=" -DR_VER_ABOVE_35"
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: ${ac_pkg_r35}" >&5
+$as_echo "${ac_pkg_r35}" >&6; }
+
+# Compile for GPU?
 # Check whether --enable-gpu was given.
 if test "${enable_gpu+set}" = set; then :
   enableval=$enable_gpu;
@@ -1694,6 +1715,53 @@ if test "${enable_gpu+set}" = set; then :
 
 fi
 
+
+OPENMP_CXXFLAGS=""
+
+if test `uname -s` = "Linux"
+then
+    OPENMP_CXXFLAGS="\$(SHLIB_OPENMP_CXXFLAGS)"
+fi
+
+if test `uname -s` = "Darwin"
+then
+    OPENMP_CXXFLAGS='-Xclang -fopenmp'
+    OPENMP_LIB='/usr/local/lib/libomp.dylib'
+    ac_pkg_openmp=no
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether OpenMP will work in a package" >&5
+$as_echo_n "checking whether OpenMP will work in a package... " >&6; }
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+                    #include <omp.h>
+
+int
+main ()
+{
+
+                    return (omp_get_max_threads() <= 1);
+
+
+  ;
+  return 0;
+}
+
+
+_ACEOF
+    ${CC} -o conftest conftest.c /usr/local/lib/libomp.dylib -Xclang -fopenmp 2>/dev/null && ./conftest && ac_pkg_openmp=yes
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: ${ac_pkg_openmp}" >&5
+$as_echo "${ac_pkg_openmp}" >&6; }
+    if test "${ac_pkg_openmp}" = no; then
+        OPENMP_CXXFLAGS=''
+        OPENMP_LIB=''
+        echo '***********************************************************************************************'
+        echo 'WARNING: OpenMP is unavailable on this Mac OSX system. LightGBM code may be slower as a result.'
+        echo '         To use all CPU cores for training jobs, you should install OpenMP by running\n'
+        echo '             brew install libomp'
+        echo '***********************************************************************************************'
+    fi
+fi
 
 # substitute variables from this script into Makevars.in
 
