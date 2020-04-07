@@ -2,27 +2,37 @@ CXX_STD = CXX11
 
 PKGROOT=.
 
+# TODO: get R_VER_ABVE_35 from configure.win
+# TODO: get MM_MALLOC from configure.win
+# TODO: get MM_PREFETCH from configure.win
+
 # USE_SOCKET: should only be used if not using MPI
-# -Wno-known-pragmas: only used witgh Clang or gcc
+# -Wno-known-pragmas: only used with Clang or gcc
 LGB_RFLAGS = \
-    @LGB_RFLAGS@ \
+    -DR_VER_ABOVE_35 \
     -DUSE_SOCKET \
     -DLGB_R_BUILD \
-    -fPIC \
+    -DMM_MALLOC=1 \
+    -DMM_PREFETCH=1 \
     -funroll-loops \
-    -Wno-unknown-pragmas
+    -Wno-unknown-pragmas \
+    -static-libstdc++ \
+    -O3
 
 PKG_CPPFLAGS = \
     -I$(PKGROOT)/include \
     $(LGB_RFLAGS)
 
 PKG_CXXFLAGS = \
-    $$(SHLIB_OPENMP_CXXFLAGS) \
-    $$(SHLIB_PTHREAD_FLAGS)
+    ${SHLIB_OPENMP_CXXFLAGS} \
+    ${SHLIB_PTHREAD_FLAGS} \
+    -static-libstdc++
 
 PKG_LIBS = \
-    $$(SHLIB_OPENMP_CXXFLAGS) \
-    $$(SHLIB_PTHREAD_FLAGS)
+    ${SHLIB_OPENMP_CXXFLAGS} \
+    ${SHLIB_PTHREAD_FLAGS} \
+    -lws2_32 \
+    -lIphlpapi
 
 OBJECTS = \
     application/application.o \
