@@ -29,7 +29,7 @@ lgb.last_error <- function() {
     , buf_len
     , act_len
     , err_msg
-    , PACKAGE = "ightgbm"
+    , PACKAGE = "lightgbm"
   )
 
   # Check error buffer
