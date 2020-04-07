@@ -8,6 +8,10 @@ AC_PREREQ(2.69)
 
 AC_INIT([lightgbm],[2.3.2], [], [lightgbm], [])
 
+###########################
+# find compiler and flags #
+###########################
+
 # set up CPP flags
 # Find the compiler and compiler flags used by R.
 : ${R_HOME=`R RHOME`}
@@ -16,6 +20,7 @@ if test -z "${R_HOME}"; then
   exit 1
 fi
 CC=`"${R_HOME}/bin/R" CMD config CC`
+CXX=`"${R_HOME}/bin/R" CMD config CXX11`
 CFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
 CPPFLAGS=`"${R_HOME}/bin/R" CMD config CPPFLAGS`
 
@@ -50,6 +55,66 @@ AC_ARG_ENABLE(
         LGB_RFLAGS+=" -DUSE_GPU"
     ]
 )
+
+###############
+# MM_PREFETCH #
+###############
+
+AC_MSG_CHECKING([whether MM_PREFETCH works])
+ac_mmprefetch=no
+AC_LANG_CONFTEST(
+    [
+        AC_LANG_PROGRAM(
+            [[
+                #include <xmmintrin.h>
+            ]],
+            [[
+                int main() {
+                    int a = 0;
+                    _mm_prefetch(&a, _MM_HINT_NTA);
+                    return 0;
+                }
+            ]]
+        )
+    ]
+)
+${CC} -o conftest conftest.c 2>/dev/null && ./conftest && ac_mmprefetch=yes
+AC_MSG_RESULT([${ac_mmprefetch}])
+if test "${ac_mmprefetch}" = yes; then
+     LGB_RFLAGS+=" -DMM_PREFETCH=1"
+fi
+
+############
+# MM_ALLOC #
+############
+
+AC_MSG_CHECKING([whether MM_MALLOC works])
+ac_mm_malloc=no
+AC_LANG_CONFTEST(
+    [
+        AC_LANG_PROGRAM(
+            [[
+                #include <mm_malloc.h>
+            ]],
+            [[
+                int main() {
+                    char *a = (char*)_mm_malloc(8, 16);
+                    _mm_free(a);
+                    return 0;
+                }
+            ]]
+        )
+    ]
+)
+${CC} -o conftest conftest.c 2>/dev/null && ./conftest && ac_mm_malloc=yes
+AC_MSG_RESULT([${ac_mm_malloc}])
+if test "${ac_mm_malloc}" = yes; then
+     LGB_RFLAGS+=" -DMM_MALLOC=1"
+fi
+
+##########
+# OpenMP #
+##########
 
 OPENMP_CXXFLAGS=""
 

@@ -157,8 +157,10 @@ Rscript -e " \
     "
 ```
 
-Creating configure files with `autoconf`
-----------------------------------------
+Preparing a CRAN package and installing it
+------------------------------------------
+
+If you've changed `R-package/configure.ac`, recreate `configure` by running the following:
 
 ```shell
 autoconf \
@@ -175,6 +177,29 @@ Rscript build_r.R --skip-install
 R CMD INSTALL \
     --configure-args='--enable-gpu' \
     lightgbm_2.3.2.tar.gz
+```
+
+You can change the compiler used by editing a file `~/.R/Makevars`. Any variables you define there will take precedence over those defined by the `configure` script or `Makevars.in` in the R package's source.
+
+For example, to use `gcc` instead of `clang++` on Mac, create a  `~/.R/Makevars` which contains the following.
+
+```make
+CC=gcc-8
+CXX=g++-8
+CXX11=g++-8
+```
+
+Testing on Windows
+
+```
+Rscript build_r.R --skip-install
+
+Rscript --vanilla -e "
+  devtools::check_win_devel(
+    pkg = 'lightgbm_r',
+    email = 'jaylamb20@gmail.com'
+  )
+  "
 ```
 
 External (Unofficial) Repositories

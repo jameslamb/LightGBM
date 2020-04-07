@@ -583,6 +583,8 @@ PACKAGE_URL=''
 
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+CXX
+CC
 LGB_RFLAGS
 OPENMP_LIB
 OPENMP_CXXFLAGS
@@ -1673,6 +1675,10 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 
+###########################
+# find compiler and flags #
+###########################
+
 # set up CPP flags
 # Find the compiler and compiler flags used by R.
 : ${R_HOME=`R RHOME`}
@@ -1681,6 +1687,7 @@ if test -z "${R_HOME}"; then
   exit 1
 fi
 CC=`"${R_HOME}/bin/R" CMD config CC`
+CXX=`"${R_HOME}/bin/R" CMD config CXX11`
 CFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
 CPPFLAGS=`"${R_HOME}/bin/R" CMD config CPPFLAGS`
 
@@ -1715,6 +1722,84 @@ if test "${enable_gpu+set}" = set; then :
 
 fi
 
+
+###############
+# MM_PREFETCH #
+###############
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether MM_PREFETCH works" >&5
+$as_echo_n "checking whether MM_PREFETCH works... " >&6; }
+ac_mmprefetch=no
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+                #include <xmmintrin.h>
+
+int
+main ()
+{
+
+                int main() {
+                    int a = 0;
+                    _mm_prefetch(&a, _MM_HINT_NTA);
+                    return 0;
+                }
+
+
+  ;
+  return 0;
+}
+
+
+_ACEOF
+${CC} -o conftest conftest.c 2>/dev/null && ./conftest && ac_mmprefetch=yes
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: ${ac_mmprefetch}" >&5
+$as_echo "${ac_mmprefetch}" >&6; }
+if test "${ac_mmprefetch}" = yes; then
+     LGB_RFLAGS+=" -DMM_PREFETCH=1"
+fi
+
+############
+# MM_ALLOC #
+############
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether MM_MALLOC works" >&5
+$as_echo_n "checking whether MM_MALLOC works... " >&6; }
+ac_mm_malloc=no
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+                #include <mm_malloc.h>
+
+int
+main ()
+{
+
+                int main() {
+                    char *a = (char*)_mm_malloc(8, 16);
+                    _mm_free(a);
+                    return 0;
+                }
+
+
+  ;
+  return 0;
+}
+
+
+_ACEOF
+${CC} -o conftest conftest.c 2>/dev/null && ./conftest && ac_mm_malloc=yes
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: ${ac_mm_malloc}" >&5
+$as_echo "${ac_mm_malloc}" >&6; }
+if test "${ac_mm_malloc}" = yes; then
+     LGB_RFLAGS+=" -DMM_MALLOC=1"
+fi
+
+##########
+# OpenMP #
+##########
 
 OPENMP_CXXFLAGS=""
 
@@ -1764,6 +1849,8 @@ $as_echo "${ac_pkg_openmp}" >&6; }
 fi
 
 # substitute variables from this script into Makevars.in
+
+
 
 
 
