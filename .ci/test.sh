@@ -53,7 +53,6 @@ if [[ $TRAVIS == "true" ]] && [[ $TASK == "lint" ]]; then
         --yes \
         -n $CONDA_ENV \
         --channel conda-forge \
-        --override-channels \
         --strict-channel-priority \
             libxml2 \
             r-lintr>=2.0
