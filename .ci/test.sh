@@ -41,10 +41,14 @@ if [[ $TRAVIS == "true" ]] && [[ $TASK == "check-docs" ]]; then
 fi
 
 if [[ $TRAVIS == "true" ]] && [[ $TASK == "lint" ]]; then
+    # stringi needs to be installed separate from r-lintr to avoid issues like 'unable to load shared object stringi.so'
+    # libcurl is necessary for 'curl' R package, a dependency of 'lintr'
     conda install -q -y -n $CONDA_ENV \
         pycodestyle \
         pydocstyle \
-        r-stringi  # stringi needs to be installed separate from r-lintr to avoid issues like 'unable to load shared object stringi.so'
+        r-stringi \
+        libcurl
+
     echo "installing R linting stuff"
     # this command requires --override-channels and --strict-channel-priority
     # to prevent conda from failing back to default channels for r-lintr
