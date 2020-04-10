@@ -55,8 +55,7 @@ if [[ $TRAVIS == "true" ]] && [[ $TASK == "lint" ]]; then
         --channel conda-forge \
         --strict-channel-priority \
             libxml2
-    R_LIBS="$(which R)/library"
-    Rscript -e "install.packages('lintr', repos = 'https://cloud.r-project.org/', lib = '${R_LIBS}')"
+    Rscript -e "install.packages('lintr', repos = 'https://cloud.r-project.org/')"
     pip install --user cpplint
     echo "Linting Python code"
     pycodestyle --ignore=E501,W503 --exclude=./compute,./.nuget . || exit -1
