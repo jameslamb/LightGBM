@@ -46,8 +46,14 @@ if [[ $TRAVIS == "true" ]] && [[ $TASK == "lint" ]]; then
         pydocstyle \
         r-stringi  # stringi needs to be installed separate from r-lintr to avoid issues like 'unable to load shared object stringi.so'
     echo "installing R linting stuff"
-    conda install -vv -y -n $CONDA_ENV \
-        --override-channels conda-forge \
+    # this command requires --override-channels and --strict-channel-priority
+    # to prevent conda from failing back to default channels for r-lintr
+    conda install \
+        -v \
+        --yes \
+        -n $CONDA_ENV \
+        --channel conda-forge \
+        --override-channels \
         --strict-channel-priority \
             libxml2 \
             r-lintr>=2.0
