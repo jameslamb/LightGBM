@@ -2,7 +2,7 @@
 
 # References:
 #    * https://unconj.ca/blog/an-autoconf-primer-for-r-package-authors.html
-*    
+*
 
 AC_PREREQ(2.69)
 
@@ -33,7 +33,7 @@ AC_MSG_CHECKING([whether using R version 3.5.0 or later])
 ac_pkg_r35=no
 R_35_OR_ABOVE=$(
     ${R_HOME}/bin/Rscript -e "
-        R_ver <- as.double(R.version[['major']]) + as.double(R.version[['min or']]) / 10.0;
+        R_ver <- as.double(R.version[['major']]) + as.double(R.version[['minor']]) / 10.0;
         cat(as.character(R_ver > 3.5))
     "
 )
@@ -147,9 +147,9 @@ then
         OPENMP_CXXFLAGS=''
         OPENMP_LIB=''
         echo '***********************************************************************************************'
-        echo 'WARNING: OpenMP is unavailable on this Mac OSX system. LightGBM code may be slower as a result.'
-        echo '         To use all CPU cores for training jobs, you should  install OpenMP by running\n'
-        echo '             brew install libomp'
+        echo ' OpenMP is unavailable on this Mac OSX system. LightGBM code may be slower as a result.'
+        echo ' To use all CPU cores for training jobs, you should  install OpenMP by running\n'
+        echo '     brew install libomp'
         echo '***********************************************************************************************'
     fi
 fi

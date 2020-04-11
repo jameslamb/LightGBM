@@ -189,7 +189,7 @@ CXX=g++-8
 CXX11=g++-8
 ```
 
-Testing on Windows
+Testing on CRAN's Windows setup
 
 ```
 Rscript build_r.R --skip-install

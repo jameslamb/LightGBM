@@ -15,6 +15,6 @@ Rscript build_r.R --skip-install
 R CMD INSTALL \
     lightgbm_2.3.2.tar.gz || exit -1
 
-pushd $(pwd)/R-package/tests
-    Rscript testthat.R
-popd
+R CMD check \
+    --as-cran \
+    lightgbm_2.3.2.tar.gz

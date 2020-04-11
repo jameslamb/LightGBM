@@ -583,8 +583,6 @@ PACKAGE_URL=''
 
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
-CXX
-CC
 LGB_RFLAGS
 OPENMP_LIB
 OPENMP_CXXFLAGS
@@ -1680,7 +1678,7 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 ###########################
 
 # set up CPP flags
-# Find the compiler and compiler flags used by R.
+# find the compiler and compiler flags used by R.
 : ${R_HOME=`R RHOME`}
 if test -z "${R_HOME}"; then
   echo "could not determine R_HOME"
@@ -1834,23 +1832,21 @@ main ()
 
 
 _ACEOF
-    ${CC} -o conftest conftest.c /usr/local/lib/libomp.dylib -Xclang -fopenmp 2>/dev/null && ./conftest && ac_pkg_openmp=yes
+    ${CC} -o conftest conftest.c /usr/local/lib/libomp.dylib -Xclang  -fopenmp 2>/dev/null && ./conftest && ac_pkg_openmp=yes
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: ${ac_pkg_openmp}" >&5
 $as_echo "${ac_pkg_openmp}" >&6; }
     if test "${ac_pkg_openmp}" = no; then
         OPENMP_CXXFLAGS=''
         OPENMP_LIB=''
         echo '***********************************************************************************************'
-        echo 'WARNING: OpenMP is unavailable on this Mac OSX system. LightGBM code may be slower as a result.'
-        echo '         To use all CPU cores for training jobs, you should install OpenMP by running\n'
-        echo '             brew install libomp'
+        echo ' OpenMP is unavailable on this Mac OSX system. LightGBM code may be slower as a result.'
+        echo ' To use all CPU cores for training jobs, you should  install OpenMP by running\n'
+        echo '     brew install libomp'
         echo '***********************************************************************************************'
     fi
 fi
 
 # substitute variables from this script into Makevars.in
-
-
 
 
 
