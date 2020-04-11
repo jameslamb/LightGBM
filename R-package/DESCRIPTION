@@ -19,6 +19,7 @@ Encoding: UTF-8
 License: MIT + file LICENSE
 URL: https://github.com/Microsoft/LightGBM
 BugReports: https://github.com/Microsoft/LightGBM/issues
+Biarch: false
 Suggests:
     ggplot2 (>= 1.0.1),
     knitr,
