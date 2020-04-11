@@ -13,7 +13,7 @@ AC_INIT([lightgbm],[2.3.2], [], [lightgbm], [])
 ###########################
 
 # set up CPP flags
-# Find the compiler and compiler flags used by R.
+# find the compiler and compiler flags used by R.
 : ${R_HOME=`R RHOME`}
 if test -z "${R_HOME}"; then
   echo "could not determine R_HOME"

@@ -63,6 +63,11 @@ result <- file.copy(
 )
 .handle_result(result)
 
+unlink(
+  x = file.path("lightgbm_r", "inst")
+  , recursive = TRUE
+)
+
 # result <- file.copy(
 #   from = "CMakeLists.txt"
 #   , to = file.path("lightgbm_r", "inst", "bin/")

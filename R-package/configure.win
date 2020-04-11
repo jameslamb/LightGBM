@@ -1,0 +1,7 @@
+
+
+# Generate Makevars.win from Makevars.win.in
+sed -e "s|@PKG_CPPFLAGS@|$PKG_CPPFLAGS|" \
+    -e "s|@PKG_LIBS@|$PKG_LIBS|" \
+    < src/Makevars.win.in > src/Makevars.win
+    

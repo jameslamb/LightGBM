@@ -4,13 +4,13 @@ PKGROOT=.
 
 # USE_SOCKET: should only be used if not using MPI
 # -Wno-known-pragmas: only used witgh Clang or gcc
+# -fPIC, -funroll-loops: non-portable flags in 'PKG_CPPFLAGS'
 LGB_RFLAGS = \
     @LGB_RFLAGS@ \
     -DUSE_SOCKET \
-    -DLGB_R_BUILD \
-    -fPIC \
-    -funroll-loops \
-    -Wno-unknown-pragmas
+    -DLGB_R_BUILD
+
+CPICFLAGS = -fPIC
 
 PKG_CPPFLAGS = \
     -I$(PKGROOT)/include \
