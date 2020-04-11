@@ -9,14 +9,11 @@ PKGROOT=.
 # USE_SOCKET: should only be used if not using MPI
 # -Wno-known-pragmas: only used with Clang or gcc
 # -Wno-unknown-pragmas: not allowed on Windows
+# -funroll-loops: non-portable flag
 LGB_RFLAGS = \
     @LGB_RFLAGS@ \
-    -DR_VER_ABOVE_35 \
     -DUSE_SOCKET \
     -DLGB_R_BUILD \
-    -DMM_MALLOC=1 \
-    -DMM_PREFETCH=1 \
-    -funroll-loops \
     -static-libstdc++ \
     -O3
 

@@ -1,7 +1,10 @@
 
+##############
+# LGB_RFLAGS #
+##############
+LGB_RFLAGS="-DR_VER_ABOVE_35 -DMM_MALLOC=1 -DMM_PREFETCH=1"
 
 # Generate Makevars.win from Makevars.win.in
-sed -e "s|@PKG_CPPFLAGS@|$PKG_CPPFLAGS|" \
-    -e "s|@PKG_LIBS@|$PKG_LIBS|" \
+sed -e \
+    "s|@LGB_RFLAGS@|$LGB_RFLAGS|" \
     < src/Makevars.win.in > src/Makevars.win
-    
