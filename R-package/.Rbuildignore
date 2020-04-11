@@ -13,6 +13,7 @@
 # Build files
 ^src/CMakeLists.txt$
 ^Makefile$
+^src/Makevars$
 ^src/build/.*$
 ^autom4te\.cache/.*$
 
