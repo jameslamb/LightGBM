@@ -53,13 +53,13 @@ result <- file.remove(
 
 # Add blank Makevars files
 result <- file.copy(
-  from = file.path(TEMP_SOURCE_DIR, "inst", "bin", "Makevars")
+  from = file.path(TEMP_R_DIR, "inst", "bin", "Makevars")
   , to = file.path(TEMP_SOURCE_DIR, "Makevars")
   , overwrite = TRUE
 )
 .handle_result(result)
 result <- file.copy(
-  from = file.path(TEMP_SOURCE_DIR, "inst", "bin", "Makevars.win")
+  from = file.path(TEMP_R_DIR, "inst", "bin", "Makevars.win")
   , to = file.path(TEMP_SOURCE_DIR, "Makevars.win")
   , overwrite = TRUE
 )
