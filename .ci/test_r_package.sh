@@ -76,6 +76,11 @@ cd ${BUILD_DIRECTORY}
 if [[ $R_BUILD_TYPE == "cmake" ]]; then
     Rscript build_r.R --skip-install || exit -1
 elif [[ $R_BUILD_TYPE == "cran" ]]; then
+    if [[ $OS_NAME == "macos" ]]; then
+        sudo installer \
+            -pkg /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg \
+            -target /
+    fi
     ./build-cran-package.sh || exit -1
 fi
 
