@@ -36,6 +36,7 @@ pushd ${TEMP_R_DIR}
     rm src/install.libs.R
     rm -r src/cmake/
     rm -r inst/
+    rm -r pkgdown/
 
     # main.cpp is used to make the lightgbm CLI, unnecessary
     # for the R package
