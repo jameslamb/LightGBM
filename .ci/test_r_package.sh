@@ -80,7 +80,7 @@ Rscript --vanilla -e "install.packages(${packages}, repos = '${CRAN_MIRROR}', li
 cd ${BUILD_DIRECTORY}
 
 if [[ $R_BUILD_TYPE == "cmake" ]]; then
-    Rscript build_r.R --skip-install || exit -1
+    Rscript build_r.R || exit -1
 elif [[ $R_BUILD_TYPE == "cran" ]]; then
     ./build-cran-package.sh || exit -1
 fi

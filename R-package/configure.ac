@@ -12,6 +12,9 @@ AC_INIT([lightgbm],[2.3.2], [], [lightgbm], [])
 # find compiler and flags #
 ###########################
 
+AC_MSG_CHECKING([location of R])
+AC_MSG_RESULT([${R_HOME}])
+
 # set up CPP flags
 # find the compiler and compiler flags used by R.
 : ${R_HOME=`R RHOME`}
