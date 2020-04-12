@@ -35,6 +35,12 @@ fi
 # Installing R precompiled for Mac OS 10.11 or higher
 if [[ $OS_NAME == "macos" ]]; then
 
+    sudo installer \
+        -pkg /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg \
+        -target /
+
+    brew install automake
+    
     brew install qpdf
     brew cask install basictex
     export PATH="/Library/TeX/texbin:$PATH"
@@ -55,12 +61,6 @@ if [[ $OS_NAME == "macos" ]]; then
             "$(brew --cellar libomp)"/*/lib/libomp.dylib \
             /Library/Frameworks/R.framework/Versions/${R_MAJOR_MINOR}/Resources/lib/libomp.dylib
     fi
-
-    sudo installer \
-        -pkg /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg \
-        -target /
-
-    brew install automake
 fi
 
 conda install \
