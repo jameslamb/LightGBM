@@ -1,7 +1,7 @@
 ^build_r.R$
 \.gitkeep$
 ^docs$
-^pkgdown/.*$
+^pkgdown$
 
 # Objects created by compilation
 ^.*\.o
@@ -14,7 +14,7 @@
 ^src/CMakeLists.txt$
 ^Makefile$
 ^src/build/.*$
-^autom4te\.cache/.*$
+^autom4te.cache/.*$
 
 # unnecessary files from submodules
 ^src/compute/.appveyor.yml$
