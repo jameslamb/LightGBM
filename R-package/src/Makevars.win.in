@@ -17,6 +17,8 @@ LGB_RFLAGS = \
     -static-libstdc++ \
     -O3
 
+CPICFLAGS = -fPIC
+
 PKG_CPPFLAGS = \
     -I$(PKGROOT)/include \
     $(LGB_RFLAGS)

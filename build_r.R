@@ -8,10 +8,13 @@
 args <- commandArgs(trailingOnly = TRUE)
 INSTALL_AFTER_BUILD <- !("--skip-install" %in% args)
 
+TEMP_R_DIR <- file.path(getwd(), "lightgbm_r")
+TEMP_SOURCE_DIR <- file.path(TEMP_R_DIR, "src")
+
 # R returns FALSE (not a non-zero exit code) if a file copy operation
 # breaks. Let's fix that
 .handle_result <- function(res) {
-  if (!res) {
+  if (!all(res)) {
     stop("Copying files failed!")
   }
 }
@@ -26,21 +29,35 @@ INSTALL_AFTER_BUILD <- !("--skip-install" %in% args)
 }
 
 # Make a new temporary folder to work in
-unlink(x = "lightgbm_r", recursive = TRUE)
-dir.create("lightgbm_r")
+unlink(x = TEMP_R_DIR, recursive = TRUE)
+dir.create(TEMP_R_DIR)
 
 # copy in the relevant files
 result <- file.copy(
   from = "R-package/./"
-  , to = "lightgbm_r/"
+  , to = sprintf("%s/", TEMP_R_DIR)
   , recursive = TRUE
   , overwrite = TRUE
 )
 .handle_result(result)
 
+# remove CRAN-specific files
+result <- file.remove(
+  file.path(TEMP_R_DIR, "configure")
+  , file.path(TEMP_R_DIR, "configure.ac")
+  , file.path(TEMP_R_DIR, "configure.win")
+  , file.path(TEMP_SOURCE_DIR, "Makevars.in")
+  , file.path(TEMP_SOURCE_DIR, "Makevars.win.in")
+)
+.handle_result(result)
+
+# Add blank Makevars files
+result <- file.create(file.path(TEMP_SOURCE_DIR, "Makevars"))
+result <- file.create(file.path(TEMP_SOURCE_DIR, "Makevars.win"))
+
 result <- file.copy(
   from = "include/"
-  , to = file.path("lightgbm_r", "src/")
+  , to = sprintf("%s/", TEMP_SOURCE_DIR)
   , recursive = TRUE
   , overwrite = TRUE
 )
@@ -48,8 +65,7 @@ result <- file.copy(
 
 result <- file.copy(
   from = "src/"
-  #, to = file.path("lightgbm_r", "src/")
-  , to = file.path("lightgbm_r", "")
+  , to = sprintf("%s/", TEMP_SOURCE_DIR)
   , recursive = TRUE
   , overwrite = TRUE
 )
@@ -57,33 +73,38 @@ result <- file.copy(
 
 result <- file.copy(
   from = "compute/"
-  , to = file.path("lightgbm_r", "src/")
+  , to = sprintf("%s/", TEMP_SOURCE_DIR)
   , recursive = TRUE
   , overwrite = TRUE
 )
 .handle_result(result)
 
-unlink(
-  x = file.path("lightgbm_r", "inst")
-  , recursive = TRUE
+result <- file.copy(
+  from = "CMakeLists.txt"
+  , to = file.path(TEMP_R_DIR, "inst", "bin/")
+  , overwrite = TRUE
 )
+.handle_result(result)
 
-# result <- file.copy(
-#   from = "CMakeLists.txt"
-#   , to = file.path("lightgbm_r", "inst", "bin/")
-#   , overwrite = TRUE
-# )
-# .handle_result(result)
-
-file.remove(
-  file.path("lightgbm_r", "src", "install.libs.R")
-)
+# copy files i ntto the place CMake expects
+for (src_file in c("lightgbm_R.cpp", "lightgbm_R.h", "R_object_helper.h")) {
+  result <- file.copy(
+    from = file.path(TEMP_SOURCE_DIR, src_file)
+    , to = file.path(TEMP_SOURCE_DIR, "src", src_file)
+    , overwrite = TRUE
+  )
+  .handle_result(result)
+  result <- file.remove(
+    file.path(TEMP_SOURCE_DIR, src_file)
+  )
+  .handle_result(result)
+}
 
 # Build the package (do not touch this line!)
 # NOTE: --keep-empty-dirs is necessary to keep the deep paths expected
 #       by CMake while also meeting the CRAN req to create object files
 #       on demand
-cmd <- "R CMD build lightgbm_r --keep-empty-dirs"
+cmd <- sprintf("R CMD build %s --keep-empty-dirs", TEMP_R_DIR)
 .run_shell_command(cmd)
 
 # Install the package
@@ -92,7 +113,7 @@ version <- gsub(
   "",
   grep(
     "Version: "
-    , readLines(con = file.path("lightgbm_r", "DESCRIPTION"))
+    , readLines(con = file.path(TEMP_R_DIR, "DESCRIPTION"))
     , value = TRUE
   )
 )
@@ -102,5 +123,6 @@ cmd <- sprintf("R CMD INSTALL %s --no-multiarch --with-keep.source", tarball)
 if (INSTALL_AFTER_BUILD) {
   .run_shell_command(cmd)
 } else {
+  print(cmd)
   print(sprintf("Skipping installation. Install the package with command '%s'", cmd))
 }
