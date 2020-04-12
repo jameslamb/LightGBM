@@ -53,6 +53,9 @@ pushd ${TEMP_R_DIR}
         -e 's/^.*#pragma endregion.*$//' \
         "${file}"
     done
+    pushd src/include/LightGBM
+        rm *.h.bak
+    popd
 
     # When building an R package with 'configure', it seems
     # you're guaranteed to get a shared library called
@@ -69,11 +72,10 @@ pushd ${TEMP_R_DIR}
         -i.bak \
         -e 's/lib_lightgbm/lightgbm/' \
         NAMESPACE
+    rm R/*.R.bak
+    rm NAMESPACE.bak
 
     echo "Cleaning sed backup files"
-    pushd src/include/LightGBM
-        rm *.h.bak
-    popd
 
 popd
 
