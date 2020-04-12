@@ -4,8 +4,11 @@ Title: Light Gradient Boosting Machine
 Version: 2.3.2
 Date: 2019-11-26
 Authors@R: c(
-	person("James", "Lamb", email="jaylamb20@gmail.com", role = c("cre"))
-	)
+    person("Guolin", "Ke", email = "guolin.ke@microsoft.com", role = c("aut", "cre")),
+    person("Damien", "Soukhavong", email = "damien.soukhavong@skema.edu", role = c("ctb")),
+    person("Yachen", "Yan", role = c("ctb")),
+    person("James", "Lamb", email="jaylamb20@gmail.com", role = c("ctb"))
+    )
 Description: Tree based algorithms can be improved by introducing boosting frameworks. "LightGBM" is one such framework, and this package offers an R interface to work with it.
     It is designed to be distributed and efficient with the following advantages:
         1. Faster training speed and higher efficiency.
