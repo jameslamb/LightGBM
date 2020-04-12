@@ -48,7 +48,7 @@ pushd ${TEMP_R_DIR}
     echo "Removing unkown pragmas in headers"
     for file in src/include/LightGBM/*.h; do
       sed \
-        -i .bak \
+        -i.bak \
         -e 's/^.*#pragma region.*$//' \
         -e 's/^.*#pragma endregion.*$//' \
         "${file}"
@@ -61,12 +61,12 @@ pushd ${TEMP_R_DIR}
     # this project has historically handled installatioon
     for file in R/*.R; do
         sed \
-            -i .bak \
+            -i.bak \
             -e 's/lib_lightgbm/lightgbm/' \
             "${file}"
     done
     sed \
-        -i .bak \
+        -i.bak \
         -e 's/lib_lightgbm/lightgbm/' \
         NAMESPACE
 
