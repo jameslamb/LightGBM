@@ -24,7 +24,8 @@ env:
     - TASK=mpi METHOD=pip
     - TASK=gpu METHOD=source PYTHON_VERSION=3.5
     - TASK=gpu METHOD=pip PYTHON_VERSION=3.6
-    - TASK=r-package
+    - TASK=r-package R_BUILD_TYPE=cmake
+    - TASK=r-package R_BUILD_TYPE=cran
 
 matrix:
   exclude:

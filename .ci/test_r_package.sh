@@ -72,7 +72,12 @@ fi
 Rscript --vanilla -e "install.packages(${packages}, repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'))" || exit -1
 
 cd ${BUILD_DIRECTORY}
-Rscript build_r.R --skip-install || exit -1
+
+if [[ $R_BUILD_TYPE == "cmake" ]]; then
+    Rscript build_r.R --skip-install || exit -1
+elif [[ $R_BUILD_TYPE == "cran" ]]; then
+    ./build-cran-package.sh || exit -1
+fi
 
 PKG_TARBALL="lightgbm_${LGB_VER}.tar.gz"
 LOG_FILE_NAME="lightgbm.Rcheck/00check.log"

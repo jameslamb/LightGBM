@@ -52,8 +52,8 @@ result <- file.remove(
 .handle_result(result)
 
 # Add blank Makevars files
-result <- file.create(file.path(TEMP_SOURCE_DIR, "Makevars"))
-result <- file.create(file.path(TEMP_SOURCE_DIR, "Makevars.win"))
+result <- writeLines("", file.path(TEMP_SOURCE_DIR, "Makevars"))
+result <- writeLines("", file.path(TEMP_SOURCE_DIR, "Makevars.win"))
 
 result <- file.copy(
   from = "include/"
