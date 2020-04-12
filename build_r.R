@@ -123,6 +123,5 @@ cmd <- sprintf("R CMD INSTALL %s --no-multiarch --with-keep.source", tarball)
 if (INSTALL_AFTER_BUILD) {
   .run_shell_command(cmd)
 } else {
-  print(cmd)
   print(sprintf("Skipping installation. Install the package with command '%s'", cmd))
 }
