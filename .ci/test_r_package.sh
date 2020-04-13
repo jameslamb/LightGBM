@@ -35,12 +35,7 @@ fi
 # Installing R precompiled for Mac OS 10.11 or higher
 if [[ $OS_NAME == "macos" ]]; then
 
-    # sudo installer \
-    #     -pkg /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg \
-    #     -target /
-
     brew install automake
-    
     brew install qpdf
     brew cask install basictex
     export PATH="/Library/TeX/texbin:$PATH"
@@ -80,7 +75,7 @@ Rscript --vanilla -e "install.packages(${packages}, repos = '${CRAN_MIRROR}', li
 cd ${BUILD_DIRECTORY}
 
 if [[ $R_BUILD_TYPE == "cmake" ]]; then
-    Rscript build_r.R || exit -1
+    Rscript build_r.R --skip-install || exit -1
 elif [[ $R_BUILD_TYPE == "cran" ]]; then
     ./build-cran-package.sh || exit -1
 fi
@@ -93,9 +88,17 @@ export _R_CHECK_FORCE_SUGGESTS_=0
 
 # fails tests if either ERRORs or WARNINGs are thrown by
 # R CMD CHECK
+check_succeeded="true"
 R CMD check ${PKG_TARBALL} \
     --as-cran \
-|| cat lightgbm.Rcheck/00install.out
+|| check_succeeded="false"
+
+echo "---- R CMD check logs ----"
+cat lightgbm.Rcheck/00install.out
+
+if [[ $check_succeeded == "false" ]]; then
+    exit -1
+fi
 
 if grep -q -R "WARNING" "$LOG_FILE_NAME"; then
     echo "WARNINGS have been found by R CMD check!"
