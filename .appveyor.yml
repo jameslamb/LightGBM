@@ -2,13 +2,13 @@
 
 image: Visual Studio 2015
 platform: x64
-configuration:  # a trick to construct a build matrix with multiple Python versions
+configuration:  # a trick too construct a build matrix with multiple Python versions
   - 3.7
 
 environment:
   matrix:
-    - COMPILER: MSVC
-      TASK: python
+    # - COMPILER: MSVC
+    #   TASK: python
     - COMPILER: MINGW
       TASK: python
 
