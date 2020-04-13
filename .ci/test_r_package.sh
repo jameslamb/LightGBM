@@ -35,6 +35,10 @@ fi
 # Installing R precompiled for Mac OS 10.11 or higher
 if [[ $OS_NAME == "macos" ]]; then
 
+    sudo installer \
+        -pkg /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg \
+        -target /
+
     brew install qpdf
     brew cask install basictex
     export PATH="/Library/TeX/texbin:$PATH"
