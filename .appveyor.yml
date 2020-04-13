@@ -7,8 +7,8 @@ configuration:  # a trick to construct a build matrix with multiple Python versi
 
 environment:
   matrix:
-    - COMPILER: MSVC
-      TASK: python
+    # - COMPILER: MSVC
+    #   TASK: python
     - COMPILER: MINGW
       TASK: python
 

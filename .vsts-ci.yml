@@ -24,8 +24,8 @@ jobs:
   strategy:
     maxParallel: 6
     matrix:
-      regular:
-        TASK: regular
+      # regular:
+      #   TASK: regular
       # sdist:
       #   TASK: sdist
       #   PYTHON_VERSION: 3.5
@@ -82,9 +82,9 @@ jobs:
   strategy:
     maxParallel: 3
     matrix:
-      regular:
-        TASK: regular
-        PYTHON_VERSION: 3.6
+      # regular:
+      #   TASK: regular
+      #   PYTHON_VERSION: 3.6
       # sdist:
       #   TASK: sdist
       #   PYTHON_VERSION: 3.5
