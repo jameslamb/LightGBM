@@ -2,7 +2,6 @@ CXX_STD = CXX11
 
 PKGROOT=.
 
-# TODO: get R_VER_ABVE_35 from configure.win
 # TODO: get MM_MALLOC from configure.win
 # TODO: get MM_PREFETCH from configure.win
 
@@ -10,8 +9,8 @@ PKGROOT=.
 # -Wno-known-pragmas: only used with Clang or gcc
 # -Wno-unknown-pragmas: not allowed on Windows
 # -funroll-loops: non-portable flag
-LGB_RFLAGS = \
-    @LGB_RFLAGS@ \
+LGB_CPPFLAGS = \
+    @LGB_CPPFLAGS@ \
     -DUSE_SOCKET \
     -DLGB_R_BUILD \
     -static-libstdc++ \
@@ -21,7 +20,7 @@ CPICFLAGS = -fPIC
 
 PKG_CPPFLAGS = \
     -I$(PKGROOT)/include \
-    $(LGB_RFLAGS)
+    $(LGB_CPPFLAGS)
 
 PKG_CXXFLAGS = \
     ${SHLIB_OPENMP_CXXFLAGS} \

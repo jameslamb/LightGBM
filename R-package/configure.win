@@ -1,9 +1,28 @@
-##############
-# LGB_RFLAGS #
-##############
-LGB_RFLAGS="-DR_VER_ABOVE_35 -DMM_MALLOC=1 -DMM_PREFETCH=1"
+
+# Find RScript on Windows
+R_SCRIPT="${R_HOME}/bin${R_ARCH_BIN}/Rscript"
+
+################
+# LGB_CPPFLAGS #
+################
+LGB_CPPFLAGS=" -DMM_MALLOC=1 -DMM_PREFETCH=1"
+
+ac_pkg_r35=no
+R_35_OR_ABOVE=$(
+    ${R_SCRIPT} -e "
+        R_ver <- as.double(R.version['major']) + as.double(R.version['minor']) / 10.0;
+        cat(as.character(R_ver > 3.5))
+    "
+)
+
+if test ${R_35_OR_ABOVE} = "TRUE"
+then
+    ac_pkg_r35=yes
+    LGB_CPPFLAGS+=" -DR_VER_ABOVE_35"
+fi
+echo "checking whether using R version 3.5.0 or later...${ac_pkg_r35}"
 
 # Generate Makevars.win from Makevars.win.in
 sed -e \
-    "s|@LGB_RFLAGS@|$LGB_RFLAGS|" \
+    "s|@LGB_CPPFLAGS@|$LGB_CPPFLAGS|" \
     < src/Makevars.win.in > src/Makevars.win

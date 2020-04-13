@@ -28,9 +28,9 @@ CFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
 CPPFLAGS=`"${R_HOME}/bin/R" CMD config CPPFLAGS`
 
 ##############
-# LGB_RFLAGS #
+# LGB_CPPFLAGS #
 ##############
-LGB_RFLAGS=""
+LGB_CPPFLAGS=""
 
 AC_MSG_CHECKING([whether using R version 3.5.0 or later])
 ac_pkg_r35=no
@@ -43,7 +43,7 @@ R_35_OR_ABOVE=$(
 if test ${R_35_OR_ABOVE} = "TRUE"
 then
     ac_pkg_r35=yes
-    LGB_RFLAGS+=" -DR_VER_ABOVE_35"
+    LGB_CPPFLAGS+=" -DR_VER_ABOVE_35"
 fi
 AC_MSG_RESULT([${ac_pkg_r35}])
 
@@ -55,7 +55,7 @@ AC_ARG_ENABLE(
         [Pass this flag to install the R package for usage with GPU]
     ),
     [
-        LGB_RFLAGS+=" -DUSE_GPU"
+        LGB_CPPFLAGS+=" -DUSE_GPU"
     ]
 )
 
@@ -84,7 +84,7 @@ AC_LANG_CONFTEST(
 ${CC} -o conftest conftest.c 2>/dev/null && ./conftest && ac_mmprefetch=yes
 AC_MSG_RESULT([${ac_mmprefetch}])
 if test "${ac_mmprefetch}" = yes; then
-     LGB_RFLAGS+=" -DMM_PREFETCH=1"
+     LGB_CPPFLAGS+=" -DMM_PREFETCH=1"
 fi
 
 ############
@@ -112,7 +112,7 @@ AC_LANG_CONFTEST(
 ${CC} -o conftest conftest.c 2>/dev/null && ./conftest && ac_mm_malloc=yes
 AC_MSG_RESULT([${ac_mm_malloc}])
 if test "${ac_mm_malloc}" = yes; then
-     LGB_RFLAGS+=" -DMM_MALLOC=1"
+     LGB_CPPFLAGS+=" -DMM_MALLOC=1"
 fi
 
 ##########
@@ -160,7 +160,7 @@ fi
 # substitute variables from this script into Makevars.in
 AC_SUBST(OPENMP_CXXFLAGS)
 AC_SUBST(OPENMP_LIB)
-AC_SUBST(LGB_RFLAGS)
+AC_SUBST(LGB_CPPFLAGS)
 AC_CONFIG_FILES([src/Makevars])
 
 # write out Autoconf output
