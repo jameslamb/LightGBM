@@ -35,6 +35,12 @@ fi
 # Installing R precompiled for Mac OS 10.11 or higher
 if [[ $OS_NAME == "macos" ]]; then
 
+    if [[ $AZURE == "true" ]] && [[ $R_BUILD_TYPE == "cran" ]]; then
+        sudo installer \
+            -pkg /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg \
+            -target /
+    fi
+
     brew install automake
     brew install qpdf
     brew cask install basictex
