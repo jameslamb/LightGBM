@@ -2,13 +2,18 @@ CXX_STD = CXX11
 
 PKGROOT=.
 
+# TODO: get MM_MALLOC from configure.win
+# TODO: get MM_PREFETCH from configure.win
+
 # USE_SOCKET: should only be used if not using MPI
-# -Wno-known-pragmas: only used witgh Clang or gcc
-# -funroll-loops: non-portable flags in 'PKG_CPPFLAGS'
+# -Wno-known-pragmas: only used with Clang or gcc
+# -Wno-unknown-pragmas: not allowed on Windows
+# -funroll-loops: non-portable flag
 LGB_CPPFLAGS = \
-    @LGB_CPPFLAGS@ \
+     -DMM_MALLOC=1 -DMM_PREFETCH=1 -DUSE_GPU \
     -DUSE_SOCKET \
     -DLGB_R_BUILD \
+    -static-libstdc++ \
     -O3
 
 CPICFLAGS = -fPIC
@@ -18,13 +23,15 @@ PKG_CPPFLAGS = \
     $(LGB_CPPFLAGS)
 
 PKG_CXXFLAGS = \
-    @OPENMP_CXXFLAGS@ \
-    -pthread
+    ${SHLIB_OPENMP_CXXFLAGS} \
+    ${SHLIB_PTHREAD_FLAGS} \
+    -static-libstdc++
 
 PKG_LIBS = \
-    @OPENMP_CXXFLAGS@ \
-    @OPENMP_LIB@ \
-    -pthread
+    ${SHLIB_OPENMP_CXXFLAGS} \
+    ${SHLIB_PTHREAD_FLAGS} \
+    -lws2_32 \
+    -lIphlpapi
 
 OBJECTS = \
     application/application.o \
