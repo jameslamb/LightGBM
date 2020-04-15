@@ -119,6 +119,9 @@ jobs:
   strategy:
     maxParallel: 3
     matrix:
+      rpkg:
+        TASK: r-package
+        R_WINDOWS_VERSION: 3.6.3
       regular:
         TASK: regular
         PYTHON_VERSION: 3.6
