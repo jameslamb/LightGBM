@@ -42,7 +42,7 @@ pushd ${TEMP_R_DIR}
     # for the R package
     rm src/main.cpp
 
-    # Remove 'regioon' and 'endregion' pragmas. This won't change
+    # Remove 'region' and 'endregion' pragmas. This won't change
     # the correctness of the code. CRAN does not allow you
     # to use compiler flag '-Wno-unknown-pragmas flags' or
     # pragmas that suppress warnings.
