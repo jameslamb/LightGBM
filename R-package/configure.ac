@@ -1,11 +1,8 @@
-### configure.ac                    -*- Autoconf -*-
-
-# References:
-#    * https://unconj.ca/blog/an-autoconf-primer-for-r-package-authors.html
-*
+# Template used by Autoconf to generate 'configure' script. For more see
+#   * https://unconj.ca/blog/an-autoconf-primer-for-r-package-authors.html
+#   * https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Configure-and-cleanup
 
 AC_PREREQ(2.69)
-
 AC_INIT([lightgbm],[2.3.2], [], [lightgbm], [])
 
 ###########################
@@ -30,6 +27,7 @@ CPPFLAGS=`"${R_HOME}/bin/R" CMD config CPPFLAGS`
 ################
 # LGB_CPPFLAGS #
 ################
+
 LGB_CPPFLAGS=""
 
 AC_MSG_CHECKING([whether using R version 3.5.0 or later])

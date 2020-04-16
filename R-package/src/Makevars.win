@@ -2,15 +2,8 @@ CXX_STD = CXX11
 
 PKGROOT=.
 
-# TODO: get MM_MALLOC from configure.win
-# TODO: get MM_PREFETCH from configure.win
-
-# USE_SOCKET: should only be used if not using MPI
-# -Wno-known-pragmas: only used with Clang or gcc
-# -Wno-unknown-pragmas: not allowed on Windows
-# -funroll-loops: non-portable flag
 LGB_CPPFLAGS = \
-     -DMM_MALLOC=1 -DMM_PREFETCH=1 -DUSE_GPU \
+     -DMM_MALLOC=1 -DMM_PREFETCH=1 \
     -DUSE_SOCKET \
     -DLGB_R_BUILD \
     -static-libstdc++ \

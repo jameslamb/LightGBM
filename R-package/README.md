@@ -187,7 +187,7 @@ At build time (e.g. `R CMD INSTALL`), `configure` will be run and used to create
 1. Edit `configure.win` directly.
 2. Edit `src/Makevars.win.in`
 
-Install from source with GPU
+Install from source with GPU on Linux or Mac:
 
 ```shell
 Rscript build_r.R --skip-install
@@ -195,6 +195,24 @@ Rscript build_r.R --skip-install
 R CMD INSTALL \
     --configure-args='--enable-gpu' \
     lightgbm_2.3.2.tar.gz
+```
+
+R on Windows does not support `--configure-args`. To install from source with GPU on Windows, set environment variable `LGB_USE_GPU` to `true`.
+
+```shell
+setx LGB_USE_GPU "true"
+```
+
+Restart CMD, then check that it was set:
+
+```shell
+echo %LGB_USE_GPU%
+```
+
+If it shows `true`, you should see the flag `-DUSE_GPU` in the compiler messages.
+
+```shell
+R CMD INSTALL lightgbm_2.3.2.tar.gz
 ```
 
 You can change the compiler used by editing a file `~/.R/Makevars`. Any variables you define there will take precedence over those defined by the `configure` script or `Makevars.in` in the R package's source.

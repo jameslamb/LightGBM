@@ -2,14 +2,10 @@ CXX_STD = CXX11
 
 PKGROOT=.
 
-# USE_SOCKET: should only be used if not using MPI
-# -Wno-known-pragmas: only used witgh Clang or gcc
-# -funroll-loops: non-portable flags in 'PKG_CPPFLAGS'
 LGB_CPPFLAGS = \
     @LGB_CPPFLAGS@ \
     -DUSE_SOCKET \
-    -DLGB_R_BUILD \
-    -O3
+    -DLGB_R_BUILD
 
 CPICFLAGS = -fPIC
 
