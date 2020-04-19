@@ -192,11 +192,14 @@ find_library(
   HINTS "${CMAKE_CURRENT_BINARY_DIR}" "${LIBR_HOME}/lib" "${LIBR_HOME}/bin/${R_ARCH}" "${LIBR_HOME}/bin" "${LIBR_LIBRARIES}"
 )
 
-if (NOT LIBR_CORE_LIBRARY)
-  message(STATUS "LIBR_CORE_LIBRARY still not found, trying hard-coding")
-  set (LIBR_CORE_LIBRARY ${LIBR_HOME}/bin/${R_ARCH}/R.dll)
-else()
-  message(STATUS "LIBR_CORE_LIBRARYwas found by find_library()")
+# starting from CMake 3.17, find_library() will not find .dll files by default
+# https://cmake.org/cmake/help/v3.17/release/3.17.html#id17
+if (WIN32 AND NOT LIBR_CORE_LIBRARY)
+    find_file(
+        LIBR_CORE_LIBRARY
+        NAME R.dll
+        HINTS "${CMAKE_CURRENT_BINARY_DIR}" "${LIBR_HOME}/lib" "${LIBR_HOME}/bin/${R_ARCH}" "${LIBR_HOME}/bin" "${LIBR_LIBRARIES}"
+    )
 endif()
 
 set(LIBR_CORE_LIBRARY ${LIBR_CORE_LIBRARY} CACHE PATH "R core shared library")
