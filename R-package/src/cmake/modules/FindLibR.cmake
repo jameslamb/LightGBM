@@ -192,7 +192,12 @@ find_library(
   HINTS "${CMAKE_CURRENT_BINARY_DIR}" "${LIBR_HOME}/lib" "${LIBR_HOME}/bin/${R_ARCH}" "${LIBR_HOME}/bin" "${LIBR_LIBRARIES}"
 )
 
-# set (LIBR_CORE_LIBRARY ${LIBR_HOME}/bin/${R_ARCH}/R.dll CACHE PATH "R core shared library")
+if (NOT LIBR_CORE_LIBRARY)
+  message(STATUS "LIBR_CORE_LIBRARY still not found, trying hard-coding")
+  set (LIBR_CORE_LIBRARY ${LIBR_HOME}/bin/${R_ARCH}/R.dll)
+else()
+  message(STATUS "LIBR_CORE_LIBRARYwas found by find_library()")
+endif()
 
 set(LIBR_CORE_LIBRARY ${LIBR_CORE_LIBRARY} CACHE PATH "R core shared library")
 
