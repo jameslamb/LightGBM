@@ -108,6 +108,7 @@ export _R_CHECK_FORCE_SUGGESTS_=0
 check_succeeded="true"
 R CMD check ${PKG_TARBALL} \
     --as-cran \
+|| exit -1
 || check_succeeded="false"
 
 echo "---- R CMD check logs ----"
@@ -133,5 +134,3 @@ if [[ ${NUM_CHECK_NOTES} -gt ${ALLOWED_CHECK_NOTES} ]]; then
     echo "Found ${NUM_CHECK_NOTES} NOTEs from R CMD check. Only ${ALLOWED_CHECK_NOTES} are allowed"
     exit -1
 fi
-
-exit 0
