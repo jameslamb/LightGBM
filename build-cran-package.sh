@@ -1,4 +1,4 @@
-#!/bin/bash
+#!sh
 
 # [description]
 #     Prepare a source distribution of the R package
@@ -6,7 +6,10 @@
 
 set -e
 
+ORIG_WD=$(pwd)
+echo "woring-dir: ${ORIG_WD}"
 TEMP_R_DIR=$(pwd)/lightgbm_r
+echo "temp-dir: ${TEMP_R_DIR}"
 
 if test -d ${TEMP_R_DIR}; then
     rm -r ${TEMP_R_DIR}
@@ -18,7 +21,7 @@ cp -R R-package/* ${TEMP_R_DIR}
 cp -R include ${TEMP_R_DIR}/src/
 cp -R src/* ${TEMP_R_DIR}/src/
 
-pushd ${TEMP_R_DIR}
+cd ${TEMP_R_DIR}
 
     # recreate configure script if autoconf is available,
     # otherwise skip it 
@@ -46,7 +49,7 @@ pushd ${TEMP_R_DIR}
     # the correctness of the code. CRAN does not allow you
     # to use compiler flag '-Wno-unknown-pragmas flags' or
     # pragmas that suppress warnings.
-    echo "Removing unkown pragmas in headers"
+    echo "Removing unknown pragmas in headers"
     for file in src/include/LightGBM/*.h; do
       sed \
         -i.bak \
@@ -54,9 +57,7 @@ pushd ${TEMP_R_DIR}
         -e 's/^.*#pragma endregion.*$//' \
         "${file}"
     done
-    pushd src/include/LightGBM
-        rm *.h.bak
-    popd
+    rm src/include/LightGBM/*.h.bak
 
     # When building an R package with 'configure', it seems
     # you're guaranteed to get a shared library called
@@ -73,13 +74,15 @@ pushd ${TEMP_R_DIR}
         -i.bak \
         -e 's/lib_lightgbm/lightgbm/' \
         NAMESPACE
+
+    echo "Cleaning sed backup files"
     rm R/*.R.bak
     rm NAMESPACE.bak
 
-    echo "Cleaning sed backup files"
+cd ${ORIG_WD}
 
-popd
+echo "here: $(pwd)"
 
 R CMD build \
     --keep-empty-dirs \
-    ${TEMP_R_DIR}
+    lightgbm_r
