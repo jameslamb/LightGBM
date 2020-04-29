@@ -317,6 +317,7 @@ endif()
 
 if(BUILD_FOR_R)
   if(MSVC)
+    message(STATUS "R_DOT_LIB_FILE: ${R_DOT_LIB_FILE}")
     TARGET_LINK_LIBRARIES(_lightgbm ${R_DOT_LIB_FILE})
   else()
     TARGET_LINK_LIBRARIES(_lightgbm ${LIBR_CORE_LIBRARY})
