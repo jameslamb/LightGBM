@@ -195,7 +195,7 @@ if(MSVC)
     )
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /MP /incremental")
     if(USE_DEBUG)
-        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Od /debug:fastlink")
+        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Od")
     else()
         SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /O2 /Ob2 /Oi /Ot /Oy")
     endif()
@@ -205,7 +205,7 @@ else()
     endif()
 endif(MSVC)
 
-MESSAGE(STATUS "CMAKE_FXX_FLAGS: ${CMAKE_CXX_FLAGS}")
+MESSAGE(STATUS "CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 
 SET(LightGBM_HEADER_DIR ${PROJECT_SOURCE_DIR}/include)
 
