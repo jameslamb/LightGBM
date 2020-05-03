@@ -86,7 +86,8 @@ if ($env:COMPILER -ne "MINGW") {
 }
 
 Write-Output "R CMD check build logs:"
-Get-Content -Path $env:BUILD_SOURCESDIRECTORY\lightgbm.Rcheck\00install.out
+$INSTALL_LOG_FILE_NAME = $env:BUILD_SOURCESDIRECTORY\lightgbm.Rcheck\00install.out
+Get-Content -Path $INSTALL_LOG_FILE_NAME
 
 Check-Output $check_succeeded
 
@@ -103,6 +104,20 @@ $ALLOWED_CHECK_NOTES = 3
 if ([int]$NUM_CHECK_NOTES -gt $ALLOWED_CHECK_NOTES) {
     Write-Output "Found ${NUM_CHECK_NOTES} NOTEs from R CMD check. Only ${ALLOWED_CHECK_NOTES} are allowed"
     Check-Output $False
+}
+
+# Checking that we actually got the expected compiler. The R package has some logic
+# to fail back to MinGW if MSVC fails, but for CI builds we need to check that the correct
+# compiler ws used.
+if ($env:COMPILER -ne "MINGW") {
+  $checks = Select-String -Path $INSTALL_LOG_FILE_NAME -Pattern 'Check for working CXX compiler.*Tools/MSVC'
+} else {
+  $checks = Select-String -Path $INSTALL_LOG_FILE_NAME -Pattern 'Check for working CXX compiler.*Rtools/mingw'
+}
+
+if ($checks.Matches.length -ne 0) {
+  Write-Output "The wrong compiler was used. Check the build logs."
+  Check-Output $False
 }
 
 Write-Output "No issues were found checking the R package"

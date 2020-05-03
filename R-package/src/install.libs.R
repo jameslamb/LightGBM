@@ -12,7 +12,7 @@ R_ver <- as.double(R.Version()$major) + as.double(R.Version()$minor) / 10.0
 
 if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
     || R_int_UUID == "2fdf6c18-697a-4ba7-b8ef-11c0d92f1327")) {
-  print("Warning: unmatched R_INTERNALS_UUID, may cannot run normally.")
+  print("Warning: unmatched R_INTERNALS_UUID, may not run normally.")
 }
 
 .find_vs_version <- function() {
@@ -42,7 +42,7 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
     )
     cmake_cmd <- paste0(
       "cmake -Wno-dev -G \""
-      , vs_version
+      , shQuote(vs_version)
       , "\" -A x64 ."
     )
     exitCode <- system(cmake_cmd)
