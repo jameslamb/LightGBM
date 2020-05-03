@@ -109,12 +109,13 @@ if ([int]$NUM_CHECK_NOTES -gt $ALLOWED_CHECK_NOTES) {
 # Checking that we actually got the expected compiler. The R package has some logic
 # to fail back to MinGW if MSVC fails, but for CI builds we need to check that the correct
 # compiler ws used.
-if ($env:COMPILER -ne "MINGW") {
+if ($env:COMPILER -eq "MSVC") {
   $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern 'Check for working CXX compiler.*MSVC'
 } else {
   $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern 'Check for working CXX compiler.*mingw'
 }
 
+$checks.Matches.length
 if ($checks.Matches.length -eq 0) {
   Write-Output "The wrong compiler was used. Check the build logs."
   Check-Output $False

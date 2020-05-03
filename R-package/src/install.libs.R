@@ -41,9 +41,9 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
       , con = "CMakeLists.txt"
     )
     cmake_cmd <- paste0(
-      "cmake -Wno-dev -G \""
+      "cmake -Wno-dev -G "
       , shQuote(vs_version)
-      , "\" -A x64 ."
+      , " -A x64 ."
     )
     exitCode <- system(cmake_cmd)
     if (exitCode == 0L) {
