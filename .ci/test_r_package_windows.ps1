@@ -49,7 +49,7 @@ Write-Output "Done installing Rtools"
 
 # MiKTeX and pandoc can be skipped on non-MINGW builds, since we don't
 # build the package documentation for those
-if ($env:COMPILER -eq "MINGW") {
+#if ($env:COMPILER -eq "MINGW") {
     Write-Output "Downloading MiKTeX"
     Download-File-With-Retries -url "https://miktex.org/download/win/miktexsetup-x64.zip" -destfile "miktexsetup-x64.zip"
     Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -62,7 +62,7 @@ if ($env:COMPILER -eq "MINGW") {
 
     initexmf --set-config-value [MPM]AutoInstall=1
     conda install -q -y --no-deps pandoc
-}
+#}
 
 Add-Content .Renviron "R_LIBS=$env:R_LIB_PATH"
 
@@ -77,13 +77,13 @@ $PKG_FILE_NAME = Get-Item *.tar.gz
 $LOG_FILE_NAME = "lightgbm.Rcheck/00check.log"
 
 $env:_R_CHECK_FORCE_SUGGESTS_ = 0
-if ($env:COMPILER -ne "MINGW") {
-  Write-Output "Running R CMD check without checking documentation"
-  R.exe CMD check --no-multiarch --no-examples --no-manual --ignore-vignettes ${PKG_FILE_NAME} ; $check_succeeded = $?
-} else {
+#if ($env:COMPILER -ne "MINGW") {
+#  Write-Output "Running R CMD check without checking documentation"
+#  R.exe CMD check --no-multiarch --no-examples --no-manual --ignore-vignettes ${PKG_FILE_NAME} ; $check_succeeded = $?
+#} else {
   Write-Output "Running R CMD check as CRAN"
   R.exe CMD check --no-multiarch --as-cran ${PKG_FILE_NAME} ; $check_succeeded = $?
-}
+#}
 
 Write-Output "R CMD check build logs:"
 $INSTALL_LOG_FILE_NAME = "$env:BUILD_SOURCESDIRECTORY\lightgbm.Rcheck\00install.out"
@@ -115,7 +115,7 @@ if ($env:COMPILER -eq "MSVC") {
   $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern 'Check for working CXX compiler.*mingw'
 }
 
-$checks.Matches.length
+$checks.Matches
 if ($checks.Matches.length -eq 0) {
   Write-Output "The wrong compiler was used. Check the build logs."
   Check-Output $False
