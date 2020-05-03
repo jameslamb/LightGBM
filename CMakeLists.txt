@@ -193,9 +193,9 @@ if(MSVC)
         CMAKE_CXX_FLAGS_RELEASE
         CMAKE_CXX_FLAGS_RELWITHDEBINFO
     )
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /MP")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /MP /incremental")
     if(USE_DEBUG)
-        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Od")
+        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Od /debug:fastlink")
     else()
         SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /O2 /Ob2 /Oi /Ot /Oy")
     endif()
@@ -204,6 +204,8 @@ else()
       SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -funroll-loops")
     endif()
 endif(MSVC)
+
+MESSAGE(STATUS "CMAKE_FXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 
 SET(LightGBM_HEADER_DIR ${PROJECT_SOURCE_DIR}/include)
 
