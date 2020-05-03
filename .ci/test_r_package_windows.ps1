@@ -86,8 +86,8 @@ if ($env:COMPILER -ne "MINGW") {
 }
 
 Write-Output "R CMD check build logs:"
-$INSTALL_LOG_FILE_NAME = $env:BUILD_SOURCESDIRECTORY\lightgbm.Rcheck\00install.out
-Get-Content -Path $INSTALL_LOG_FILE_NAME
+$INSTALL_LOG_FILE_NAME = "$env:BUILD_SOURCESDIRECTORY\lightgbm.Rcheck\00install.out"
+Get-Content -Path "$INSTALL_LOG_FILE_NAME"
 
 Check-Output $check_succeeded
 
@@ -110,9 +110,9 @@ if ([int]$NUM_CHECK_NOTES -gt $ALLOWED_CHECK_NOTES) {
 # to fail back to MinGW if MSVC fails, but for CI builds we need to check that the correct
 # compiler ws used.
 if ($env:COMPILER -ne "MINGW") {
-  $checks = Select-String -Path $INSTALL_LOG_FILE_NAME -Pattern 'Check for working CXX compiler.*Tools/MSVC'
+  $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern 'Check for working CXX compiler.*MSVC'
 } else {
-  $checks = Select-String -Path $INSTALL_LOG_FILE_NAME -Pattern 'Check for working CXX compiler.*Rtools/mingw'
+  $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern 'Check for working CXX compiler.*mingw'
 }
 
 if ($checks.Matches.length -ne 0) {
