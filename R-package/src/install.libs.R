@@ -45,10 +45,7 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
       , shQuote(vs_version)
       , " -A x64 ."
     )
-    #exitCode <- system(cmake_cmd)
-    # simulate the case where all the Visual Studio stuff fails
-    # and we fail back to mingw
-    exitCode <- -1L
+    exitCode <- system(cmake_cmd)
     if (exitCode == 0L) {
       working_vs_version <- vs_version
       break
