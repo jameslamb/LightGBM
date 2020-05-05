@@ -42,11 +42,11 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
       , con = "CMakeLists.txt"
     )
     cmake_cmd <- paste0(
-      "cmake --verbose -Wno-dev -G "
+      "cmake -DCMAKE_BUILD_TYPE=Release --verbose -Wno-dev -G "
       , shQuote(vs_version)
-      , " -A x64 --config Release ."
+      , " -A x64 ."
     )
-    exitCode <- system(cmake_cmd, timeout = 30)
+    exitCode <- system(cmake_cmd, timeout = 180, ignore.stdout = FALSE, ignore.stderr = FALSE)
     #if (exitCode == 0L) {
     if (vs_version == "Visual Studio 15 2017") {
       print(as.POSIXct(Sys.time()))
