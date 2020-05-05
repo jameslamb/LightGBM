@@ -42,11 +42,13 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
       , con = "CMakeLists.txt"
     )
     cmake_cmd <- paste0(
-      "cmake -Wno-dev -G "
+      "cmake --verbose -Wno-dev -G "
       , shQuote(vs_version)
-      , " -A x64 ."
+      , " -A x64 --config Release ."
     )
     exitCode <- system(cmake_cmd)
+    print(as.Date(Sys.time()))
+    print("Done building test project")
     if (exitCode == 0L) {
       working_vs_version <- vs_version
       break
@@ -81,7 +83,7 @@ if (!use_precompile) {
   setwd(build_dir)
 
   # Prepare installation steps
-  cmake_cmd <- "cmake "
+  cmake_cmd <- "cmake --verbose "
   build_cmd <- "make _lightgbm"
   lib_folder <- file.path(source_dir, fsep = "/")
 
@@ -122,7 +124,7 @@ if (!use_precompile) {
         print(as.POSIXct(Sys.time()))
         print(paste0("Building with ", shQuote(local_vs_def)))
         cmake_cmd <- paste0(cmake_cmd, " -G ", shQuote(local_vs_def), " -A x64")
-        build_cmd <- "cmake --build . --target _lightgbm --config Release"
+        build_cmd <- "cmake --verbose --build . --target _lightgbm --config Release"
         lib_folder <- file.path(source_dir, "Release", fsep = "/")
       }
     }
