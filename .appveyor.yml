@@ -9,10 +9,10 @@ environment:
   matrix:
     - COMPILER: MINGW
       TASK: r-package
-    - COMPILER: MSVC
-      TASK: python
-    - COMPILER: MINGW
-      TASK: python
+    # - COMPILER: MSVC
+    #   TASK: python
+    # - COMPILER: MINGW
+    #   TASK: python
 
 clone_depth: 5
 
