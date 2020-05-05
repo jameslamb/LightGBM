@@ -46,8 +46,8 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
       , shQuote(vs_version)
       , " -A x64 --config Release ."
     )
-    exitCode <- system(cmake_cmd)
-    print(as.Date(Sys.time()))
+    exitCode <- system(cmake_cmd, timeout = 30)
+    print(as.POSIXct(Sys.time()))
     print("Done building test project")
     if (exitCode == 0L) {
       working_vs_version <- vs_version
