@@ -200,7 +200,8 @@ if(MSVC)
       CMAKE_C_FLAGS_RELEASE
       CMAKE_CXX_FLAGS_RELEASE
     )
-    SET(CMAKE_BUILD_TYPE "Release")
+    # https://stackoverflow.com/questions/19024259/how-to-change-the-build-type-to-release-mode-in-cmake
+    # SET(CMAKE_BUILD_TYPE "Release")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /MP /incremental")
     if(USE_DEBUG)
         SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Od")
