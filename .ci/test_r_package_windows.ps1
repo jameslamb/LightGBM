@@ -23,16 +23,6 @@ if ($env:COMPILER -eq "MINGW") {
   $env:CC = "$env:R_LIB_PATH/Rtools/mingw_64/bin/gcc.exe"
 }
 
-cd $env:BUILD_SOURCESDIRECTORY
-
-Write-Output "----- testing CMake VS build -----"
-cd $env:BUILD_SOURCESDIRECTORY\testing-dir\build
-cmake -G"Visual Studio 15 2017" -A x64 ..
-Write-Output "successfully wrote build files"
-
-Exit 0
-
-
 tzutil /s "GMT Standard Time"
 [Void][System.IO.Directory]::CreateDirectory($env:R_LIB_PATH)
 
@@ -55,6 +45,16 @@ Write-Output "Done installing R"
 Write-Output "Installing Rtools"
 Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH/Rtools" ; Check-Output $?
 Write-Output "Done installing Rtools"
+
+cd $env:BUILD_SOURCESDIRECTORY
+
+Write-Output "----- testing CMake VS build -----"
+cd $env:BUILD_SOURCESDIRECTORY\testing-dir\build
+#cmake -G"Visual Studio 15 2017" -A x64 ..
+Rscript test-build.R
+Write-Output "successfully wrote build files"
+
+Exit 0
 
 # MiKTeX and pandoc can be skipped on non-MINGW builds, since we don't
 # build the package documentation for those
