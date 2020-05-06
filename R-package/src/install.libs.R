@@ -27,8 +27,6 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
   )
   working_vs_version <- NULL
   for (vs_version in vs_versions) {
-    print(as.POSIXct(Sys.time()))
-    print(sprintf("Trying '%s'", vs_version))
     build_dir <- file.path(tempdir(), "test")
     if (dir.exists(build_dir)) {
       print(sprintf("Directory '%s' already exists, removing it", build_dir))
@@ -48,8 +46,6 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
     )
     exitCode <- system(cmake_cmd)
     if (exitCode == 0L) {
-      print(as.POSIXct(Sys.time()))
-      print("Done building test project")
       working_vs_version <- vs_version
       break
     }
@@ -121,7 +117,6 @@ if (!use_precompile) {
         system(paste0(cmake_cmd, " ..")) # Must build twice for Windows due sh.exe in Rtools
         build_cmd <- "mingw32-make.exe _lightgbm"
       } else {
-        print(as.POSIXct(Sys.time()))
         print(paste0("Building with ", shQuote(local_vs_def)))
         cmake_cmd <- paste0(cmake_cmd, " -G ", shQuote(local_vs_def), " -A x64")
         build_cmd <- "cmake --build . --target _lightgbm --config Release"
@@ -136,8 +131,6 @@ if (!use_precompile) {
   # R CMD check complains about the .NOTPARALLEL directive created in the cmake
   # Makefile. We don't need it here anyway since targets are built serially, so trying
   # to remove it with this hack
-  print(as.POSIXct(Sys.time()))
-  print("Updating Makefile")
   generated_makefile <- file.path(
     build_dir
     , "Makefile"
@@ -157,14 +150,7 @@ if (!use_precompile) {
       , sep = "\n"
     )
   }
-  print(as.POSIXct(Sys.time()))
-  print("Done updating Makefile")
-  
-  print(as.POSIXct(Sys.time()))
-  print("Building library")
   system(build_cmd)
-  print(as.POSIXct(Sys.time()))
-  print("Done building library")
   src <- file.path(lib_folder, paste0("lib_lightgbm", SHLIB_EXT), fsep = "/")
 
 } else {

@@ -1,5 +1,3 @@
-# Visual Studio agents: https://docs.microsoft.com/en-us/azure/devops/pipelines/process/phases?view=azure-devops&tabs=yaml
-
 # Download a file and retry upon failure. This looks like
 # an infinite loop but CI-level timeouts will kill it
 function Download-File-With-Retries {
@@ -24,18 +22,16 @@ function Download-File-With-Retries {
 
 # Try moving everything to C:\
 # https://community.spiceworks.com/topic/549614-question-about-syntax
-Write-Output "Trying to move files to faster drive"
-#New-Item -Path "c:\" -Name "LightGBM"
-$env:NEW_BUILD_DIRECTORY = "C:\LightGBM"
-Copy-Item -Path "$env:BUILD_SOURCESDIRECTORY" -Destination "$env:NEW_BUILD_DIRECTORY" -Recurse
-$env:BUILD_SOURCESDIRECTORY = "$env:NEW_BUILD_DIRECTORY"
-Write-Output "BUILD_SOURCESDIRECTORY: $env:BUILD_SOURCESDIRECTORY"
+if ($env:AZURE -eq "true") {
+  Write-Output "Trying to move files to faster drive"
+  $env:NEW_BUILD_DIRECTORY = "C:\LightGBM"
+  Copy-Item -Path "$env:BUILD_SOURCESDIRECTORY" -Destination "$env:NEW_BUILD_DIRECTORY" -Recurse
+  $env:BUILD_SOURCESDIRECTORY = "$env:NEW_BUILD_DIRECTORY"
+  Write-Output "BUILD_SOURCESDIRECTORY: $env:BUILD_SOURCESDIRECTORY"
 
-Write-Output "all items in LightGBM"
-Get-ChildItem -Path "C:\LightGBM"
-
-# find possible values
-# Get-CimClass -Namespace root/CIMV2 | Where-Object CimClassName -like Win32* | Select-Object CimClassName
+  Write-Output "all items in LightGBM"
+  Get-ChildItem -Path "C:\LightGBM"
+}
 
 $env:R_WINDOWS_VERSION = "3.6.3"
 $env:R_LIB_PATH = "$env:BUILD_SOURCESDIRECTORY/RLibrary" -replace '[\\]', '/'
@@ -96,11 +92,7 @@ $packages = "c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat'), dependenci
 Rscript --vanilla -e "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH')" ; Check-Output $?
 
 Write-Output "Building R package"
-Rscript build_r.R
 Rscript build_r.R --skip-install ; Check-Output $?
-#cp $env:BUILD_SOURCESDIRECTORY\CMakeLists.txt $env:BUILD_SOURCESDIRECTORY\lightgbm_r\src\
-#cd $env:BUILD_SOURCESDIRECTORY\lightgbm_r\src\src
-#cmake --config Release --verbose -DUSE_R35=ON  -DBUILD_FOR_R=ON  -DCMAKE_R_VERSION='3.6.1'  -G "Visual Studio 16 2019" -A x64 ..
 
 $PKG_FILE_NAME = Get-Item *.tar.gz
 $LOG_FILE_NAME = "lightgbm.Rcheck/00check.log"
