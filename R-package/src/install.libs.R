@@ -26,7 +26,7 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
   for (vs_version in vs_versions) {
     print(sprintf("Trying '%s'", vs_version))
     # if the build directory is not empty, clean it
-    if (file.exists("CMakeCache.txt")){
+    if (file.exists("CMakeCache.txt")) {
       file.remove("CMakeCache.txt")
     }
     vs_cmake_cmd <- paste0(
@@ -41,7 +41,7 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
       print(sprintf("Successfully created build files for '%s'", vs_version))
       return(TRUE)
     }
-    
+
   }
   return(TRUE)
 }
@@ -94,7 +94,7 @@ if (!use_precompile) {
     paste0(cmake_cmd, " -DCMAKE_R_VERSION='%s' ")
     , R_version_string
   )
-  
+
   # the checks below might already run `cmake -G`. If they do, set this flag
   # to TRUE to avoid re-running it later
   makefiles_already_generated <- FALSE
