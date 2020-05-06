@@ -15,14 +15,15 @@ function Download-File-With-Retries {
 }
 
 # Trying this: https://en.m.wikipedia.org/wiki/Windows_System_Assessment_Tool
-Write-Output "Checking disk speed"
-Write-Output "----- logical disk -----"
-Get-CimInstance Win32_PerfRawData_PerfDisk_LogicalDisk
+#Write-Output "Checking disk speed"
+#Write-Output "----- logical disk -----"
+#Get-CimInstance Win32_PerfRawData_PerfDisk_LogicalDisk
 
-Write-Output "----- physical disk -----"
-Win32_PerfRawData_PerfDisk_PhysicalDisk
+#Write-Output "----- physical disk -----"
+#Win32_PerfRawData_PerfDisk_PhysicalDisk
 
 # Try moving everything to C:\
+Write-Output "Trying to move files to faster drive"
 $env:NEW_BUILD_DIRECTORY = "C:\LightGBM"
 Copy-Item -Path "$env:BUILD_SOURCESDIRECTORY\*" -Destination "$env:NEW_BUILD_DIRECTORY" -Recurse
 $env:BUILD_SOURCESDIRECTORY = "$env:NEW_BUILD_DIRECTORY"
@@ -42,7 +43,7 @@ if ($env:COMPILER -eq "MINGW") {
   $env:CC = "$env:R_LIB_PATH/Rtools/mingw_64/bin/gcc.exe"
 }
 
-cd $env:BUILD_SOURCESDIRECTORY
+cd $env:BUILD_SOURCESDIRECTORY\LightGBM
 tzutil /s "GMT Standard Time"
 [Void][System.IO.Directory]::CreateDirectory($env:R_LIB_PATH)
 
