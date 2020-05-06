@@ -12,25 +12,28 @@ function Download-File-With-Retries {
   } while(!$?);
 }
 
-# Trying this: https://en.m.wikipedia.org/wiki/Windows_System_Assessment_Tool
-#Write-Output "Checking disk speed"
-#Write-Output "----- logical disk -----"
-#Get-CimInstance Win32_PerfRawData_PerfDisk_LogicalDisk
-
-#Write-Output "----- physical disk -----"
-#Win32_PerfRawData_PerfDisk_PhysicalDisk
-
-# Try moving everything to C:\
-# https://community.spiceworks.com/topic/549614-question-about-syntax
+# in the virtual machine we get from Azure DevOps, the write throughput of
+# D:\ (the default location builds run from) is 10x lower than the write throughput
+# of C:\. This matters for very write-heavy steps like generating a build makefile
+# with `cmake -G"Visual Studio..."`.
+#
+# To check the disk performance, run the following
+#
+#     Get-CimInstance Win32_PerfRawData_PerfDisk_LogicalDisk
+#     Get-CimInstance Win32_PerfRawData_PerfDisk_PhysicalDisk
+#
+# More details: https://github.com/microsoft/LightGBM/pull/2965#issuecomment-624421092
+#
 if ($env:AZURE -eq "true") {
-  Write-Output "Trying to move files to faster drive"
+  Write-Output "Moving files to C:\ and changing BUILD_SOURCESDIRECTORY"
   $env:NEW_BUILD_DIRECTORY = "C:\LightGBM"
-  Copy-Item -Path "$env:BUILD_SOURCESDIRECTORY" -Destination "$env:NEW_BUILD_DIRECTORY" -Recurse
+  Copy-Item -Path "$env:BUILD_SOURCESDIRECTORY\src" -Destination "$env:NEW_BUILD_DIRECTORY\src" -Recurse
+  Copy-Item -Path "$env:BUILD_SOURCESDIRECTORY\include" -Destination "$env:NEW_BUILD_DIRECTORY\include" -Recurse
+  Copy-Item -Path "$env:BUILD_SOURCESDIRECTORY\R-package" -Destination "$env:NEW_BUILD_DIRECTORY\R-package" -Recurse
+  Copy-Item -Path "$env:BUILD_SOURCESDIRECTORY\build_r.R" -Destination "$env:NEW_BUILD_DIRECTORY\build_r.R"
+  Copy-Item -Path "$env:BUILD_SOURCESDIRECTORY\CMakeLists.txt" -Destination "$env:NEW_BUILD_DIRECTORY\CMakeLists.txt"
   $env:BUILD_SOURCESDIRECTORY = "$env:NEW_BUILD_DIRECTORY"
-  Write-Output "BUILD_SOURCESDIRECTORY: $env:BUILD_SOURCESDIRECTORY"
-
-  Write-Output "all items in LightGBM"
-  Get-ChildItem -Path "C:\LightGBM"
+  Write-Output "new BUILD_SOURCESDIRECTORY: $env:BUILD_SOURCESDIRECTORY"
 }
 
 $env:R_WINDOWS_VERSION = "3.6.3"

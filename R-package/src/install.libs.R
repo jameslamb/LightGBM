@@ -27,6 +27,7 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
   )
   working_vs_version <- NULL
   for (vs_version in vs_versions) {
+    print(sprintf("Trying '%s'", vs_version))
     build_dir <- file.path(tempdir(), "test")
     if (dir.exists(build_dir)) {
       print(sprintf("Directory '%s' already exists, removing it", build_dir))
@@ -150,6 +151,7 @@ if (!use_precompile) {
       , sep = "\n"
     )
   }
+
   system(build_cmd)
   src <- file.path(lib_folder, paste0("lib_lightgbm", SHLIB_EXT), fsep = "/")
 
