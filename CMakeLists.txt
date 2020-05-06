@@ -246,12 +246,12 @@ file(GLOB SOURCES
 )
 
 add_executable(lightgbm src/main.cpp ${SOURCES})
-list(INSERT SOURCES 0 "src/c_api.cpp")
+list(APPEND SOURCES "src/c_api.cpp")
 
 # Only build the R part of the library if building for
 # use with the R package
 if(BUILD_FOR_R)
-  list(INSERT SOURCES 1 "src/lightgbm_R.cpp")
+  list(APPEND SOURCES "src/lightgbm_R.cpp")
 endif(BUILD_FOR_R)
 
 add_library(_lightgbm SHARED ${SOURCES})

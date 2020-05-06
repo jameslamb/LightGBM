@@ -42,13 +42,11 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
       , con = "CMakeLists.txt"
     )
     cmake_cmd <- paste0(
-      "cmake -DCMAKE_BUILD_TYPE=Release --verbose -Wno-dev -G "
+      "cmake -Wno-dev -G "
       , shQuote(vs_version)
       , " -A x64 ."
     )
-    exitCode <- system(cmake_cmd, timeout = 180, ignore.stdout = FALSE, ignore.stderr = FALSE)
-    #if (exitCode == 0L) {
-    if (vs_version == "Visual Studio 15 2017") {
+    if (exitCode == 0L) {
       print(as.POSIXct(Sys.time()))
       print("Done building test project")
       working_vs_version <- vs_version
@@ -84,7 +82,7 @@ if (!use_precompile) {
   setwd(build_dir)
 
   # Prepare installation steps
-  cmake_cmd <- "cmake --verbose "
+  cmake_cmd <- "cmake "
   build_cmd <- "make _lightgbm"
   lib_folder <- file.path(source_dir, fsep = "/")
 
@@ -125,7 +123,7 @@ if (!use_precompile) {
         print(as.POSIXct(Sys.time()))
         print(paste0("Building with ", shQuote(local_vs_def)))
         cmake_cmd <- paste0(cmake_cmd, " -G ", shQuote(local_vs_def), " -A x64")
-        build_cmd <- "cmake --verbose --build . --target _lightgbm --config Release"
+        build_cmd <- "cmake --build . --target _lightgbm --config Release"
         lib_folder <- file.path(source_dir, "Release", fsep = "/")
       }
     }

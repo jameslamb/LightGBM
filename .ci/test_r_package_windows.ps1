@@ -73,12 +73,9 @@ Rscript --vanilla -e "options(install.packages.check.source = 'no'); install.pac
 Write-Output "Building R package"
 Get-Command cmake
 Rscript build_r.R --skip-install ; Check-Output $?
-cp $env:BUILD_SOURCESDIRECTORY\CMakeLists.txt $env:BUILD_SOURCESDIRECTORY\lightgbm_r\src\
-cd $env:BUILD_SOURCESDIRECTORY\lightgbm_r\src\src
-cmake --config Release --verbose -DUSE_R35=ON  -DBUILD_FOR_R=ON  -DCMAKE_R_VERSION='3.6.1'  -G "Visual Studio 16 2019" -A x64 ..
-
-
-Rscript build_r.R ; Check-Output $false
+#cp $env:BUILD_SOURCESDIRECTORY\CMakeLists.txt $env:BUILD_SOURCESDIRECTORY\lightgbm_r\src\
+#cd $env:BUILD_SOURCESDIRECTORY\lightgbm_r\src\src
+#cmake --config Release --verbose -DUSE_R35=ON  -DBUILD_FOR_R=ON  -DCMAKE_R_VERSION='3.6.1'  -G "Visual Studio 16 2019" -A x64 ..
 
 $PKG_FILE_NAME = Get-Item *.tar.gz
 $LOG_FILE_NAME = "lightgbm.Rcheck/00check.log"
