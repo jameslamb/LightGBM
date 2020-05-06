@@ -27,9 +27,10 @@ function Download-File-With-Retries {
 if ($env:AZURE -eq "true") {
   Write-Output "Moving files to C:\ and changing BUILD_SOURCESDIRECTORY"
   $env:NEW_BUILD_DIRECTORY = "C:\LightGBM"
-  Copy-Item -Path "$env:BUILD_SOURCESDIRECTORY\src" -Destination "$env:NEW_BUILD_DIRECTORY\src" -Recurse
+  Copy-Item -Path "$env:BUILD_SOURCESDIRECTORY\compute" -Destination "$env:NEW_BUILD_DIRECTORY\compute" -Recurse
   Copy-Item -Path "$env:BUILD_SOURCESDIRECTORY\include" -Destination "$env:NEW_BUILD_DIRECTORY\include" -Recurse
   Copy-Item -Path "$env:BUILD_SOURCESDIRECTORY\R-package" -Destination "$env:NEW_BUILD_DIRECTORY\R-package" -Recurse
+  Copy-Item -Path "$env:BUILD_SOURCESDIRECTORY\src" -Destination "$env:NEW_BUILD_DIRECTORY\src" -Recurse
   Copy-Item -Path "$env:BUILD_SOURCESDIRECTORY\build_r.R" -Destination "$env:NEW_BUILD_DIRECTORY\build_r.R"
   Copy-Item -Path "$env:BUILD_SOURCESDIRECTORY\CMakeLists.txt" -Destination "$env:NEW_BUILD_DIRECTORY\CMakeLists.txt"
   $env:BUILD_SOURCESDIRECTORY = "$env:NEW_BUILD_DIRECTORY"
