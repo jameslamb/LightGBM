@@ -1,3 +1,5 @@
+# Visual Studio agents: https://docs.microsoft.com/en-us/azure/devops/pipelines/process/phases?view=azure-devops&tabs=yaml
+
 # Download a file and retry upon failure. This looks like
 # an infinite loop but CI-level timeouts will kill it
 function Download-File-With-Retries {
@@ -11,6 +13,11 @@ function Download-File-With-Retries {
     (New-Object System.Net.WebClient).DownloadFile($url, $destfile)
   } while(!$?);
 }
+
+# Trying this: https://en.m.wikipedia.org/wiki/Windows_System_Assessment_Tool
+Write-Output "Checking disk speed"
+Get-CimInstance Win32_WinSat
+Get-WmiObject -class Win32_WinSAT
 
 $env:R_WINDOWS_VERSION = "3.6.3"
 $env:R_LIB_PATH = "$env:BUILD_SOURCESDIRECTORY/RLibrary" -replace '[\\]', '/'
