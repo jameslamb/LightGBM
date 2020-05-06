@@ -71,7 +71,7 @@ $packages = "c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat'), dependenci
 Rscript --vanilla -e "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH')" ; Check-Output $?
 
 Write-Output "Building R package"
-Get-Command cmake
+Rscript build_r.R
 Rscript build_r.R --skip-install ; Check-Output $?
 #cp $env:BUILD_SOURCESDIRECTORY\CMakeLists.txt $env:BUILD_SOURCESDIRECTORY\lightgbm_r\src\
 #cd $env:BUILD_SOURCESDIRECTORY\lightgbm_r\src\src
