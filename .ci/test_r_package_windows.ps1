@@ -17,6 +17,16 @@ function Download-File-With-Retries {
 # Trying this: https://en.m.wikipedia.org/wiki/Windows_System_Assessment_Tool
 Write-Output "Checking disk speed"
 winsat disk
+
+Get-CimInstance Win32_LogicalDisk
+Get-CimInstance Win32_DiskPartition
+Get-CimInstance Win32_DiskDrivePhyiscalMedia
+Write-Output "----- logical disk -----"
+Get-CimInstance Win32_PerfRawData_PerfDisk_LogicalDisk
+
+Write-Output "----- physical disk -----"
+Win32_PerfRawData_PerfDisk_PhysicalDisk   
+
 Get-CimClass -Namespace root/CIMV2 | Where-Object CimClassName -like Win32* | Select-Object CimClassName
 Get-CimInstance Win32_WinSat
 Get-WmiObject -class Win32_WinSAT
