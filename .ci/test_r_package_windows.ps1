@@ -26,10 +26,11 @@ function Download-File-With-Retries {
 Write-Output "Trying to move files to faster drive"
 New-Item -Path "c:\" -Name "LightGBM"
 $env:NEW_BUILD_DIRECTORY = "C:\LightGBM"
-Copy-Item -Path "$env:BUILD_SOURCESDIRECTORY\*" -Destination "$env:NEW_BUILD_DIRECTORY" -Recurse
+Copy-Item -Path "$env:BUILD_SOURCESDIRECTORY" -Destination "$env:NEW_BUILD_DIRECTORY" -Recurse
 $env:BUILD_SOURCESDIRECTORY = "$env:NEW_BUILD_DIRECTORY"
 Write-Output "BUILD_SOURCESDIRECTORY: $env:BUILD_SOURCESDIRECTORY"
 
+Write-Output "all items in LightGBM"
 Get-ChildItem -Path "C:\LightGBM"
 
 # find possible values
