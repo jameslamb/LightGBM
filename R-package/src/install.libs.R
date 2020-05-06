@@ -15,11 +15,8 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
   print("Warning: unmatched R_INTERNALS_UUID, may not run normally.")
 }
 
-.find_vs_version <- function() {
-  current_working_dir <- getwd()
-  on.exit({
-    setwd(current_working_dir)
-  })
+# try to generate Visual Studio build files
+.generate_vs_makefiles <- function(cmake_cmd) {
   vs_versions <- c(
     "Visual Studio 16 2019"
     , "Visual Studio 15 2017"
@@ -28,30 +25,25 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
   working_vs_version <- NULL
   for (vs_version in vs_versions) {
     print(sprintf("Trying '%s'", vs_version))
-    build_dir <- file.path(tempdir(), "test")
-    if (dir.exists(build_dir)) {
-      print(sprintf("Directory '%s' already exists, removing it", build_dir))
-      unlink(build_dir, recursive = TRUE, force = TRUE)
-      build_dir <- file.path(tempdir(), "test")
+    # if the build directory is not empty, clean it
+    if (file.exists("CMakeCache.txt")){
+      file.remove("CMakeCache.txt")
     }
-    dir.create(build_dir)
-    setwd(build_dir)
-    writeLines(
-      text = "PROJECT(testing)"
-      , con = "CMakeLists.txt"
-    )
-    cmake_cmd <- paste0(
-      "cmake -Wno-dev -G "
+    vs_cmake_cmd <- paste0(
+      cmake_cmd
+      , " -G "
       , shQuote(vs_version)
-      , " -A x64 ."
+      , " -A x64"
+      , " .."
     )
-    exitCode <- system(cmake_cmd)
+    exitCode <- system(vs_cmake_cmd)
     if (exitCode == 0L) {
-      working_vs_version <- vs_version
-      break
+      print(sprintf("Successfully created build files for '%s'", vs_version))
+      return(TRUE)
     }
+    
   }
-  return(working_vs_version)
+  return(TRUE)
 }
 
 # Move in CMakeLists.txt
@@ -102,6 +94,10 @@ if (!use_precompile) {
     paste0(cmake_cmd, " -DCMAKE_R_VERSION='%s' ")
     , R_version_string
   )
+  
+  # the checks below might already run `cmake -G`. If they do, set this flag
+  # to TRUE to avoid re-running it later
+  makefiles_already_generated <- FALSE
 
   # Check if Windows installation (for gcc vs Visual Studio)
   if (WINDOWS) {
@@ -111,23 +107,24 @@ if (!use_precompile) {
       build_cmd <- "mingw32-make.exe _lightgbm"
       system(paste0(cmake_cmd, " ..")) # Must build twice for Windows due sh.exe in Rtools
     } else {
-      local_vs_def <- .find_vs_version()
-      if (is.null(local_vs_def)) {
+      visual_studio_succeeded <- .generate_vs_makefiles(cmake_cmd)
+      if (!isTRUE(visual_studio_succeeded)) {
         print("Building with Visual Studio failed. Attempting with MinGW")
         cmake_cmd <- paste0(cmake_cmd, " -G \"MinGW Makefiles\" ")
         system(paste0(cmake_cmd, " ..")) # Must build twice for Windows due sh.exe in Rtools
         build_cmd <- "mingw32-make.exe _lightgbm"
       } else {
-        print(paste0("Building with ", shQuote(local_vs_def)))
-        cmake_cmd <- paste0(cmake_cmd, " -G ", shQuote(local_vs_def), " -A x64")
         build_cmd <- "cmake --build . --target _lightgbm --config Release"
         lib_folder <- file.path(source_dir, "Release", fsep = "/")
+        makefiles_already_generated <- TRUE
       }
     }
   }
 
-  # Install
-  system(paste0(cmake_cmd, " .."))
+  # Set up makefiles
+  if (!makefiles_already_generated) {
+    system(paste0(cmake_cmd, " .."))
+  }
 
   # R CMD check complains about the .NOTPARALLEL directive created in the cmake
   # Makefile. We don't need it here anyway since targets are built serially, so trying
@@ -152,6 +149,7 @@ if (!use_precompile) {
     )
   }
 
+  # build the library
   system(build_cmd)
   src <- file.path(lib_folder, paste0("lib_lightgbm", SHLIB_EXT), fsep = "/")
 

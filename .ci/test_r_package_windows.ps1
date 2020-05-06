@@ -104,7 +104,7 @@ $LOG_FILE_NAME = "lightgbm.Rcheck/00check.log"
 $env:_R_CHECK_FORCE_SUGGESTS_ = 0
 if ($env:COMPILER -ne "MINGW") {
   Write-Output "Running R CMD check without checking documentation"
-  R.exe CMD check --no-multiarch --no-examples --no-manual --ignore-vignettes ${PKG_FILE_NAME} ; $check_succeeded = $?
+  R.exe CMD check --no-multiarch --no-codoc --no-examples --no-manual --ignore-vignettes ${PKG_FILE_NAME} ; $check_succeeded = $?
 } else {
   Write-Output "Running R CMD check as CRAN"
   R.exe CMD check --no-multiarch --as-cran ${PKG_FILE_NAME} ; $check_succeeded = $?
