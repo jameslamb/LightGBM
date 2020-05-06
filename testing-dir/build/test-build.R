@@ -7,7 +7,5 @@ exitCode <- system2(
         , "x64"
         , ".."
     )
-    , stdout = FALSE
-    , stderr = FALSE
 )
 print(exitCode)
