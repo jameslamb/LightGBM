@@ -46,6 +46,7 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
       , shQuote(vs_version)
       , " -A x64 ."
     )
+    exitCode <- system(cmake_cmd)
     if (exitCode == 0L) {
       print(as.POSIXct(Sys.time()))
       print("Done building test project")
