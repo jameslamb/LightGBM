@@ -23,8 +23,9 @@ function Download-File-With-Retries {
 #Win32_PerfRawData_PerfDisk_PhysicalDisk
 
 # Try moving everything to C:\
+# https://community.spiceworks.com/topic/549614-question-about-syntax
 Write-Output "Trying to move files to faster drive"
-New-Item -Path "c:\" -Name "LightGBM"
+#New-Item -Path "c:\" -Name "LightGBM"
 $env:NEW_BUILD_DIRECTORY = "C:\LightGBM"
 Copy-Item -Path "$env:BUILD_SOURCESDIRECTORY" -Destination "$env:NEW_BUILD_DIRECTORY" -Recurse
 $env:BUILD_SOURCESDIRECTORY = "$env:NEW_BUILD_DIRECTORY"
