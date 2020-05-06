@@ -1,4 +1,4 @@
-﻿version: 2.3.2.{build}
+version: 2.3.2.{build}
 
 image: Visual Studio 2015
 platform: x64
@@ -38,3 +38,4 @@ build: false
 test_script:
   - conda init powershell
   - powershell.exe -ExecutionPolicy Bypass -File %APPVEYOR_BUILD_FOLDER%\.ci\test_windows.ps1
+  
