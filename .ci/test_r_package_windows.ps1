@@ -16,8 +16,11 @@ function Download-File-With-Retries {
 
 # Trying this: https://en.m.wikipedia.org/wiki/Windows_System_Assessment_Tool
 Write-Output "Checking disk speed"
+winsat disk
 Get-CimInstance Win32_WinSat
 Get-WmiObject -class Win32_WinSAT
+
+Check-Output #false
 
 $env:R_WINDOWS_VERSION = "3.6.3"
 $env:R_LIB_PATH = "$env:BUILD_SOURCESDIRECTORY/RLibrary" -replace '[\\]', '/'
