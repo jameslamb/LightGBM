@@ -48,7 +48,7 @@ if ($env:COMPILER -eq "MINGW") {
   $env:CC = "$env:R_LIB_PATH/Rtools/mingw_64/bin/gcc.exe"
 }
 
-cd $env:BUILD_SOURCESDIRECTORY\LightGBM
+cd $env:BUILD_SOURCESDIRECTORY
 tzutil /s "GMT Standard Time"
 [Void][System.IO.Directory]::CreateDirectory($env:R_LIB_PATH)
 
