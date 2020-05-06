@@ -24,6 +24,15 @@ if ($env:COMPILER -eq "MINGW") {
 }
 
 cd $env:BUILD_SOURCESDIRECTORY
+
+Write-Output "----- testing CMake VS build -----"
+cd $env:BUILD_SOURCESDIRECTORY\testing-dir\build
+cmake -G"Visual Studio 15 2017" -A x64 ..
+Write-Output "successfully wrote build files"
+
+Exit 0
+
+
 tzutil /s "GMT Standard Time"
 [Void][System.IO.Directory]::CreateDirectory($env:R_LIB_PATH)
 
