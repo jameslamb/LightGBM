@@ -75,11 +75,12 @@ system2(
 processx::run(
     command = Sys.which("cmake")
     , args = c(
-        "-G\'Visual Studio 15 2017\'"
+        "-G\"Visual Studio 15 2017\""
         , "-A"
         , "x64"
         , ".."
     )
+    , windows_verbatim_args = TRUE
 )
 
 print(exitCode)
