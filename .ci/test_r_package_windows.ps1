@@ -51,7 +51,7 @@ cd $env:BUILD_SOURCESDIRECTORY
 Write-Output "----- testing CMake VS build -----"
 cd $env:BUILD_SOURCESDIRECTORY\testing-dir\build
 #cmake -G"Visual Studio 15 2017" -A x64 ..
-Rscript test-build.R
+Rscript test-build.R ; Check-Output $?
 Get-ChildItem -Path $env:BUILD_SOURCESDIRECTORY\testing-dir -Recurse
 Write-Output "successfully wrote build files"
 

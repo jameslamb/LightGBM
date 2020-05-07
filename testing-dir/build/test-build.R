@@ -19,5 +19,19 @@
 #     )
 #     , intern = FALSE
 # )
-exitCode <- system2("try-command.bat")
+
+
+# exitCode <- system2("try-command.bat")
+
+install.packages('sys', repos = 'http://cran.rstudio.com')
+exitCode <- sys::exec_wait(
+    cmd="cmake"
+    , args = c(
+        "--verbose"
+        , paste0("-G\"Visual Studio 15 2017\"")
+        , "-A"
+        , "x64"
+        , " .."
+    )
+)
 print(exitCode)
