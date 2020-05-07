@@ -47,27 +47,23 @@ Write-Output "Installing Rtools"
 Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH/Rtools" ; Check-Output $?
 Write-Output "Done installing Rtools"
 
-# MiKTeX and pandoc can be skipped on non-MINGW builds, since we don't
-# build the package documentation for those
-if ($env:COMPILER -eq "MINGW") {
-    Write-Output "Downloading MiKTeX"
-    Download-File-With-Retries -url "https://miktex.org/download/win/miktexsetup-x64.zip" -destfile "miktexsetup-x64.zip"
-    Add-Type -AssemblyName System.IO.Compression.FileSystem
-    [System.IO.Compression.ZipFile]::ExtractToDirectory("miktexsetup-x64.zip", "miktex")
-    Write-Output "Setting up MiKTeX"
-    .\miktex\miktexsetup.exe --remote-package-repository="$env:CTAN_MIRROR" --local-package-repository=./miktex/download --package-set=essential --quiet download ; Check-Output $?
-    Write-Output "Installing MiKTeX"
-    .\miktex\download\miktexsetup.exe --remote-package-repository="$env:CTAN_MIRROR" --portable="$env:R_LIB_PATH/miktex" --quiet install ; Check-Output $?
-    Write-Output "Done installing MiKTeX"
+Write-Output "Downloading MiKTeX"
+Download-File-With-Retries -url "https://miktex.org/download/win/miktexsetup-x64.zip" -destfile "miktexsetup-x64.zip"
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+[System.IO.Compression.ZipFile]::ExtractToDirectory("miktexsetup-x64.zip", "miktex")
+Write-Output "Setting up MiKTeX"
+.\miktex\miktexsetup.exe --remote-package-repository="$env:CTAN_MIRROR" --local-package-repository=./miktex/download --package-set=essential --quiet download ; Check-Output $?
+Write-Output "Installing MiKTeX"
+.\miktex\download\miktexsetup.exe --remote-package-repository="$env:CTAN_MIRROR" --portable="$env:R_LIB_PATH/miktex" --quiet install ; Check-Output $?
+Write-Output "Done installing MiKTeX"
 
-    initexmf --set-config-value [MPM]AutoInstall=1
-    conda install -q -y --no-deps pandoc
-}
+initexmf --set-config-value [MPM]AutoInstall=1
+conda install -q -y --no-deps pandoc
 
 Add-Content .Renviron "R_LIBS=$env:R_LIB_PATH"
 
 Write-Output "Installing dependencies"
-$packages = "c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
+$packages = "c('data.table', 'jsonlite', 'processx', Matrix', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
 Rscript --vanilla -e "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH')" ; Check-Output $?
 
 Write-Output "Building R package"
@@ -77,13 +73,8 @@ $PKG_FILE_NAME = Get-Item *.tar.gz
 $LOG_FILE_NAME = "lightgbm.Rcheck/00check.log"
 
 $env:_R_CHECK_FORCE_SUGGESTS_ = 0
-if ($env:COMPILER -ne "MINGW") {
-  Write-Output "Running R CMD check without checking documentation"
-  R.exe CMD check --no-multiarch --no-codoc --no-examples --no-manual --ignore-vignettes ${PKG_FILE_NAME} ; $check_succeeded = $?
-} else {
-  Write-Output "Running R CMD check as CRAN"
-  R.exe CMD check --no-multiarch --as-cran ${PKG_FILE_NAME} ; $check_succeeded = $?
-}
+Write-Output "Running R CMD check as CRAN"
+R.exe CMD check --no-multiarch --as-cran ${PKG_FILE_NAME} ; $check_succeeded = $?
 
 Write-Output "R CMD check build logs:"
 $INSTALL_LOG_FILE_NAME = "$env:BUILD_SOURCESDIRECTORY\lightgbm.Rcheck\00install.out"
