@@ -23,15 +23,45 @@
 
 # exitCode <- system2("try-command.bat")
 
-install.packages('sys', repos = 'http://cran.rstudio.com')
-exitCode <- sys::exec_wait(
-    cmd="cmake"
+# install.packages('sys', repos = 'http://cran.rstudio.com')
+# exitCode <- sys::exec_wait(
+#     cmd="cmake"
+#     , args = c(
+#         "--verbose"
+#         , paste0("-G\"Visual Studio 15 2017\"")
+#         , "-A"
+#         , "x64"
+#         , " .."
+#     )
+# )
+
+print('----- sys.which -----')
+print(Sys.which("cmake"))
+install.packages('processx', repos = 'http://cran.rstudio.com')
+
+# print('---- processx -----')
+# processx::run(
+#     command = "where"
+#     , args = "cmake"
+# )
+print("cmake version processx")
+processx::run(
+    command = Sys.which("cmake")
+    , args = "--version"
+)
+print("cmake version system2")
+system2(
+    command = Sys.which("cmake")
+    , args = "--version"
+)
+processx::run(
+    command = Sys.which("cmake")
     , args = c(
-        "--verbose"
-        , paste0("-G\"Visual Studio 15 2017\"")
+        paste0("-G", shQuote("Visual Studio 15 2017"))
         , "-A"
         , "x64"
-        , " .."
+        , ".."
     )
 )
+
 print(exitCode)
