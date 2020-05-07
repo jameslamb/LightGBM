@@ -48,18 +48,18 @@ Write-Output "Done installing Rtools"
 
 cd $env:BUILD_SOURCESDIRECTORY
 
-Write-Output "----- testing CMake VS build -----"
-Write-Output "where is CMake"
-Get-Command cmake
-Get-Command cmake.exe
+# Write-Output "----- testing CMake VS build -----"
+# Write-Output "where is CMake"
+# Get-Command cmake
+# Get-Command cmake.exe
 
-cd $env:BUILD_SOURCESDIRECTORY\testing-dir\build
-#cmake -G"Visual Studio 15 2017" -A x64 ..
-Rscript test-build.R ; Check-Output $?
-Get-ChildItem -Path $env:BUILD_SOURCESDIRECTORY\testing-dir -Recurse
-Write-Output "successfully wrote build files"
+# cd $env:BUILD_SOURCESDIRECTORY\testing-dir\build
+# #cmake -G"Visual Studio 15 2017" -A x64 ..
+# Rscript test-build.R ; Check-Output $?
+# Get-ChildItem -Path $env:BUILD_SOURCESDIRECTORY\testing-dir -Recurse
+# Write-Output "successfully wrote build files"
 
-Exit 0
+# Exit 0
 
 # MiKTeX and pandoc can be skipped on non-MINGW builds, since we don't
 # build the package documentation for those
@@ -85,6 +85,8 @@ $packages = "c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat'), dependenci
 Rscript --vanilla -e "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH')" ; Check-Output $?
 
 Write-Output "Building R package"
+Rscript build_r.R
+Exit 0
 Rscript build_r.R --skip-install ; Check-Output $?
 
 $PKG_FILE_NAME = Get-Item *.tar.gz

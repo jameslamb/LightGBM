@@ -16,7 +16,7 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
 }
 
 # try to generate Visual Studio build files
-.generate_vs_makefiles <- function(cmake_cmd) {
+.generate_vs_makefiles <- function(cmake_args) {
   vs_versions <- c(
     "Visual Studio 16 2019"
     , "Visual Studio 15 2017"
@@ -29,14 +29,33 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
     if (file.exists("CMakeCache.txt")) {
       file.remove("CMakeCache.txt")
     }
-    vs_cmake_cmd <- paste0(
-      cmake_cmd
-      , " -G "
-      , shQuote(vs_version)
-      , " -A x64"
-      , " .."
+    # vs_cmake_cmd <- paste0(
+    #   cmake_cmd
+    #   , " -G "
+    #   , shQuote(vs_version)
+    #   , " -A x64"
+    #   , " .."
+    # )
+    vs_cmake_args <- c(
+      cmake_args,
+      c(
+          paste0("-G", shQuote(vs_version))
+          , "-A"
+          , "x64"
+          , ".."
+      )
     )
-    exitCode <- system(vs_cmake_cmd)
+    result <- processx::run(
+        command = Sys.which("cmake")
+        , args = vs_cmake_args
+        , windows_verbatim_args = TRUE
+        , error_on_status = FALSE
+    )
+    out_txt <-  strsplit(result$stdout, "\n")[[1]]
+    for (line in out_txt) {
+      print(line)
+    }
+    exitCode <- result$status
     if (exitCode == 0L) {
       print(sprintf("Successfully created build files for '%s'", vs_version))
       return(TRUE)
@@ -73,16 +92,20 @@ if (!use_precompile) {
 
   # Prepare installation steps
   cmake_cmd <- "cmake "
+  cmake_args <- NULL
   build_cmd <- "make _lightgbm"
   lib_folder <- file.path(source_dir, fsep = "/")
 
   if (use_gpu) {
     cmake_cmd <- paste0(cmake_cmd, " -DUSE_GPU=ON ")
+    cmake_args <- c(cmake_args, "-DUSE_GPU=ON")
   }
   if (R_ver >= 3.5) {
     cmake_cmd <- paste0(cmake_cmd, " -DUSE_R35=ON ")
+    cmake_args <- c(cmake_args, "-DUSE_R35=ON")
   }
   cmake_cmd <- paste0(cmake_cmd, " -DBUILD_FOR_R=ON ")
+  cmake_args <- c(cmake_args, "-DBUILD_FOR_R=ON")
 
   # Pass in R version, used to help find R executable for linking
   R_version_string <- paste(
@@ -94,6 +117,7 @@ if (!use_precompile) {
     paste0(cmake_cmd, " -DCMAKE_R_VERSION='%s' ")
     , R_version_string
   )
+  cmake_args <- c(cmake_args, sprintf("-DCMAKE_R_VERSION='%s'", R_version_string))
 
   # the checks below might already run `cmake -G`. If they do, set this flag
   # to TRUE to avoid re-running it later
@@ -107,7 +131,7 @@ if (!use_precompile) {
       build_cmd <- "mingw32-make.exe _lightgbm"
       system(paste0(cmake_cmd, " ..")) # Must build twice for Windows due sh.exe in Rtools
     } else {
-      visual_studio_succeeded <- .generate_vs_makefiles(cmake_cmd)
+      visual_studio_succeeded <- .generate_vs_makefiles(cmake_args)
       if (!isTRUE(visual_studio_succeeded)) {
         print("Building with Visual Studio failed. Attempting with MinGW")
         cmake_cmd <- paste0(cmake_cmd, " -G \"MinGW Makefiles\" ")
