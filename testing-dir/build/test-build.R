@@ -9,14 +9,15 @@
 #     )
 # )
 
-exitCode <- shell(
-    cmd = paste0(
-        "cmake "
-        , paste0("-G", shQuote("Visual Studio 15 2017"))
-        , " -A"
-        , " x64"
-        , " .."
-    )
-    , intern = FALSE
-)
+# exitCode <- shell(
+#     cmd = paste0(
+#         "cmake "
+#         , paste0("-G", shQuote("Visual Studio 15 2017"))
+#         , " -A"
+#         , " x64"
+#         , " .."
+#     )
+#     , intern = FALSE
+# )
+exitCode <- system2("try-command.bat")
 print(exitCode)
