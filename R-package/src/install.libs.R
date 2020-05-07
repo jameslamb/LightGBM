@@ -15,6 +15,37 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
   print("Warning: unmatched R_INTERNALS_UUID, may not run normally.")
 }
 
+# [description] Run `cmake` to generate build files. This command
+#               returns the status code from running `cmake`.
+.generate_build_files <- function(cmake_args, src_dir){
+  has_processx <- suppressWarnings({
+    require("processx")
+  })
+  if (has_processx) {
+    result <- processx::run(
+      command = "cmake"
+      , args = c(cmake_args, src_dir)
+      , windows_verbatim_args = TRUE
+      , error_on_status = FALSE
+    )
+    out_txt <-  strsplit(result$stdout, "\n")[[1]]
+    for (line in out_txt) {
+      print(line)
+    }
+    exit_code <- result$status
+  } else {
+    message("Using system() to run 'cmake'. Installing 'processx' with install.packages('processx') might make this faster.")
+    exit_code <- system(
+      command = paste0(
+        "cmake "
+        , paste0(cmake_args, collapse = " ")
+        , src_dir
+      )
+    )
+  }
+  return(exit_code)
+}
+
 # try to generate Visual Studio build files
 .generate_vs_makefiles <- function(cmake_args) {
   vs_versions <- c(
@@ -29,34 +60,27 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
     if (file.exists("CMakeCache.txt")) {
       file.remove("CMakeCache.txt")
     }
-    # vs_cmake_cmd <- paste0(
-    #   cmake_cmd
-    #   , " -G "
-    #   , shQuote(vs_version)
-    #   , " -A x64"
-    #   , " .."
-    # )
     vs_cmake_args <- c(
       cmake_args,
       c(
           paste0("-G", shQuote(vs_version))
           , "-A"
           , "x64"
-          , ".."
       )
     )
-    result <- processx::run(
-        command = Sys.which("cmake")
-        , args = vs_cmake_args
-        , windows_verbatim_args = TRUE
-        , error_on_status = FALSE
-    )
-    out_txt <-  strsplit(result$stdout, "\n")[[1]]
-    for (line in out_txt) {
-      print(line)
-    }
-    exitCode <- result$status
-    if (exitCode == 0L) {
+    exit_code <- .generate_build_files(vs_cmake_args, "..")
+    # result <- processx::run(
+    #     command = "cmake"
+    #     , args = vs_cmake_args
+    #     , windows_verbatim_args = TRUE
+    #     , error_on_status = FALSE
+    # )
+    # out_txt <-  strsplit(result$stdout, "\n")[[1]]
+    # for (line in out_txt) {
+    #   print(line)
+    # }
+    # exitCode <- result$status
+    if (exit_code == 0L) {
       print(sprintf("Successfully created build files for '%s'", vs_version))
       return(TRUE)
     }
@@ -91,20 +115,16 @@ if (!use_precompile) {
   setwd(build_dir)
 
   # Prepare installation steps
-  cmake_cmd <- "cmake "
   cmake_args <- NULL
   build_cmd <- "make _lightgbm"
   lib_folder <- file.path(source_dir, fsep = "/")
 
   if (use_gpu) {
-    cmake_cmd <- paste0(cmake_cmd, " -DUSE_GPU=ON ")
     cmake_args <- c(cmake_args, "-DUSE_GPU=ON")
   }
   if (R_ver >= 3.5) {
-    cmake_cmd <- paste0(cmake_cmd, " -DUSE_R35=ON ")
     cmake_args <- c(cmake_args, "-DUSE_R35=ON")
   }
-  cmake_cmd <- paste0(cmake_cmd, " -DBUILD_FOR_R=ON ")
   cmake_args <- c(cmake_args, "-DBUILD_FOR_R=ON")
 
   # Pass in R version, used to help find R executable for linking
@@ -113,11 +133,8 @@ if (!use_precompile) {
     , R.Version()[["minor"]]
     , sep = "."
   )
-  cmake_cmd <- sprintf(
-    paste0(cmake_cmd, " -DCMAKE_R_VERSION='%s' ")
-    , R_version_string
-  )
-  cmake_args <- c(cmake_args, sprintf("-DCMAKE_R_VERSION='%s'", R_version_string))
+  r_version_arg <- sprintf("-DCMAKE_R_VERSION='%s'", R_version_string)
+  cmake_args <- c(cmake_args, r_version_arg)
 
   # the checks below might already run `cmake -G`. If they do, set this flag
   # to TRUE to avoid re-running it later
@@ -127,15 +144,21 @@ if (!use_precompile) {
   if (WINDOWS) {
     if (use_mingw) {
       print("Trying to build with MinGW")
-      cmake_cmd <- paste0(cmake_cmd, " -G \"MinGW Makefiles\" ")
       build_cmd <- "mingw32-make.exe _lightgbm"
-      system(paste0(cmake_cmd, " ..")) # Must build twice for Windows due sh.exe in Rtools
+      # Must build twice for Windows due sh.exe in Rtools
+      .generate_build_files(
+        c(cmake_args, "-G", shQuote("MinGW Makefiles"))
+        , ".."
+      )
     } else {
       visual_studio_succeeded <- .generate_vs_makefiles(cmake_args)
       if (!isTRUE(visual_studio_succeeded)) {
         print("Building with Visual Studio failed. Attempting with MinGW")
-        cmake_cmd <- paste0(cmake_cmd, " -G \"MinGW Makefiles\" ")
-        system(paste0(cmake_cmd, " ..")) # Must build twice for Windows due sh.exe in Rtools
+        # Must build twice for Windows due sh.exe in Rtools
+        .generate_build_files(
+          c(cmake_args, "-G", shQuote("MinGW Makefiles"))
+          , ".."
+        )
         build_cmd <- "mingw32-make.exe _lightgbm"
       } else {
         build_cmd <- "cmake --build . --target _lightgbm --config Release"
@@ -143,11 +166,19 @@ if (!use_precompile) {
         makefiles_already_generated <- TRUE
       }
     }
+  } else {
+      .generate_build_files(
+        cmake_args
+        , ".."
+      )
   }
 
-  # Set up makefiles
+  # generate build files
   if (!makefiles_already_generated) {
-    system(paste0(cmake_cmd, " .."))
+    .generate_build_files(
+      cmake_args
+      , ".."
+    )
   }
 
   # R CMD check complains about the .NOTPARALLEL directive created in the cmake

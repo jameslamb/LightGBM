@@ -14,7 +14,7 @@ function Download-File-With-Retries {
 
 $env:R_WINDOWS_VERSION = "3.6.3"
 $env:R_LIB_PATH = "$env:BUILD_SOURCESDIRECTORY/RLibrary" -replace '[\\]', '/'
-$env:PATH = "$env:R_LIB_PATH/Rtools/bin;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + "C:/Program Files/CMake/bin;" + $env:PATH
+$env:PATH = "$env:R_LIB_PATH/Rtools/bin;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + $env:PATH
 $env:CRAN_MIRROR = "https://cloud.r-project.org/"
 $env:CTAN_MIRROR = "https://ctan.math.illinois.edu/systems/win32/miktex/tm/packages/"
 
@@ -48,19 +48,6 @@ Write-Output "Done installing Rtools"
 
 cd $env:BUILD_SOURCESDIRECTORY
 
-# Write-Output "----- testing CMake VS build -----"
-# Write-Output "where is CMake"
-# Get-Command cmake
-# Get-Command cmake.exe
-
-# cd $env:BUILD_SOURCESDIRECTORY\testing-dir\build
-# #cmake -G"Visual Studio 15 2017" -A x64 ..
-# Rscript test-build.R ; Check-Output $?
-# Get-ChildItem -Path $env:BUILD_SOURCESDIRECTORY\testing-dir -Recurse
-# Write-Output "successfully wrote build files"
-
-# Exit 0
-
 # MiKTeX and pandoc can be skipped on non-MINGW builds, since we don't
 # build the package documentation for those
 if ($env:COMPILER -eq "MINGW") {
@@ -81,12 +68,10 @@ if ($env:COMPILER -eq "MINGW") {
 Add-Content .Renviron "R_LIBS=$env:R_LIB_PATH"
 
 Write-Output "Installing dependencies"
-$packages = "c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
+$packages = "c('data.table', 'jsonlite', 'Matrix', 'processx', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
 Rscript --vanilla -e "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH')" ; Check-Output $?
 
 Write-Output "Building R package"
-Rscript build_r.R
-Exit 0
 Rscript build_r.R --skip-install ; Check-Output $?
 
 $PKG_FILE_NAME = Get-Item *.tar.gz
