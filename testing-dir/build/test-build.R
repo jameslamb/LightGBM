@@ -75,7 +75,7 @@ system2(
 processx::run(
     command = Sys.which("cmake")
     , args = c(
-        paste0("-G", shQuote("Visual Studio 15 2017"))
+        "-G\"Visual Studio 15 2017\""
         , "-A"
         , "x64"
         , ".."

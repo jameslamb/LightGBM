@@ -49,6 +49,10 @@ Write-Output "Done installing Rtools"
 cd $env:BUILD_SOURCESDIRECTORY
 
 Write-Output "----- testing CMake VS build -----"
+Write-Output "where is CMake"
+Get-Command cmake
+Get-Command cmake.exe
+
 cd $env:BUILD_SOURCESDIRECTORY\testing-dir\build
 #cmake -G"Visual Studio 15 2017" -A x64 ..
 Rscript test-build.R ; Check-Output $?
