@@ -72,39 +72,44 @@ $packages = "c('data.table', 'jsonlite', 'Matrix', 'processx', 'R6', 'testthat')
 Rscript --vanilla -e "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH')" ; Check-Output $?
 
 Write-Output "Building R package"
-Rscript build_r.R --skip-install ; Check-Output $?
-
-$PKG_FILE_NAME = Get-Item *.tar.gz
-$LOG_FILE_NAME = "lightgbm.Rcheck/00check.log"
+if ($env:COOMPILER -ne "MSVC") {
+  Rscript build_r.R --skip-install ; Check-Output $?
+} else {
+  Rscript build_r.R ; Check-Output $?
+}
 
 $env:_R_CHECK_FORCE_SUGGESTS_ = 0
-if ($env:COMPILER -ne "MINGW") {
-  Write-Output "Running R CMD check without checking documentation"
-  R.exe CMD check --no-multiarch --no-codoc --no-examples --no-manual --ignore-vignettes ${PKG_FILE_NAME} ; $check_succeeded = $?
+if ($env:COMPILER -eq "MSVC") {
+  cd R-package/tests
+  Rscript testthat.R ; Check-Output $?
 } else {
+
+  $PKG_FILE_NAME = Get-Item *.tar.gz
+  $LOG_FILE_NAME = "lightgbm.Rcheck/00check.log"
+
   Write-Output "Running R CMD check as CRAN"
   R.exe CMD check --no-multiarch --as-cran ${PKG_FILE_NAME} ; $check_succeeded = $?
-}
 
-Write-Output "R CMD check build logs:"
-$INSTALL_LOG_FILE_NAME = "$env:BUILD_SOURCESDIRECTORY\lightgbm.Rcheck\00install.out"
-Get-Content -Path "$INSTALL_LOG_FILE_NAME"
+  Write-Output "R CMD check build logs:"
+  $INSTALL_LOG_FILE_NAME = "$env:BUILD_SOURCESDIRECTORY\lightgbm.Rcheck\00install.out"
+  Get-Content -Path "$INSTALL_LOG_FILE_NAME"
 
-Check-Output $check_succeeded
+  Check-Output $check_succeeded
 
-Write-Output "Looking for issues with R CMD check results"
-if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "WARNING" -Quiet) {
-    echo "WARNINGS have been found by R CMD check!"
-    Check-Output $False
-}
+  Write-Output "Looking for issues with R CMD check results"
+  if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "WARNING" -Quiet) {
+      echo "WARNINGS have been found by R CMD check!"
+      Check-Output $False
+  }
 
-$note_str = Get-Content "${LOG_FILE_NAME}" | Select-String -Pattern ' NOTE' | Out-String ; Check-Output $?
-$relevant_line = $note_str -match '.*Status: (\d+) NOTE.*'
-$NUM_CHECK_NOTES = $matches[1]
-$ALLOWED_CHECK_NOTES = 3
-if ([int]$NUM_CHECK_NOTES -gt $ALLOWED_CHECK_NOTES) {
-    Write-Output "Found ${NUM_CHECK_NOTES} NOTEs from R CMD check. Only ${ALLOWED_CHECK_NOTES} are allowed"
-    Check-Output $False
+  $note_str = Get-Content "${LOG_FILE_NAME}" | Select-String -Pattern ' NOTE' | Out-String ; Check-Output $?
+  $relevant_line = $note_str -match '.*Status: (\d+) NOTE.*'
+  $NUM_CHECK_NOTES = $matches[1]
+  $ALLOWED_CHECK_NOTES = 3
+  if ([int]$NUM_CHECK_NOTES -gt $ALLOWED_CHECK_NOTES) {
+      Write-Output "Found ${NUM_CHECK_NOTES} NOTEs from R CMD check. Only ${ALLOWED_CHECK_NOTES} are allowed"
+      Check-Output $False
+  }
 }
 
 # Checking that we actually got the expected compiler. The R package has some logic
