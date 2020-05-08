@@ -15,36 +15,71 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
   print("Warning: unmatched R_INTERNALS_UUID, may not run normally.")
 }
 
+# system() will not raise an R exception if the process called
+# fails. Wrapping it here to get that behavior.
+#
+# system() introduces a lot of overhead, at least on Windows,
+# so trying processx if it is available
+.run_shell_command <- function(cmd, args) {
+    on_windows <- .Platform$OS.type == "windows"
+    has_processx <- suppressWarnings({
+      require("processx")
+    })
+    if (has_processx && on_windows){
+      result <- processx::run(
+        command = cmd
+        , args = args
+        , windows_verbatim_args = TRUE
+        , error_on_status = FALSE
+      )
+      stdout_txt <-  strsplit(result$stdout, "\n")[[1]]
+      for (line in stdout_txt) {
+        message(line)
+      }
+      exit_code <- result$status
+    } else {
+      if (on_windows) {
+        message("Using system() to run shell commands. Installing 'processx' with install.packages('processx') might make this faster.")
+      }
+      cmd <- paste0(cmd, " ", paste0(args, collapse = " "))
+      exit_code <- system(cmd)
+    }
+
+    if (exit_code != 0L) {
+        stop(paste0("Command failed with exit code: ", exit_code))
+    }
+}
+
 # [description] Run `cmake` to generate build files. This command
 #               returns the status code from running `cmake`.
-.generate_build_files <- function(cmake_args, src_dir){
-  has_processx <- suppressWarnings({
-    require("processx")
-  })
-  if (has_processx) {
-    result <- processx::run(
-      command = "cmake"
-      , args = c(cmake_args, src_dir)
-      , windows_verbatim_args = TRUE
-      , error_on_status = FALSE
-    )
-    out_txt <-  strsplit(result$stdout, "\n")[[1]]
-    for (line in out_txt) {
-      print(line)
-    }
-    exit_code <- result$status
-  } else {
-    message("Using system() to run 'cmake'. Installing 'processx' with install.packages('processx') might make this faster.")
-    exit_code <- system(
-      command = paste0(
-        "cmake "
-        , paste0(cmake_args, collapse = " ")
-        , src_dir
-      )
-    )
-  }
-  return(exit_code)
-}
+# .generate_build_files <- function(cmake_args, src_dir){
+#   has_processx <- suppressWarnings({
+#     require("processx")
+#   })
+#   if (has_processx) {
+#     result <- processx::run(
+#       command = "cmake"
+#       , args = c(cmake_args, src_dir)
+#       , windows_verbatim_args = TRUE
+#       , error_on_status = FALSE
+#     )
+#     out_txt <-  strsplit(result$stdout, "\n")[[1]]
+#     for (line in out_txt) {
+#       print(line)
+#     }
+#     exit_code <- result$status
+#   } else {
+#     message("Using system() to run 'cmake'. Installing 'processx' with install.packages('processx') might make this faster.")
+#     exit_code <- system(
+#       command = paste0(
+#         "cmake "
+#         , paste0(cmake_args, collapse = " ")
+#         , src_dir
+#       )
+#     )
+#   }
+#   return(exit_code)
+# }
 
 # try to generate Visual Studio build files
 .generate_vs_makefiles <- function(cmake_args) {
@@ -68,18 +103,10 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
           , "x64"
       )
     )
-    exit_code <- .generate_build_files(vs_cmake_args, "..")
-    # result <- processx::run(
-    #     command = "cmake"
-    #     , args = vs_cmake_args
-    #     , windows_verbatim_args = TRUE
-    #     , error_on_status = FALSE
-    # )
-    # out_txt <-  strsplit(result$stdout, "\n")[[1]]
-    # for (line in out_txt) {
-    #   print(line)
-    # }
-    # exitCode <- result$status
+    print("----- vs_cmake_args -----")
+    print(vs_cmake_args)
+    print("----- done vs_cmake_args -----")
+    exit_code <- .run_shell_command("cmake", c(vs_cmake_args, ".."))
     if (exit_code == 0L) {
       print(sprintf("Successfully created build files for '%s'", vs_version))
       return(TRUE)
@@ -116,7 +143,8 @@ if (!use_precompile) {
 
   # Prepare installation steps
   cmake_args <- NULL
-  build_cmd <- "make _lightgbm"
+  build_cmd <- "make"
+  build_args <- "_lightgbm"
   lib_folder <- file.path(source_dir, fsep = "/")
 
   if (use_gpu) {
@@ -144,41 +172,38 @@ if (!use_precompile) {
   if (WINDOWS) {
     if (use_mingw) {
       print("Trying to build with MinGW")
-      build_cmd <- "mingw32-make.exe _lightgbm"
+      build_cmd <- "mingw32-make.exe"
+      build_args <- "_lightgbm"
       # Must build twice for Windows due sh.exe in Rtools
-      .generate_build_files(
-        c(cmake_args, "-G", shQuote("MinGW Makefiles"))
-        , ".."
+      .run_shell_command(
+        "cmake"
+        , c(cmake_args, "-G", shQuote("MinGW Makefiles"), "..")
       )
     } else {
       visual_studio_succeeded <- .generate_vs_makefiles(cmake_args)
       if (!isTRUE(visual_studio_succeeded)) {
         print("Building with Visual Studio failed. Attempting with MinGW")
         # Must build twice for Windows due sh.exe in Rtools
-        .generate_build_files(
-          c(cmake_args, "-G", shQuote("MinGW Makefiles"))
-          , ".."
+        .run_shell_command(
+          "cmake"
+          ,  c(cmake_args, "-G", shQuote("MinGW Makefiles"), "..")
         )
-        build_cmd <- "mingw32-make.exe _lightgbm"
+        build_cmd <- "mingw32-make.exe"
+        build_args <- "_lightgbm"
       } else {
-        build_cmd <- "cmake --build . --target _lightgbm --config Release"
+        build_cmd <- "cmake"
+        build_args <- c("--build", ".", "--target", "_lightgbm", "--config", "Release")
         lib_folder <- file.path(source_dir, "Release", fsep = "/")
         makefiles_already_generated <- TRUE
       }
     }
   } else {
-      .generate_build_files(
-        cmake_args
-        , ".."
-      )
+      .run_shell_command("cmake", c(cmake_args, ".."))
   }
 
   # generate build files
   if (!makefiles_already_generated) {
-    .generate_build_files(
-      cmake_args
-      , ".."
-    )
+    .run_shell_command("cmake", c(cmake_args, ".."))
   }
 
   # R CMD check complains about the .NOTPARALLEL directive created in the cmake
@@ -205,7 +230,7 @@ if (!use_precompile) {
   }
 
   # build the library
-  system(build_cmd)
+  .run_shell_command(build_cmd, build_args)
   src <- file.path(lib_folder, paste0("lib_lightgbm", SHLIB_EXT), fsep = "/")
 
 } else {
