@@ -23,8 +23,10 @@ INSTALL_AFTER_BUILD <- !("--skip-install" %in% args)
 # so trying processx if it is available
 .run_shell_command <- function(cmd, args, strict = TRUE) {
     on_windows <- .Platform$OS.type == "windows"
-    has_processx <- suppressWarnings({
-      require("processx")
+    has_processx <- suppressMessages({
+      suppressWarnings({
+        require("processx")
+      })
     })
     if (has_processx && on_windows){
       result <- processx::run(

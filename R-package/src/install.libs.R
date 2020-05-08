@@ -22,8 +22,10 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
 # so trying processx if it is available
 .run_shell_command <- function(cmd, args, strict = TRUE) {
     on_windows <- .Platform$OS.type == "windows"
-    has_processx <- suppressWarnings({
-      require("processx")
+    has_processx <- suppressMessages({
+      suppressWarnings({
+        require("processx")
+      })
     })
     if (has_processx && on_windows){
       result <- processx::run(
