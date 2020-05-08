@@ -23,6 +23,7 @@ if ($env:COMPILER -eq "MINGW") {
   $env:CC = "$env:R_LIB_PATH/Rtools/mingw_64/bin/gcc.exe"
 }
 
+cd $env:BUILD_SOURCESDIRECTORY
 tzutil /s "GMT Standard Time"
 [Void][System.IO.Directory]::CreateDirectory($env:R_LIB_PATH)
 
@@ -45,8 +46,6 @@ Write-Output "Done installing R"
 Write-Output "Installing Rtools"
 Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH/Rtools" ; Check-Output $?
 Write-Output "Done installing Rtools"
-
-cd $env:BUILD_SOURCESDIRECTORY
 
 # MiKTeX and pandoc can be skipped on non-MINGW builds, since we don't
 # build the package documentation for those
@@ -72,7 +71,7 @@ $packages = "c('data.table', 'jsonlite', 'Matrix', 'processx', 'R6', 'testthat')
 Rscript --vanilla -e "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH')" ; Check-Output $?
 
 Write-Output "Building R package"
-if ($env:COOMPILER -ne "MSVC") {
+if ($env:COMPILER -ne "MSVC") {
   Rscript build_r.R --skip-install ; Check-Output $?
 } else {
   Rscript build_r.R ; Check-Output $?
