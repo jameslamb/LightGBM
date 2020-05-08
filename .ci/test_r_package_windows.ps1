@@ -65,6 +65,8 @@ if ($env:COMPILER -eq "MINGW") {
 }
 
 Add-Content .Renviron "R_LIBS=$env:R_LIB_PATH"
+Add-Content .Renviron "R_LIBS_SITE=$env:R_LIB_PATH"
+Add-Content .Renviron "R_LIBS_USER=$env:R_LIB_PATH"
 
 Write-Output "Installing dependencies"
 $packages = "c('data.table', 'jsonlite', 'Matrix', 'processx', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
@@ -74,7 +76,8 @@ Write-Output "Building R package"
 if ($env:COMPILER -ne "MSVC") {
   Rscript build_r.R --skip-install ; Check-Output $?
 } else {
-  Rscript build_r.R ; Check-Output $?
+  $INSTALL_LOG_FILE_NAME = "$env:BUILD_SOURCESDIRECTORY\00install_out.txt"
+  Rscript build_r.R > $INSTALL_LOG_FILE_NAME 2>&1 ; Check-Output $?
 }
 
 if ($env:COMPILER -eq "MSVC") {
