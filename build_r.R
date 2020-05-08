@@ -32,17 +32,8 @@ INSTALL_AFTER_BUILD <- !("--skip-install" %in% args)
         , args = args
         , windows_verbatim_args = TRUE
         , error_on_status = FALSE
+        , echo = TRUE
       )
-      stdout_txt <-  strsplit(result$stdout, "\n")[[1]]
-      for (line in stdout_txt) {
-        message(line)
-      }
-      if (!identical(result$stderr, "")) {
-        stderr_txt <-  strsplit(result$stderr, "\n")[[1]]
-        for (line in stderr_txt) {
-          message(line)
-        }
-      }
       exit_code <- result$status
     } else {
       if (on_windows) {

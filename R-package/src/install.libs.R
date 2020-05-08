@@ -31,11 +31,8 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
         , args = args
         , windows_verbatim_args = TRUE
         , error_on_status = FALSE
+        , echo = TRUE
       )
-      stdout_txt <-  strsplit(result$stdout, "\n")[[1]]
-      for (line in stdout_txt) {
-        message(line)
-      }
       exit_code <- result$status
     } else {
       if (on_windows) {
@@ -50,37 +47,6 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
     }
     return(exit_code)
 }
-
-# [description] Run `cmake` to generate build files. This command
-#               returns the status code from running `cmake`.
-# .generate_build_files <- function(cmake_args, src_dir){
-#   has_processx <- suppressWarnings({
-#     require("processx")
-#   })
-#   if (has_processx) {
-#     result <- processx::run(
-#       command = "cmake"
-#       , args = c(cmake_args, src_dir)
-#       , windows_verbatim_args = TRUE
-#       , error_on_status = FALSE
-#     )
-#     out_txt <-  strsplit(result$stdout, "\n")[[1]]
-#     for (line in out_txt) {
-#       print(line)
-#     }
-#     exit_code <- result$status
-#   } else {
-#     message("Using system() to run 'cmake'. Installing 'processx' with install.packages('processx') might make this faster.")
-#     exit_code <- system(
-#       command = paste0(
-#         "cmake "
-#         , paste0(cmake_args, collapse = " ")
-#         , src_dir
-#       )
-#     )
-#   }
-#   return(exit_code)
-# }
 
 # try to generate Visual Studio build files
 .generate_vs_makefiles <- function(cmake_args) {
@@ -103,9 +69,6 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
       , "-A"
       , "x64"
     )
-    print("----- vs_cmake_args -----")
-    print(vs_cmake_args)
-    print("----- done vs_cmake_args -----")
     exit_code <- .run_shell_command("cmake", c(vs_cmake_args, ".."), strict = FALSE)
     if (exit_code == 0L) {
       print(sprintf("Successfully created build files for '%s'", vs_version))
