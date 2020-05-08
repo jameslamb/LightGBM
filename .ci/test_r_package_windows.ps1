@@ -51,21 +51,21 @@ Write-Output "Installing Rtools"
 Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH/Rtools" ; Check-Output $?
 Write-Output "Done installing Rtools"
 
-Rscript logs.R > file1.txt
-Rscript logs.R > "file2.txt"
-Rscript logs.R > "file3.txt" ; Check-Output $true
-Rscript logs.R *> "file4.txt" ; Check-Output $true
+# Rscript logs.R > file1.txt
+# Rscript logs.R > "file2.txt"
+# Rscript logs.R > "file3.txt" ; Check-Output $true
+# Rscript logs.R *> "file4.txt" ; Check-Output $true
 
-Write-Output "--- file1.txt ---"
-Get-Content -Path "file1.txt"
+# Write-Output "--- file1.txt ---"
+# Get-Content -Path "file1.txt"
 
-Write-Output "--- file2.txt ---"
-Get-Content -Path "file2.txt"
+# Write-Output "--- file2.txt ---"
+# Get-Content -Path "file2.txt"
 
-Write-Output "--- file4.txt ---"
-Get-Content -Path "file4.txt"
+# Write-Output "--- file4.txt ---"
+# Get-Content -Path "file4.txt"
 
-Check-Output $false
+# Check-Output $false
 
 # MiKTeX and pandoc can be skipped on non-MINGW builds, since we don't
 # build the package documentation for those
@@ -97,7 +97,7 @@ if ($env:COMPILER -ne "MSVC") {
   Rscript build_r.R --skip-install ; Check-Output $?
 } else {
   $INSTALL_LOG_FILE_NAME = "$env:BUILD_SOURCESDIRECTORY\00install_out.txt"
-  Rscript build_r.R > $INSTALL_LOG_FILE_NAME ; $install_succeeded = $?
+  Rscript build_r.R *> $INSTALL_LOG_FILE_NAME ; $install_succeeded = $?
   Write-Output "----- start printing -----"
   Get-Content -Path "$INSTALL_LOG_FILE_NAME"
   Write-Output "----- done printing -----"
