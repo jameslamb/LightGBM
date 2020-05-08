@@ -86,6 +86,7 @@ Rscript --vanilla -e "install.packages(${packages}, repos = '${CRAN_MIRROR}', li
 cd ${BUILD_DIRECTORY}
 
 PKG_TARBALL="lightgbm_${LGB_VER}.tar.gz"
+LOG_FILE_NAME="lightgbm.Rcheck/00check.log"
 if [[ $R_BUILD_TYPE == "cmake" ]]; then
     Rscript build_r.R --skip-install || exit -1
 elif [[ $R_BUILD_TYPE == "cran" ]]; then
@@ -105,20 +106,18 @@ export _R_CHECK_FORCE_SUGGESTS_=0
 
 # fails tests if either ERRORs or WARNINGs are thrown by
 # R CMD CHECK
-check_succeeded="true"
+check_succeeded="yes"
 R CMD check ${PKG_TARBALL} \
     --as-cran \
-|| exit -1
-|| check_succeeded="false"
+|| check_succeeded="no"
 
-echo "---- R CMD check logs ----"
-cat lightgbm.Rcheck/00install.out
+echo "R CMD check build logs:"
+cat ${BUILD_DIRECTORY}/lightgbm.Rcheck/00install.out
 
-if [[ $check_succeeded == "false" ]]; then
+if [[ $check_succeeded == "no" ]]; then
     exit -1
 fi
 
-LOG_FILE_NAME="lightgbm.Rcheck/00check.log"
 if grep -q -R "WARNING" "$LOG_FILE_NAME"; then
     echo "WARNINGS have been found by R CMD check!"
     exit -1

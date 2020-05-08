@@ -5,9 +5,8 @@ git:
   depth: 5
 
 os:
-  - osx
   - linux
-  #- osx
+  - osx
 dist: bionic
 osx_image: xcode11.4
 
