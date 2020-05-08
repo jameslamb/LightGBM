@@ -77,11 +77,13 @@ if ($env:COMPILER -ne "MSVC") {
   Rscript build_r.R ; Check-Output $?
 }
 
-$env:_R_CHECK_FORCE_SUGGESTS_ = 0
 if ($env:COMPILER -eq "MSVC") {
+  Write-Output "Running tests with testthat.R"
   cd R-package/tests
   Rscript testthat.R ; Check-Output $?
 } else {
+
+  $env:_R_CHECK_FORCE_SUGGESTS_ = 0
 
   $PKG_FILE_NAME = Get-Item *.tar.gz
   $LOG_FILE_NAME = "lightgbm.Rcheck/00check.log"

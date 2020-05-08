@@ -1,3 +1,5 @@
+print(.libPaths())
+
 library(testthat)
 library(lightgbm)
 

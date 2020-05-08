@@ -17,9 +17,35 @@ INSTALL_AFTER_BUILD <- !("--skip-install" %in% args)
 }
 
 # system() will not raise an R exception if the process called
-# fails. Wrapping it here to get that behavior
-.run_shell_command <- function(cmd, ...) {
-    exit_code <- system(cmd, ...)
+# fails. Wrapping it here to get that behavior.
+#
+# system() introduces a lot of overhead, at least on Windows,
+# so trying processx if it is available
+.run_shell_command <- function(cmd, args) {
+    on_windows <- .Platform$OS.type == "windows"
+    has_processx <- suppressWarnings({
+      require("processx")
+    })
+    if (has_processx && on_windows){
+      result <- processx::run(
+        command = cmd
+        , args = args
+        , windows_verbatim_args = TRUE
+        , error_on_status = FALSE
+      )
+      stdout_txt <-  strsplit(result$stdout, "\n")[[1]]
+      for (line in stdout_txt) {
+        message(line)
+      }
+      exit_code <- result$status
+    } else {
+      if (on_windows) {
+        message("Using system() to run shell commands. Installing 'processx' with install.packages('processx') might make this faster.")
+      }
+      cmd <- paste0(cmd, " ", paste0(args, collapse = " "))
+      exit_code <- system(cmd)
+    }
+
     if (exit_code != 0L) {
         stop(paste0("Command failed with exit code: ", exit_code))
     }
@@ -74,7 +100,7 @@ result <- file.copy(
 #       by CMake while also meeting the CRAN req to create object files
 #       on demand
 cmd <- "R CMD build lightgbm_r --keep-empty-dirs"
-.run_shell_command(cmd)
+.run_shell_command("R", c("CMD", "build", "lightgbm_r", "--keep-empty-dirs"))
 
 # Install the package
 version <- gsub(
@@ -88,9 +114,8 @@ version <- gsub(
 )
 tarball <- file.path(getwd(), sprintf("lightgbm_%s.tar.gz", version))
 
-cmd <- sprintf("R CMD INSTALL %s --no-multiarch --with-keep.source", tarball)
 if (INSTALL_AFTER_BUILD) {
-  .run_shell_command(cmd)
+  .run_shell_command("R", c("CMD", "INSTALL", tarball, "--no-multiarch", "--with-keep.source"))
 } else {
   print(sprintf("Skipping installation. Install the package with command '%s'", cmd))
 }
