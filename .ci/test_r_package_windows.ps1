@@ -47,6 +47,21 @@ Write-Output "Installing Rtools"
 Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH/Rtools" ; Check-Output $?
 Write-Output "Done installing Rtools"
 
+Rscript logs.R > file1.txt
+Rscript logs.R > "file2.txt"
+Rscript logs.R > "file3.txt" ; Check-Output $true
+
+Write-Output "--- file1.txt ---"
+Get-Content -Path "file1.txt"
+
+Write-Output "--- file2.txt ---"
+Get-Content -Path "file2.txt"
+
+Write-Output "--- file3.txt ---"
+Get-Content -Path "file3.txt"
+
+Check-Output $false
+
 # MiKTeX and pandoc can be skipped on non-MINGW builds, since we don't
 # build the package documentation for those
 if ($env:COMPILER -eq "MINGW") {
@@ -76,22 +91,22 @@ $packages = "c('data.table', 'jsonlite', 'Matrix', 'processx', 'R6', 'testthat')
 Rscript --vanilla -e "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH')" ; Check-Output $?
 
 Write-Output "Building R package"
-# if ($env:COMPILER -ne "MSVC") {
-Rscript build_r.R --skip-install ; Check-Output $?
-# } else {
-#   $INSTALL_LOG_FILE_NAME = "$env:BUILD_SOURCESDIRECTORY\00install_out.txt"
-#   Rscript build_r.R > $INSTALL_LOG_FILE_NAME ; $install_succeeded = $?
-#   Write-Output "----- start printing -----"
-#   Get-Content -Path "$INSTALL_LOG_FILE_NAME"
-#   Write-Output "----- done printing -----"
-#   Check-Output $install_succeeded
-# }
+if ($env:COMPILER -ne "MSVC") {
+  Rscript build_r.R --skip-install ; Check-Output $?
+} else {
+  $INSTALL_LOG_FILE_NAME = "$env:BUILD_SOURCESDIRECTORY\00install_out.txt"
+  Rscript build_r.R > $INSTALL_LOG_FILE_NAME ; $install_succeeded = $?
+  Write-Output "----- start printing -----"
+  Get-Content -Path "$INSTALL_LOG_FILE_NAME"
+  Write-Output "----- done printing -----"
+  Check-Output $install_succeeded
+}
 
-# if ($env:COMPILER -eq "MSVC") {
-#   Write-Output "Running tests with testthat.R"
-#   cd R-package/tests
-#   Rscript testthat.R ; Check-Output $?
-# } else {
+if ($env:COMPILER -eq "MSVC") {
+  Write-Output "Running tests with testthat.R"
+  cd R-package/tests
+  Rscript testthat.R ; Check-Output $?
+} else {
 
   $env:_R_CHECK_FORCE_SUGGESTS_ = 0
 
@@ -121,7 +136,7 @@ Rscript build_r.R --skip-install ; Check-Output $?
       Write-Output "Found ${NUM_CHECK_NOTES} NOTEs from R CMD check. Only ${ALLOWED_CHECK_NOTES} are allowed"
       Check-Output $False
   }
-# }
+}
 
 # Checking that we actually got the expected compiler. The R package has some logic
 # to fail back to MinGW if MSVC fails, but for CI builds we need to check that the correct
