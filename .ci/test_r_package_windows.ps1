@@ -18,6 +18,10 @@ $env:PATH = "$env:R_LIB_PATH/Rtools/bin;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env
 $env:CRAN_MIRROR = "https://cloud.r-project.org/"
 $env:CTAN_MIRROR = "https://ctan.math.illinois.edu/systems/win32/miktex/tm/packages/"
 
+$env:R_LIBS="$env:R_LIB_PATH"
+$env:R_LIBS_SITE="$env:R_LIB_PATH/R/library"
+$env:R_LIBS_USER="$env:R_LIB_PATH/R/library"
+
 if ($env:COMPILER -eq "MINGW") {
   $env:CXX = "$env:R_LIB_PATH/Rtools/mingw_64/bin/g++.exe"
   $env:CC = "$env:R_LIB_PATH/Rtools/mingw_64/bin/gcc.exe"
@@ -50,6 +54,7 @@ Write-Output "Done installing Rtools"
 Rscript logs.R > file1.txt
 Rscript logs.R > "file2.txt"
 Rscript logs.R > "file3.txt" ; Check-Output $true
+Rscript logs.R *> "file4.txt" ; Check-Output $true
 
 Write-Output "--- file1.txt ---"
 Get-Content -Path "file1.txt"
@@ -57,8 +62,8 @@ Get-Content -Path "file1.txt"
 Write-Output "--- file2.txt ---"
 Get-Content -Path "file2.txt"
 
-Write-Output "--- file3.txt ---"
-Get-Content -Path "file3.txt"
+Write-Output "--- file4.txt ---"
+Get-Content -Path "file4.txt"
 
 Check-Output $false
 
@@ -79,12 +84,9 @@ if ($env:COMPILER -eq "MINGW") {
     conda install -q -y --no-deps pandoc
 }
 
-Add-Content .Renviron "R_LIBS=$env:R_LIB_PATH"
+#Add-Content .Renviron "R_LIBS=$env:R_LIB_PATH"
 # Add-Content .Renviron "R_LIBS_SITE=$env:R_LIB_PATH/R/library"
 # Add-Content .Renviron "R_LIBS_USER=$env:R_LIB_PATH/R/library"
-$env:R_LIBS="$env:R_LIB_PATH"
-$env:R_LIBS_SITE="$env:R_LIB_PATH/R/library"
-$env:R_LIBS_USER="$env:R_LIB_PATH/R/library"
 
 Write-Output "Installing dependencies"
 $packages = "c('data.table', 'jsonlite', 'Matrix', 'processx', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
