@@ -20,7 +20,7 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
 #
 # system() introduces a lot of overhead, at least on Windows,
 # so trying processx if it is available
-.run_shell_command <- function(cmd, args) {
+.run_shell_command <- function(cmd, args, strict = TRUE) {
     on_windows <- .Platform$OS.type == "windows"
     has_processx <- suppressWarnings({
       require("processx")
@@ -45,7 +45,7 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
       exit_code <- system(cmd)
     }
 
-    if (exit_code != 0L) {
+    if (exit_code != 0L && isTRUE(strict)) {
         stop(paste0("Command failed with exit code: ", exit_code))
     }
 }
@@ -105,7 +105,7 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
     print("----- vs_cmake_args -----")
     print(vs_cmake_args)
     print("----- done vs_cmake_args -----")
-    exit_code <- .run_shell_command("cmake", c(vs_cmake_args, ".."))
+    exit_code <- .run_shell_command("cmake", c(vs_cmake_args, ".."), strict = FALSE)
     if (exit_code == 0L) {
       print(sprintf("Successfully created build files for '%s'", vs_version))
       return(TRUE)

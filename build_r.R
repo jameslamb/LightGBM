@@ -21,7 +21,7 @@ INSTALL_AFTER_BUILD <- !("--skip-install" %in% args)
 #
 # system() introduces a lot of overhead, at least on Windows,
 # so trying processx if it is available
-.run_shell_command <- function(cmd, args) {
+.run_shell_command <- function(cmd, args, strict = TRUE) {
     on_windows <- .Platform$OS.type == "windows"
     has_processx <- suppressWarnings({
       require("processx")
@@ -52,7 +52,7 @@ INSTALL_AFTER_BUILD <- !("--skip-install" %in% args)
       exit_code <- system(cmd)
     }
 
-    if (exit_code != 0L) {
+    if (exit_code != 0L && isTRUE(strict)) {
         stop(paste0("Command failed with exit code: ", exit_code))
     }
 }
