@@ -96,12 +96,11 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
       file.remove("CMakeCache.txt")
     }
     vs_cmake_args <- c(
-      cmake_args,
-      c(
-          paste0("-G", shQuote(vs_version))
-          , "-A"
-          , "x64"
-      )
+      cmake_args
+      , "-G"
+      , shQuote(vs_version)
+      , "-A"
+      , "x64"
     )
     print("----- vs_cmake_args -----")
     print(vs_cmake_args)
