@@ -80,7 +80,7 @@ if ($env:COMPILER -ne "MSVC") {
   Rscript build_r.R --skip-install ; Check-Output $?
 } else {
   $INSTALL_LOG_FILE_NAME = "$env:BUILD_SOURCESDIRECTORY\00install_out.txt"
-  Rscript build_r.R ; $install_succeeded = $?
+  Rscript build_r.R > $INSTALL_LOG_FILE_NAME ; $install_succeeded = $?
   Write-Output "----- start printing -----"
   Get-Content -Path "$INSTALL_LOG_FILE_NAME"
   Write-Output "----- done printing -----"

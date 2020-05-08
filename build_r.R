@@ -37,6 +37,12 @@ INSTALL_AFTER_BUILD <- !("--skip-install" %in% args)
       for (line in stdout_txt) {
         message(line)
       }
+      if (!identical(result$stderr, "")) {
+        stderr_txt <-  strsplit(result$stderr, "\n")[[1]]
+        for (line in stderr_txt) {
+          message(line)
+        }
+      }
       exit_code <- result$status
     } else {
       if (on_windows) {
