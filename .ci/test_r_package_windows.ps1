@@ -65,8 +65,11 @@ if ($env:COMPILER -eq "MINGW") {
 }
 
 Add-Content .Renviron "R_LIBS=$env:R_LIB_PATH"
-Add-Content .Renviron "R_LIBS_SITE=$env:R_LIB_PATH"
-Add-Content .Renviron "R_LIBS_USER=$env:R_LIB_PATH"
+# Add-Content .Renviron "R_LIBS_SITE=$env:R_LIB_PATH/R/library"
+# Add-Content .Renviron "R_LIBS_USER=$env:R_LIB_PATH/R/library"
+$env:R_LIBS="$env:R_LIB_PATH"
+$env:R_LIBS_SITE="$env:R_LIB_PATH/R/library"
+$env:R_LIBS_USER="$env:R_LIB_PATH/R/library"
 
 Write-Output "Installing dependencies"
 $packages = "c('data.table', 'jsonlite', 'Matrix', 'processx', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
@@ -77,7 +80,11 @@ if ($env:COMPILER -ne "MSVC") {
   Rscript build_r.R --skip-install ; Check-Output $?
 } else {
   $INSTALL_LOG_FILE_NAME = "$env:BUILD_SOURCESDIRECTORY\00install_out.txt"
-  Rscript build_r.R > $INSTALL_LOG_FILE_NAME 2>&1 ; Check-Output $?
+  Rscript build_r.R > "$INSTALL_LOG_FILE_NAME" ; $install_succeeded = $?
+  Write-Output "----- start printing -----"
+  Get-Content -Path "$INSTALL_LOG_FILE_NAME"
+  Write-Output "----- done printing -----"
+  Check-Output $install_succeeded
 }
 
 if ($env:COMPILER -eq "MSVC") {
