@@ -48,6 +48,7 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
     if (exit_code != 0L && isTRUE(strict)) {
         stop(paste0("Command failed with exit code: ", exit_code))
     }
+    return(exit_code)
 }
 
 # [description] Run `cmake` to generate build files. This command
