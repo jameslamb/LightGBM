@@ -14,13 +14,12 @@ function Download-File-With-Retries {
 
 $env:R_WINDOWS_VERSION = "3.6.3"
 $env:R_LIB_PATH = "$env:BUILD_SOURCESDIRECTORY/RLibrary" -replace '[\\]', '/'
-$env:PATH = "$env:R_LIB_PATH/Rtools/bin;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + $env:PATH
-$env:CRAN_MIRROR = "https://cloud.r-project.org/"
-$env:CTAN_MIRROR = "https://ctan.math.illinois.edu/systems/win32/miktex/tm/packages/"
-
 $env:R_LIBS="$env:R_LIB_PATH"
 $env:R_LIBS_SITE="$env:R_LIB_PATH/R/library"
 $env:R_LIBS_USER="$env:R_LIB_PATH/R/library"
+$env:PATH = "$env:R_LIB_PATH/Rtools/bin;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + $env:PATH
+$env:CRAN_MIRROR = "https://cloud.r-project.org/"
+$env:CTAN_MIRROR = "https://ctan.math.illinois.edu/systems/win32/miktex/tm/packages/"
 
 if ($env:COMPILER -eq "MINGW") {
   $env:CXX = "$env:R_LIB_PATH/Rtools/mingw_64/bin/g++.exe"
@@ -73,28 +72,15 @@ $packages = "c('data.table', 'jsonlite', 'Matrix', 'processx', 'R6', 'testthat')
 Rscript --vanilla -e "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH')" ; Check-Output $?
 
 Write-Output "Building R package"
+
+# R CMD check is not used for MSVC builds
 if ($env:COMPILER -ne "MSVC") {
   Rscript build_r.R --skip-install ; Check-Output $?
-} else {
-  $INSTALL_LOG_FILE_NAME = "$env:BUILD_SOURCESDIRECTORY\00install_out.txt"
-  Rscript build_r.R *> $INSTALL_LOG_FILE_NAME ; $install_succeeded = $?
-  Write-Output "----- start printing -----"
-  Get-Content -Path "$INSTALL_LOG_FILE_NAME"
-  Write-Output "----- done printing -----"
-  Check-Output $install_succeeded
-}
-
-if ($env:COMPILER -eq "MSVC") {
-  Write-Output "Running tests with testthat.R"
-  cd R-package/tests
-  Rscript testthat.R ; Check-Output $?
-} else {
-
-  $env:_R_CHECK_FORCE_SUGGESTS_ = 0
 
   $PKG_FILE_NAME = Get-Item *.tar.gz
   $LOG_FILE_NAME = "lightgbm.Rcheck/00check.log"
 
+  $env:_R_CHECK_FORCE_SUGGESTS_ = 0
   Write-Output "Running R CMD check as CRAN"
   R.exe CMD check --no-multiarch --as-cran ${PKG_FILE_NAME} ; $check_succeeded = $?
 
@@ -118,6 +104,16 @@ if ($env:COMPILER -eq "MSVC") {
       Write-Output "Found ${NUM_CHECK_NOTES} NOTEs from R CMD check. Only ${ALLOWED_CHECK_NOTES} are allowed"
       Check-Output $False
   }
+} else {
+  $INSTALL_LOG_FILE_NAME = "$env:BUILD_SOURCESDIRECTORY\00install_out.txt"
+  Rscript build_r.R *> $INSTALL_LOG_FILE_NAME ; $install_succeeded = $?
+  Write-Output "----- build and install logs -----"
+  Get-Content -Path "$INSTALL_LOG_FILE_NAME"
+  Write-Output "----- end of build and install logs -----"
+  Check-Output $install_succeeded
+  Write-Output "Running tests with testthat.R"
+  cd R-package/tests
+  Rscript testthat.R ; Check-Output $?
 }
 
 # Checking that we actually got the expected compiler. The R package has some logic

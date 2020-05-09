@@ -1,3 +1,4 @@
+# a comment to keep the PR from being closed
 # CMake module used to find the location of R's
 # dll and header files.
 #
