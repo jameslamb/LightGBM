@@ -21,37 +21,37 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
 # system() introduces a lot of overhead, at least on Windows,
 # so trying processx if it is available
 .run_shell_command <- function(cmd, args, strict = TRUE) {
-  on_windows <- .Platform$OS.type == "windows"
-  has_processx <- suppressMessages({
-    suppressWarnings({
-      require("processx")  # nolint
+    on_windows <- .Platform$OS.type == "windows"
+    has_processx <- suppressMessages({
+      suppressWarnings({
+        require("processx")  # nolint
+      })
     })
-  })
-  if (has_processx && on_windows) {
-    result <- processx::run(
-      command = cmd
-      , args = args
-      , windows_verbatim_args = TRUE
-      , error_on_status = FALSE
-      , echo = TRUE
-    )
-    exit_code <- result$status
-  } else {
-    if (on_windows) {
-      message(paste0(
-        "Using system() to run shell commands. Installing "
-        , "'processx' with install.packages('processx') might "
-        , "make this faster."
-      ))
+    if (has_processx && on_windows) {
+      result <- processx::run(
+        command = cmd
+        , args = args
+        , windows_verbatim_args = TRUE
+        , error_on_status = FALSE
+        , echo = TRUE
+      )
+      exit_code <- result$status
+    } else {
+      if (on_windows) {
+        message(paste0(
+          "Using system() to run shell commands. Installing "
+          , "'processx' with install.packages('processx') might "
+          , "make this faster."
+        ))
+      }
+      cmd <- paste0(cmd, " ", paste0(args, collapse = " "))
+      exit_code <- system(cmd)
     }
-    cmd <- paste0(cmd, " ", paste0(args, collapse = " "))
-    exit_code <- system(cmd)
-  }
 
-  if (exit_code != 0L && isTRUE(strict)) {
-    stop(paste0("Command failed with exit code: ", exit_code))
-  }
-  return(invisible(exit_code))
+    if (exit_code != 0L && isTRUE(strict)) {
+        stop(paste0("Command failed with exit code: ", exit_code))
+    }
+    return(invisible(exit_code))
 }
 
 # try to generate Visual Studio build files
@@ -163,7 +163,7 @@ if (!use_precompile) {
       }
     }
   } else {
-    .run_shell_command("cmake", c(cmake_args, ".."))
+      .run_shell_command("cmake", c(cmake_args, ".."))
   }
 
   # generate build files
