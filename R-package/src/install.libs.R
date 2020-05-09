@@ -151,7 +151,7 @@ if (!use_precompile) {
         print("Building with Visual Studio failed. Attempting with MinGW")
         # Must build twice for Windows due sh.exe in Rtools
         cmake_args <- c(cmake_args, "-G", shQuote("MinGW Makefiles"))
-        .run_shell_command("cmake", c(cmake_args, ".."))
+        .run_shell_command("cmake", c(cmake_args, ".."), strict = FALSE)
         build_cmd <- "mingw32-make.exe"
         build_args <- "_lightgbm"
       } else {
@@ -168,7 +168,7 @@ if (!use_precompile) {
   # generate build files
   if (!makefiles_already_generated) {
     print("schmibberty")
-    .run_shell_command("cmake", c(cmake_args, ".."))
+    .run_shell_command("cmake", c(cmake_args, ".."), strict = FALSE)
   }
 
   # R CMD check complains about the .NOTPARALLEL directive created in the cmake
