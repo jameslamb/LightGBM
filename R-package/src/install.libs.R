@@ -27,7 +27,7 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
         require("processx")
       })
     })
-    if (FALSE){
+    if (has_processx && on_windows){
       result <- processx::run(
         command = cmd
         , args = args
@@ -138,22 +138,18 @@ if (!use_precompile) {
   if (WINDOWS) {
     if (use_mingw) {
       print("Trying to build with MinGW")
+      # Must build twice for Windows due sh.exe in Rtools
+      cmake_args <- c(cmake_args, "-G", shQuote("MinGW Makefiles"))
+      .run_shell_command("cmake", c(cmake_args, ".."))
       build_cmd <- "mingw32-make.exe"
       build_args <- "_lightgbm"
-      # Must build twice for Windows due sh.exe in Rtools
-      .run_shell_command(
-        "cmake"
-        , c(cmake_args, "-G", shQuote("MinGW Makefiles"), "..")
-      )
     } else {
       visual_studio_succeeded <- .generate_vs_makefiles(cmake_args)
       if (!isTRUE(visual_studio_succeeded)) {
         print("Building with Visual Studio failed. Attempting with MinGW")
         # Must build twice for Windows due sh.exe in Rtools
-        .run_shell_command(
-          "cmake"
-          ,  c(cmake_args, "-G", shQuote("MinGW Makefiles"), "..")
-        )
+        cmake_args <- c(cmake_args, "-G", shQuote("MinGW Makefiles"), "..")
+        .run_shell_command("cmake", c(cmake_args, ".."))
         build_cmd <- "mingw32-make.exe"
         build_args <- "_lightgbm"
       } else {
