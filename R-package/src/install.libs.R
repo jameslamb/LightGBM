@@ -143,7 +143,7 @@ if (!use_precompile) {
       # Must build twice for Windows due sh.exe in Rtools
       .run_shell_command(
         "cmake"
-        , c(cmake_args, paste0("-G", shQuote("MinGW Makefiles")), "..")
+        , c(cmake_args, "-G", shQuote("MinGW Makefiles"), "..")
       )
     } else {
       visual_studio_succeeded <- .generate_vs_makefiles(cmake_args)
