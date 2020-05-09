@@ -51,7 +51,7 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
     if (exit_code != 0L && isTRUE(strict)) {
         stop(paste0("Command failed with exit code: ", exit_code))
     }
-    return(exit_code)
+    return(invisible(exit_code))
 }
 
 # try to generate Visual Studio build files
@@ -78,11 +78,11 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
     exit_code <- .run_shell_command("cmake", c(vs_cmake_args, ".."), strict = FALSE)
     if (exit_code == 0L) {
       print(sprintf("Successfully created build files for '%s'", vs_version))
-      return(TRUE)
+      return(invisible(TRUE))
     }
 
   }
-  return(TRUE)
+  return(invisible(FALSE))
 }
 
 # Move in CMakeLists.txt
@@ -141,22 +141,18 @@ if (!use_precompile) {
   if (WINDOWS) {
     if (use_mingw) {
       print("Trying to build with MinGW")
+      # Must build twice for Windows due sh.exe in Rtools
+      cmake_args <- c(cmake_args, "-G", shQuote("MinGW Makefiles"))
+      .run_shell_command("cmake", c(cmake_args, ".."), strict = FALSE)
       build_cmd <- "mingw32-make.exe"
       build_args <- "_lightgbm"
-      # Must build twice for Windows due sh.exe in Rtools
-      .run_shell_command(
-        "cmake"
-        , c(cmake_args, "-G", shQuote("MinGW Makefiles"), "..")
-      )
     } else {
       visual_studio_succeeded <- .generate_vs_makefiles(cmake_args)
       if (!isTRUE(visual_studio_succeeded)) {
         print("Building with Visual Studio failed. Attempting with MinGW")
         # Must build twice for Windows due sh.exe in Rtools
-        .run_shell_command(
-          "cmake"
-          ,  c(cmake_args, "-G", shQuote("MinGW Makefiles"), "..")
-        )
+        cmake_args <- c(cmake_args, "-G", shQuote("MinGW Makefiles"))
+        .run_shell_command("cmake", c(cmake_args, ".."), strict = FALSE)
         build_cmd <- "mingw32-make.exe"
         build_args <- "_lightgbm"
       } else {
@@ -172,7 +168,7 @@ if (!use_precompile) {
 
   # generate build files
   if (!makefiles_already_generated) {
-    .run_shell_command("cmake", c(cmake_args, ".."))
+    .run_shell_command("cmake", c(cmake_args, ".."), strict = FALSE)
   }
 
   # R CMD check complains about the .NOTPARALLEL directive created in the cmake
