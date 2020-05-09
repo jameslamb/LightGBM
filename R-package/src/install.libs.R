@@ -75,11 +75,11 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
     exit_code <- .run_shell_command("cmake", c(vs_cmake_args, ".."), strict = FALSE)
     if (exit_code == 0L) {
       print(sprintf("Successfully created build files for '%s'", vs_version))
-      return(TRUE)
+      return(invisible(TRUE))
     }
 
   }
-  return(invisible(TRUE))
+  return(invisible(FALSE))
 }
 
 # Move in CMakeLists.txt
@@ -141,7 +141,7 @@ if (!use_precompile) {
       # Must build twice for Windows due sh.exe in Rtools
       cmake_args <- c(cmake_args, "-G", shQuote("MinGW Makefiles"))
       print("libberty")
-      .run_shell_command("cmake", c(cmake_args, ".."))
+      .run_shell_command("cmake", c(cmake_args, ".."), strict = FALSE)
       print("bibberty")
       build_cmd <- "mingw32-make.exe"
       build_args <- "_lightgbm"
