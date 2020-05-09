@@ -34,6 +34,7 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
         , windows_verbatim_args = TRUE
         , error_on_status = FALSE
         , echo = TRUE
+        , echo_cmd = TRUE
       )
       exit_code <- result$status
     } else {
@@ -47,7 +48,7 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
     if (exit_code != 0L && isTRUE(strict)) {
         stop(paste0("Command failed with exit code: ", exit_code))
     }
-    return(exit_code)
+    return(invisible(exit_code))
 }
 
 # try to generate Visual Studio build files
@@ -78,7 +79,7 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
     }
 
   }
-  return(TRUE)
+  return(invisible(TRUE))
 }
 
 # Move in CMakeLists.txt
@@ -142,7 +143,7 @@ if (!use_precompile) {
       # Must build twice for Windows due sh.exe in Rtools
       .run_shell_command(
         "cmake"
-        , c(cmake_args, "-G", shQuote("MinGW Makefiles"), "..")
+        , c(cmake_args, paste0("-G", shQuote("MinGW Makefiles")), "..")
       )
     } else {
       visual_studio_succeeded <- .generate_vs_makefiles(cmake_args)

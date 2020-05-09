@@ -48,7 +48,7 @@ INSTALL_AFTER_BUILD <- !("--skip-install" %in% args)
     if (exit_code != 0L && isTRUE(strict)) {
         stop(paste0("Command failed with exit code: ", exit_code))
     }
-    return(exit_code)
+    return(invisible(exit_code))
 }
 
 # Make a new temporary folder to work in
