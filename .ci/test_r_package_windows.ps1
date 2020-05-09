@@ -73,6 +73,8 @@ $packages = "c('data.table', 'jsonlite', 'Matrix', 'processx', 'R6', 'testthat')
 Rscript --vanilla -e "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH')" ; Check-Output $?
 
 Write-Output "Building R package"
+Rscript build_r.R
+Check-Output $false
 if ($env:COMPILER -ne "MSVC") {
   Rscript build_r.R --skip-install ; Check-Output $?
 } else {
