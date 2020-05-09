@@ -140,9 +140,7 @@ if (!use_precompile) {
       print("Trying to build with MinGW")
       # Must build twice for Windows due sh.exe in Rtools
       cmake_args <- c(cmake_args, "-G", shQuote("MinGW Makefiles"))
-      print("libberty")
       .run_shell_command("cmake", c(cmake_args, ".."), strict = FALSE)
-      print("bibberty")
       build_cmd <- "mingw32-make.exe"
       build_args <- "_lightgbm"
     } else {
@@ -167,7 +165,6 @@ if (!use_precompile) {
 
   # generate build files
   if (!makefiles_already_generated) {
-    print("schmibberty")
     .run_shell_command("cmake", c(cmake_args, ".."), strict = FALSE)
   }
 
