@@ -13,10 +13,10 @@ environment:
       TASK: r-package
     - COMPILER: MSVC
       TASK: r-package
-    - COMPILER: MSVC
-      TASK: python
-    - COMPILER: MINGW
-      TASK: python
+    # - COMPILER: MSVC
+    #   TASK: python
+    # - COMPILER: MINGW
+    #   TASK: python
 
 matrix:
   exclude:

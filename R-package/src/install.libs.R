@@ -27,7 +27,7 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
         require("processx")
       })
     })
-    if (has_processx && on_windows){
+    if (FALSE){
       result <- processx::run(
         command = cmd
         , args = args
