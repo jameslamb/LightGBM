@@ -140,7 +140,9 @@ if (!use_precompile) {
       print("Trying to build with MinGW")
       # Must build twice for Windows due sh.exe in Rtools
       cmake_args <- c(cmake_args, "-G", shQuote("MinGW Makefiles"))
+      print("libberty")
       .run_shell_command("cmake", c(cmake_args, ".."))
+      print("bibberty")
       build_cmd <- "mingw32-make.exe"
       build_args <- "_lightgbm"
     } else {
@@ -148,7 +150,7 @@ if (!use_precompile) {
       if (!isTRUE(visual_studio_succeeded)) {
         print("Building with Visual Studio failed. Attempting with MinGW")
         # Must build twice for Windows due sh.exe in Rtools
-        cmake_args <- c(cmake_args, "-G", shQuote("MinGW Makefiles"), "..")
+        cmake_args <- c(cmake_args, "-G", shQuote("MinGW Makefiles"))
         .run_shell_command("cmake", c(cmake_args, ".."))
         build_cmd <- "mingw32-make.exe"
         build_args <- "_lightgbm"
@@ -165,6 +167,7 @@ if (!use_precompile) {
 
   # generate build files
   if (!makefiles_already_generated) {
+    print("schmibberty")
     .run_shell_command("cmake", c(cmake_args, ".."))
   }
 
