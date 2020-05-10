@@ -69,13 +69,6 @@ result <- file.copy(
 )
 .handle_result(result)
 
-result <- file.copy(
-  from = file.path("R-package", "src", "make-r-def.R")
-  , to = file.path("lightgbm_r", "inst", "bin/")
-  , overwrite = TRUE
-)
-.handle_result(result)
-
 # Build the package (do not touch this line!)
 # NOTE: --keep-empty-dirs is necessary to keep the deep paths expected
 #       by CMake while also meeting the CRAN req to create object files
