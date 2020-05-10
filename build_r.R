@@ -103,7 +103,6 @@ result <- file.copy(
 # NOTE: --keep-empty-dirs is necessary to keep the deep paths expected
 #       by CMake while also meeting the CRAN req to create object files
 #       on demand
-cmd <- "R CMD build lightgbm_r --keep-empty-dirs"
 .run_shell_command("R", c("CMD", "build", "lightgbm_r", "--keep-empty-dirs"))
 
 # Install the package
