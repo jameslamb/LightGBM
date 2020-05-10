@@ -1,8 +1,6 @@
 ﻿version: 2.3.2.{build}
 
-image:
-  - Visual Studio 2015
-  - Visual Studio 2019
+image: Visual Studio 2015
 platform: x64
 configuration:  # a trick to construct a build matrix with multiple Python versions
   - 3.7
@@ -13,21 +11,11 @@ environment:
       TASK: r-package
     - COMPILER: MSVC
       TASK: r-package
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
     - COMPILER: MSVC
       TASK: python
     - COMPILER: MINGW
       TASK: python
-
-matrix:
-  exclude:
-    - TASK: python
-      image: Visual Studio 2019
-    - TASK: r-package
-      COMPILER: MINGW
-      image: Visual Studio 2019
-    - TASK: r-package
-      COMPILER: MSVC
-      image: Visual Studio 2015
 
 clone_depth: 5
 
