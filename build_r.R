@@ -120,5 +120,6 @@ tarball <- file.path(getwd(), sprintf("lightgbm_%s.tar.gz", version))
 if (INSTALL_AFTER_BUILD) {
   .run_shell_command("R", c("CMD", "INSTALL", tarball, "--no-multiarch", "--with-keep.source"))
 } else {
+  cmd <- sprintf("R CMD INSTALL %s --no-multiarch --with-keep.source", tarball)
   print(sprintf("Skipping installation. Install the package with command '%s'", cmd))
 }
