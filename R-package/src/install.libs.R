@@ -168,7 +168,7 @@ if (!use_precompile) {
 
   # generate build files
   if (!makefiles_already_generated) {
-    .run_shell_command("cmake", c(cmake_args, ".."), strict = FALSE)
+    .run_shell_command("cmake", c(cmake_args, ".."))
   }
 
   # R CMD check complains about the .NOTPARALLEL directive created in the cmake
