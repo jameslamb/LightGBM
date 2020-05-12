@@ -83,6 +83,7 @@ PredictionEarlyStopInstance CreatePredictionEarlyStopInstance(const std::string&
   } else {
     Log::Fatal("Unknown early stopping type: %s", type.c_str());
   }
+  return nullptr;
 }
 
 }  // namespace LightGBM

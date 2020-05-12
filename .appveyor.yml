@@ -12,10 +12,10 @@ environment:
     - COMPILER: MSVC
       TASK: r-package
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-    - COMPILER: MSVC
-      TASK: python
-    - COMPILER: MINGW
-      TASK: python
+    # - COMPILER: MSVC
+    #   TASK: python
+    # - COMPILER: MINGW
+    #   TASK: python
 
 clone_depth: 5
 
