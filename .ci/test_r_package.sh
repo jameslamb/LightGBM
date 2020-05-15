@@ -34,6 +34,20 @@ fi
 
 # Installing R precompiled for Mac OS 10.11 or higher
 if [[ $OS_NAME == "macos" ]]; then
+
+    # temp fix for basictex
+    if [[ $AZURE == "true" ]]; then
+        brew update
+        # Azure Mac images aren't built with the macOS SDK headers enabled
+        if [[ $R_BUILD_TYPE == "cran" ]]; then
+            sudo installer \
+            -pkg /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg \
+            -target /
+        fi
+    fi
+
+    brew install automake
+
     brew install qpdf
     brew cask install basictex
     export PATH="/Library/TeX/texbin:$PATH"
@@ -71,10 +85,22 @@ fi
 Rscript --vanilla -e "install.packages(${packages}, repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'))" || exit -1
 
 cd ${BUILD_DIRECTORY}
-Rscript build_r.R --skip-install || exit -1
 
 PKG_TARBALL="lightgbm_${LGB_VER}.tar.gz"
 LOG_FILE_NAME="lightgbm.Rcheck/00check.log"
+if [[ $R_BUILD_TYPE == "cmake" ]]; then
+    Rscript build_r.R --skip-install || exit -1
+elif [[ $R_BUILD_TYPE == "cran" ]]; then
+    ./build-cran-package.sh || exit -1
+    # Test CRAN source .tar.gz in a directory that is not this repo or below it.
+    # When people install.packages('lightgbm'), they won't have the LightGBM
+    # git repo around. This is to protect against the use of relative paths
+    # like ../../CMakeLists.txt that would only work if you are in the repoo
+    R_CMD_CHECK_DIR="${HOME}/tmp-r-cmd-check/"
+    mkdir -p ${R_CMD_CHECK_DIR}
+    mv ${PKG_TARBALL} ${R_CMD_CHECK_DIR}
+    cd ${R_CMD_CHECK_DIR}
+fi
 
 # suppress R CMD check warning from Suggests dependencies not being available
 export _R_CHECK_FORCE_SUGGESTS_=0

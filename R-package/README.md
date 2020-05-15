@@ -104,6 +104,85 @@ Rscript -e " \
     "
 ```
 
+Preparing a CRAN package and installing it
+------------------------------------------
+
+This section is primarily for maintainers, but may help users and contributors to understand the structure of the R package.
+
+Most of `LightGBM` uses `CMake` to handle tasks like setting compiler and linker flags, including header file locations, and linking to other libraries. Because CRAN packages cannot assume the presence of `CMake`, the R package uses an alternative method that is in the CRAN-supported toolchain for building R packages with C++ code: `Autoconf`.
+
+For more information on this approach, see ["Writing R Extensions"](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Configure-and-cleanup).
+
+**Configuring for Unix-alikes**
+
+1. Edit `configure.ac`
+2. Create `configure` with `autoconf` (do not edit it by hand)
+
+```shell
+autoconf \
+  --verbose \
+  --output configure \
+  configure.ac
+```
+
+3. Edit `src/Makevars.in`
+
+At build time (e.g. `R CMD INSTALL`), `configure` will be run and used to create a file `src/Makevars`, using `Makevars.in` as a template.
+
+**Configuring for Windows**
+
+1. Edit `configure.win` directly.
+2. Edit `src/Makevars.win.in`
+
+Install from source with GPU on Linux or Mac:
+
+```shell
+Rscript build_r.R --skip-install
+R CMD INSTALL \
+    --configure-args='--enable-gpu' \
+    lightgbm_2.3.2.tar.gz
+```
+
+R on Windows does not support `--configure-args`. To install from source with GPU on Windows, set environment variable `LGB_USE_GPU` to `true`.
+
+```shell
+setx LGB_USE_GPU "true"
+```
+
+Restart CMD, then check that it was set:
+
+```shell
+echo %LGB_USE_GPU%
+```
+
+If it shows `true`, you should see the flag `-DUSE_GPU` in the compiler messages.
+
+```shell
+R CMD INSTALL lightgbm_2.3.2.tar.gz
+```
+
+You can change the compiler used by editing a file `~/.R/Makevars`. Any variables you define there will take precedence over those defined by the `configure` script or `Makevars.in` in the R package's source.
+
+For example, to use `gcc` instead of `clang++` on Mac, create a  `~/.R/Makevars` which contains the following.
+
+```make
+CC=gcc-8
+CXX=g++-8
+CXX11=g++-8
+```
+
+Testing on CRAN's Windows setup
+
+```
+Rscript build_r.R --skip-install
+Rscript --vanilla -e "
+  devtools::check_win_devel(
+    pkg = 'lightgbm_r',
+    email = 'jaylamb20@gmail.com'
+  )
+  "
+```
+
 External (Unofficial) Repositories
 ----------------------------------
 
