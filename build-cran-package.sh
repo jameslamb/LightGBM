@@ -1,4 +1,4 @@
-#!sh
+#!/bin/sh
 
 # [description]
 #     Prepare a source distribution of the R package
