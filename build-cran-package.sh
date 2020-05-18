@@ -3,6 +3,9 @@
 # [description]
 #     Prepare a source distribution of the R package
 #     to be submitted to CRAN.
+#
+# [usage]
+#     sh build-cran-package.sh
 
 set -e
 
@@ -47,7 +50,7 @@ cd ${TEMP_R_DIR}
 
     # Remove 'region' and 'endregion' pragmas. This won't change
     # the correctness of the code. CRAN does not allow you
-    # to use compiler flag '-Wno-unknown-pragmas flags' or
+    # to use compiler flag '-Wno-unknown-pragmas' or
     # pragmas that suppress warnings.
     echo "Removing unknown pragmas in headers"
     for file in src/include/LightGBM/*.h; do
@@ -62,7 +65,7 @@ cd ${TEMP_R_DIR}
     # When building an R package with 'configure', it seems
     # you're guaranteed to get a shared library called
     #  <packagename>.so/dll. The package source code expects
-    # 'lib_lightgbm.so', no 'lightgbm.so', to comply with the way
+    # 'lib_lightgbm.so', not 'lightgbm.so', to comply with the way
     # this project has historically handled installatioon
     for file in R/*.R; do
         sed \
