@@ -67,6 +67,7 @@ cd ${TEMP_R_DIR}
     #  <packagename>.so/dll. The package source code expects
     # 'lib_lightgbm.so', not 'lightgbm.so', to comply with the way
     # this project has historically handled installatioon
+    echo "Changing lib_lightgbm to lightgbm"
     for file in R/*.R; do
         sed \
             -i.bak \
@@ -77,6 +78,14 @@ cd ${TEMP_R_DIR}
         -i.bak \
         -e 's/lib_lightgbm/lightgbm/' \
         NAMESPACE
+
+    # 'processx' is listed as a 'Suggests' dependency in DESCRIPTION
+    # because it is used in install.libs.R, a file that is not
+    # included in the CRAN distribution of the pagkage
+    sed \
+        -i.bak \
+        '/processx/d' \
+        DESCRIPTION
 
     echo "Cleaning sed backup files"
     rm R/*.R.bak
