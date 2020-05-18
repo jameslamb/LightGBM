@@ -81,8 +81,6 @@ cd ${TEMP_R_DIR}
 
 cd ${ORIG_WD}
 
-echo "here: $(pwd)"
-
 R CMD build \
     --keep-empty-dirs \
     lightgbm_r
