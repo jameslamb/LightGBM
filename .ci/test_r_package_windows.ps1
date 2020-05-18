@@ -19,7 +19,7 @@ $env:PATH = "$env:R_LIB_PATH/Rtools/bin;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env
 $env:CRAN_MIRROR = "https://cloud.r-project.org/"
 $env:CTAN_MIRROR = "https://ctan.math.illinois.edu/systems/win32/miktex/tm/packages/"
 
-if ($env:COMPILER -eq "MINGW") {
+if (($env:COMPILER -eq "MINGW") -and ($env:BUILD_TYPE -eq "cmake")) {
   $env:CXX = "$env:R_LIB_PATH/Rtools/mingw_64/bin/g++.exe"
   $env:CC = "$env:R_LIB_PATH/Rtools/mingw_64/bin/gcc.exe"
 }
@@ -28,7 +28,7 @@ cd $env:BUILD_SOURCESDIRECTORY
 tzutil /s "GMT Standard Time"
 [Void][System.IO.Directory]::CreateDirectory($env:R_LIB_PATH)
 
-if ($env:COMPILER -eq "MINGW") {
+if (($env:COMPILER -eq "MINGW") -and ($env:BUILD_TYPE -eq "cmake")) {
   Write-Output "Telling R to use MinGW"
   $install_libs = "$env:BUILD_SOURCESDIRECTORY/R-package/src/install.libs.R"
   ((Get-Content -path $install_libs -Raw) -replace 'use_mingw <- FALSE','use_mingw <- TRUE') | Set-Content -Path $install_libs
@@ -48,9 +48,11 @@ Write-Output "Installing Rtools"
 Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH/Rtools" ; Check-Output $?
 Write-Output "Done installing Rtools"
 
-# MiKTeX and pandoc can be skipped on non-MINGW builds, since we don't
-# build the package documentation for those
-if ($env:COMPILER -eq "MINGW") {
+# MiKTeX and pandoc can be skipped on non-MINGW builds CMake, since we don't
+# build the package documentation for those.
+#
+# MiKTeX always needs to be built to test a CRAN package.
+if (($env:COMPILER -eq "MINGW") -or ($env:BUILD_TYPE -eq "cran")) {
     Write-Output "Downloading MiKTeX"
     Download-File-With-Retries -url "https://miktex.org/download/win/miktexsetup-x64.zip" -destfile "miktexsetup-x64.zip"
     Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -73,22 +75,35 @@ Write-Output "Building R package"
 
 # R CMD check is not used for MSVC builds
 if ($env:COMPILER -ne "MSVC") {
-  Rscript build_r.R --skip-install ; Check-Output $?
 
-  $PKG_FILE_NAME = Get-Item *.tar.gz
-  $LOG_FILE_NAME = "lightgbm.Rcheck/00check.log"
+  if ($env:R_BUILD_TYPE == "cmake") {
+    Rscript build_r.R --skip-install ; Check-Output $?
+    $PKG_TARBALL = Get-Item *.tar.gz
+  } elseif ($env:R_BUILD_TYPE == "cran") {
+    sh build-cran-package.sh ; Check-Output $?
+    $PKG_TARBALL = Get-Item *.tar.gz
+    # Test CRAN source .tar.gz in a directory that is not this repo or below it.
+    # When people install.packages('lightgbm'), they won't have the LightGBM
+    # git repo around. This is to protect against the use of relative paths
+    # like ../../CMakeLists.txt that would only work if you are in the repoo
+    $R_CMD_CHECK_DIR="tmp-r-cmd-check"
+    New-Item -Path "C:\" -Name $R_CMD_CHECK_DIR -ItemType "directory"
+    Move-Item -Path "$PKG_TARBALL" -Destination "C:\$R_CMD_CHECK_DIR\"
+    cd "C:\$R_CMD_CHECK_DIR\"
+  }
 
   $env:_R_CHECK_FORCE_SUGGESTS_ = 0
   Write-Output "Running R CMD check as CRAN"
-  R.exe CMD check --no-multiarch --as-cran ${PKG_FILE_NAME} ; $check_succeeded = $?
+  R.exe CMD check --no-multiarch --as-cran ${PKG_TARBALL} ; $check_succeeded = $?
 
   Write-Output "R CMD check build logs:"
-  $INSTALL_LOG_FILE_NAME = "$env:BUILD_SOURCESDIRECTORY\lightgbm.Rcheck\00install.out"
+  $INSTALL_LOG_FILE_NAME = "lightgbm.Rcheck\00install.out"
   Get-Content -Path "$INSTALL_LOG_FILE_NAME"
 
   Check-Output $check_succeeded
 
   Write-Output "Looking for issues with R CMD check results"
+  $LOG_FILE_NAME = "lightgbm.Rcheck/00check.log"
   if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "WARNING" -Quiet) {
       echo "WARNINGS have been found by R CMD check!"
       Check-Output $False
@@ -114,13 +129,15 @@ if ($env:COMPILER -ne "MSVC") {
 # Checking that we actually got the expected compiler. The R package has some logic
 # to fail back to MinGW if MSVC fails, but for CI builds we need to check that the correct
 # compiler was used.
-$checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern "Check for working CXX compiler.*$env:COMPILER"
-if ($checks.Matches.length -eq 0) {
-  Write-Output "The wrong compiler was used. Check the build logs."
-  Check-Output $False
+if ($env:BUILD_TYPE -eq "cmake") {
+  $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern "Check for working CXX compiler.*$env:COMPILER"
+  if ($checks.Matches.length -eq 0) {
+    Write-Output "The wrong compiler was used. Check the build logs."
+    Check-Output $False
+  }
 }
 
-if ($env:COMPILER -eq "MSVC") {
+if (($env:COMPILER -eq "MSVC") -and ($env:BUILD_TYPE -eq "cmake")) {
   Write-Output "Running tests with testthat.R"
   cd R-package/tests
   Rscript testthat.R ; Check-Output $?
