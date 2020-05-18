@@ -403,7 +403,7 @@ R-package/src/lib_lightgbm.so.dSYM/
 R-package/src/src/
 R-package/src-x64
 R-package/src-i386
-Makevars.win
+**/Makevars.win
 lightgbm_r/*
 lightgbm*.tar.gz
 lightgbm.Rcheck/

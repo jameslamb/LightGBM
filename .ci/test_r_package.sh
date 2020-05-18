@@ -44,7 +44,6 @@ if [[ $OS_NAME == "macos" ]]; then
     fi
 
     brew install automake
-
     brew install qpdf
     brew cask install basictex
     export PATH="/Library/TeX/texbin:$PATH"

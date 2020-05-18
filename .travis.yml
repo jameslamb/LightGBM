@@ -35,8 +35,6 @@ matrix:
       env: TASK=lint
     - os: osx
       env: TASK=check-docs
-    - os: linux
-      env: TASK=r-package
 
 before_install:
   - test -n $CC  && unset CC

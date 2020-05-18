@@ -113,28 +113,27 @@ Most of `LightGBM` uses `CMake` to handle tasks like setting compiler and linker
 
 For more information on this approach, see ["Writing R Extensions"](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Configure-and-cleanup).
 
-**Configuring for Unix-alikes**
+### Build a CRAN package
 
-1. Edit `configure.ac`
-2. Create `configure` with `autoconf` (do not edit it by hand)
+From the root of the repository, run the following.
 
 ```shell
-autoconf \
-  --verbose \
-  --output configure \
-  configure.ac
+sh build-cran-package.sh
 ```
 
-3. Edit `src/Makevars.in`
+This will create a file `lightgbm_${VERSION}.tar.gz`, where `VERSION` is the version of `LightGBM`.
 
-At build time (e.g. `R CMD INSTALL`), `configure` will be run and used to create a file `src/Makevars`, using `Makevars.in` as a template.
+### Standard Installation from CRAN package
 
-**Configuring for Windows**
+After building the package, install it with a command like the following:
 
-1. Edit `configure.win` directly.
-2. Edit `src/Makevars.win.in`
+```shell
+R CMD install lightgbm_*.tar.gz
+```
 
-Install from source with GPU on Linux or Mac:
+#### Custom Installation (Linux, Mac)
+
+You can use `--configure-args` to build a GPU-enabled version of the package.
 
 ```shell
 Rscript build_r.R --skip-install
@@ -143,7 +142,20 @@ R CMD INSTALL \
     lightgbm_2.3.2.tar.gz
 ```
 
-R on Windows does not support `--configure-args`. To install from source with GPU on Windows, set environment variable `LGB_USE_GPU` to `true`.
+To change the compiler used when installing the package, you can create a file `~/.R/Makevars` which overrides `CC` (`C` compiler) and `CXX` (`C++` compiler). For example, to use `gcc` instead of `clang` on Mac, you could use something like the following:
+
+```make
+# ~/.R/Makevars
+CC=gcc-8
+CXX=g++-8
+CXX11=g++-8
+```
+
+#### Custom Installation (Windows)
+
+Since R on Windows does not support the use of `--configure-args`, building a GPU-enabled version of the package on Windows requires the use of an environment variable.
+
+To install from source with GPU on Windows, set environment variable `LGB_USE_GPU` to `true`.
 
 ```shell
 setx LGB_USE_GPU "true"
@@ -158,30 +170,37 @@ echo %LGB_USE_GPU%
 If it shows `true`, you should see the flag `-DUSE_GPU` in the compiler messages.
 
 ```shell
-R CMD INSTALL lightgbm_2.3.2.tar.gz
+R CMD install lightgbm_*.tar.gz
 ```
 
-You can change the compiler used by editing a file `~/.R/Makevars`. Any variables you define there will take precedence over those defined by the `configure` script or `Makevars.in` in the R package's source.
+### Changing the CRAN package
 
-For example, to use `gcc` instead of `clang++` on Mac, create a  `~/.R/Makevars` which contains the following.
+A lot of details are handled automatically by `R CMD build` and `R CMD install`, so it can be difficult to understand how the files in the R package are related to each other. An extensive treatment of those details is available in ["Writing R Extensions"](https://cran.r-project.org/doc/manuals/r-release/R-exts.html).
 
-```make
-CC=gcc-8
-CXX=g++-8
-CXX11=g++-8
+This section briefly explains the key files for building a CRAN package. To update the package, edit the files relevant to your change and re-run the steps in `Build a CRAN package`.
+
+**Linux or Mac**
+
+At build time, `configure` will be run and used to create a file `Makevars`, using `Makevars.in` as a template.
+
+1. Edit `configure.ac`
+2. Create `configure` with `autoconf`. Do not edit it by hand.
+
+```shell
+autoconf \
+  --verbose \
+  --output configure \
+    configure.ac
 ```
 
-Testing on CRAN's Windows setup
+3. Edit `src/Makevars.in`
 
-```
-Rscript build_r.R --skip-install
-Rscript --vanilla -e "
-  devtools::check_win_devel(
-    pkg = 'lightgbm_r',
-    email = 'jaylamb20@gmail.com'
-  )
-  "
-```
+**Configuring for Windows**
+
+At build time, `configure.win` will be run and used to create a file `Makevars.win`, using `Makevars.win.in` as a template.
+
+1. Edit `configure.win` directly
+2. Edit `src/Makevars.win.in`
 
 External (Unofficial) Repositories
 ----------------------------------
