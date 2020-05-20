@@ -91,8 +91,8 @@ if ($env:COMPILER -ne "MSVC") {
     # git repo around. This is to protect against the use of relative paths
     # like ../../CMakeLists.txt that would only work if you are in the repoo
     $R_CMD_CHECK_DIR="tmp-r-cmd-check"
-    New-Item -Path "C:\" -Name $R_CMD_CHECK_DIR -ItemType "directory"
-    Move-Item -Path "$PKG_TARBALL" -Destination "C:\$R_CMD_CHECK_DIR\" ; Check-Output  $?
+    New-Item -Path "C:\" -Name $R_CMD_CHECK_DIR -ItemType "directory" > $null
+    Move-Item -Path "$PKG_TARBALL" -Destination "C:\$R_CMD_CHECK_DIR\" > $null
     cd "C:\$R_CMD_CHECK_DIR\"
   }
 
