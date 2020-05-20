@@ -23,7 +23,7 @@ $env:PATH = "$RTOOLS_INSTALL_PATH/bin;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R
 $env:CRAN_MIRROR = "https://cloud.r-project.org/"
 $env:CTAN_MIRROR = "https://ctan.math.illinois.edu/systems/win32/miktex/tm/packages/"
 
-if (($env:COMPILER -eq "MINGW") -and ($env:BUILD_TYPE -eq "cmake")) {
+if (($env:COMPILER -eq "MINGW") -and ($env:R_BUILD_TYPE -eq "cmake")) {
   $env:CXX = "$RTOOLS_INSTALL_PATH/mingw_64/bin/g++.exe"
   $env:CC = "$RTOOLS_INSTALL_PATH/mingw_64/bin/gcc.exe"
 }
@@ -33,7 +33,7 @@ tzutil /s "GMT Standard Time"
 [Void][System.IO.Directory]::CreateDirectory($env:R_LIB_PATH)
 $env:LGB_VER = Get-Content -Path VERSION.txt -TotalCount 1
 
-if (($env:COMPILER -eq "MINGW") -and ($env:BUILD_TYPE -eq "cmake")) {
+if (($env:COMPILER -eq "MINGW") -and ($env:R_BUILD_TYPE -eq "cmake")) {
   Write-Output "Telling R to use MinGW"
   $install_libs = "$env:BUILD_SOURCESDIRECTORY/R-package/src/install.libs.R"
   ((Get-Content -path $install_libs -Raw) -replace 'use_mingw <- FALSE','use_mingw <- TRUE') | Set-Content -Path $install_libs
@@ -79,9 +79,10 @@ Rscript --vanilla -e "options(install.packages.check.source = 'no'); install.pac
 Write-Output "Building R package"
 
 # R CMD check is not used for MSVC builds
-$PKG_TARBALL = "lightgbm_$env:LGB_VER.tar.gz"
 if ($env:COMPILER -ne "MSVC") {
 
+  $PKG_FILE_NAME = "lightgbm_$env:LGB_VER.tar.gz"
+  $LOG_FILE_NAME = "lightgbm.Rcheck/00check.log"
   if ($env:R_BUILD_TYPE -eq "cmake") {
     Rscript build_r.R --skip-install ; Check-Output $?
   } elseif ($env:R_BUILD_TYPE -eq "cran") {
@@ -92,13 +93,13 @@ if ($env:COMPILER -ne "MSVC") {
     # like ../../CMakeLists.txt that would only work if you are in the repoo
     $R_CMD_CHECK_DIR="tmp-r-cmd-check"
     New-Item -Path "C:\" -Name $R_CMD_CHECK_DIR -ItemType "directory" > $null
-    Move-Item -Path "$PKG_TARBALL" -Destination "C:\$R_CMD_CHECK_DIR\" > $null
+    Move-Item -Path "$PKG_FILE_NAME" -Destination "C:\$R_CMD_CHECK_DIR\" > $null
     cd "C:\$R_CMD_CHECK_DIR\"
   }
 
   $env:_R_CHECK_FORCE_SUGGESTS_ = 0
   Write-Output "Running R CMD check as CRAN"
-  R.exe CMD check --no-multiarch --as-cran ${PKG_TARBALL} ; $check_succeeded = $?
+  R.exe CMD check --no-multiarch --as-cran ${PKG_FILE_NAME} ; $check_succeeded = $?
 
   Write-Output "R CMD check build logs:"
   $INSTALL_LOG_FILE_NAME = "lightgbm.Rcheck\00install.out"
@@ -107,7 +108,6 @@ if ($env:COMPILER -ne "MSVC") {
   Check-Output $check_succeeded
 
   Write-Output "Looking for issues with R CMD check results"
-  $LOG_FILE_NAME = "lightgbm.Rcheck/00check.log"
   if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "WARNING" -Quiet) {
       echo "WARNINGS have been found by R CMD check!"
       Check-Output $False
