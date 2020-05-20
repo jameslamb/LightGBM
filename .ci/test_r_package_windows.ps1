@@ -12,16 +12,20 @@ function Download-File-With-Retries {
   } while(!$?);
 }
 
+# Rtools has to be installed at C:\Rtools\
+#     * https://stackoverflow.com/a/46619260/3986677
+$RTOOLS_INSTALL_PATH = "C:\Rtools"
+
 $env:R_WINDOWS_VERSION = "3.6.3"
 $env:R_LIB_PATH = "$env:BUILD_SOURCESDIRECTORY/RLibrary" -replace '[\\]', '/'
 $env:R_LIBS = "$env:R_LIB_PATH"
-$env:PATH = "$env:R_LIB_PATH/Rtools/bin;" + "$env:R_LIB_PATH/Rtools/mingw_64/bin;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + $env:PATH
+$env:PATH = "$RTOOLS_INSTALL_PATH/bin;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + $env:PATH
 $env:CRAN_MIRROR = "https://cloud.r-project.org/"
 $env:CTAN_MIRROR = "https://ctan.math.illinois.edu/systems/win32/miktex/tm/packages/"
 
 if (($env:COMPILER -eq "MINGW") -and ($env:BUILD_TYPE -eq "cmake")) {
-  $env:CXX = "$env:R_LIB_PATH/Rtools/mingw_64/bin/g++.exe"
-  $env:CC = "$env:R_LIB_PATH/Rtools/mingw_64/bin/gcc.exe"
+  $env:CXX = "$RTOOLS_INSTALL_PATH/mingw_64/bin/g++.exe"
+  $env:CC = "$RTOOLS_INSTALL_PATH/mingw_64/bin/gcc.exe"
 }
 
 cd $env:BUILD_SOURCESDIRECTORY
@@ -46,17 +50,14 @@ Start-Process -FilePath R-win.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT 
 Write-Output "Done installing R"
 
 Write-Output "Installing Rtools"
-Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH/Rtools" ; Check-Output $?
+Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$RTOOLS_INSTALL_PATH" ; Check-Output $?
 Write-Output "Done installing Rtools"
-
-# Get-ChildItem -Path "$env:R_LIB_PATH/Rtools/" -Recurse
-# Check-Output $false
 
 # MiKTeX and pandoc can be skipped on non-MINGW builds CMake, since we don't
 # build the package documentation for those.
 #
 # MiKTeX always needs to be built to test a CRAN package.
-if (($env:COMPILER -eq "MINGW") -or ($env:BUILD_TYPE -eq "cran")) {
+if (($env:COMPILER -eq "MINGW") -or ($env:R_BUILD_TYPE -eq "cran")) {
     Write-Output "Downloading MiKTeX"
     Download-File-With-Retries -url "https://miktex.org/download/win/miktexsetup-x64.zip" -destfile "miktexsetup-x64.zip"
     Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -132,7 +133,7 @@ if ($env:COMPILER -ne "MSVC") {
 # Checking that we actually got the expected compiler. The R package has some logic
 # to fail back to MinGW if MSVC fails, but for CI builds we need to check that the correct
 # compiler was used.
-if ($env:BUILD_TYPE -eq "cmake") {
+if ($env:R_BUILD_TYPE -eq "cmake") {
   $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern "Check for working CXX compiler.*$env:COMPILER"
   if ($checks.Matches.length -eq 0) {
     Write-Output "The wrong compiler was used. Check the build logs."
@@ -140,7 +141,7 @@ if ($env:BUILD_TYPE -eq "cmake") {
   }
 }
 
-if (($env:COMPILER -eq "MSVC") -and ($env:BUILD_TYPE -eq "cmake")) {
+if (($env:COMPILER -eq "MSVC") -and ($env:R_BUILD_TYPE -eq "cmake")) {
   Write-Output "Running tests with testthat.R"
   cd R-package/tests
   Rscript testthat.R ; Check-Output $?
