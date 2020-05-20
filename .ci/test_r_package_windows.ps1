@@ -15,7 +15,7 @@ function Download-File-With-Retries {
 $env:R_WINDOWS_VERSION = "3.6.3"
 $env:R_LIB_PATH = "$env:BUILD_SOURCESDIRECTORY/RLibrary" -replace '[\\]', '/'
 $env:R_LIBS = "$env:R_LIB_PATH"
-$env:PATH = "$env:R_LIB_PATH/Rtools/bin;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + $env:PATH
+$env:PATH = "$env:R_LIB_PATH/Rtools/bin;" + "$env:R_LIB_PATH/Rtools/mingw_64/bin;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + $env:PATH
 $env:CRAN_MIRROR = "https://cloud.r-project.org/"
 $env:CTAN_MIRROR = "https://ctan.math.illinois.edu/systems/win32/miktex/tm/packages/"
 
@@ -27,6 +27,7 @@ if (($env:COMPILER -eq "MINGW") -and ($env:BUILD_TYPE -eq "cmake")) {
 cd $env:BUILD_SOURCESDIRECTORY
 tzutil /s "GMT Standard Time"
 [Void][System.IO.Directory]::CreateDirectory($env:R_LIB_PATH)
+$env:LGB_VER = Get-Content -Path VERSION.txt -TotalCount 1
 
 if (($env:COMPILER -eq "MINGW") -and ($env:BUILD_TYPE -eq "cmake")) {
   Write-Output "Telling R to use MinGW"
@@ -47,6 +48,9 @@ Write-Output "Done installing R"
 Write-Output "Installing Rtools"
 Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH/Rtools" ; Check-Output $?
 Write-Output "Done installing Rtools"
+
+# Get-ChildItem -Path "$env:R_LIB_PATH/Rtools/" -Recurse
+# Check-Output $false
 
 # MiKTeX and pandoc can be skipped on non-MINGW builds CMake, since we don't
 # build the package documentation for those.
@@ -74,22 +78,20 @@ Rscript --vanilla -e "options(install.packages.check.source = 'no'); install.pac
 Write-Output "Building R package"
 
 # R CMD check is not used for MSVC builds
+$PKG_TARBALL = "lightgbm_$env:LGB_VER.tar.gz"
 if ($env:COMPILER -ne "MSVC") {
 
   if ($env:R_BUILD_TYPE -eq "cmake") {
     Rscript build_r.R --skip-install ; Check-Output $?
-    $PKG_TARBALL = Get-Item *.tar.gz
   } elseif ($env:R_BUILD_TYPE -eq "cran") {
     sh build-cran-package.sh ; Check-Output $?
-    $PKG_TARBALL = Get-Item *.tar.gz
     # Test CRAN source .tar.gz in a directory that is not this repo or below it.
     # When people install.packages('lightgbm'), they won't have the LightGBM
     # git repo around. This is to protect against the use of relative paths
     # like ../../CMakeLists.txt that would only work if you are in the repoo
     $R_CMD_CHECK_DIR="tmp-r-cmd-check"
     New-Item -Path "C:\" -Name $R_CMD_CHECK_DIR -ItemType "directory"
-    Get-ChildItem -Path "C:/$R_CMD_CHECK_DIR/"
-    Move-Item -Path "$PKG_TARBALL" -Destination "C:/$R_CMD_CHECK_DIR/" ; Check-Output  $?
+    Move-Item -Path "$PKG_TARBALL" -Destination "C:\$R_CMD_CHECK_DIR\" ; Check-Output  $?
     cd "C:\$R_CMD_CHECK_DIR\"
   }
 

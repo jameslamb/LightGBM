@@ -84,7 +84,6 @@ if test "${ac_mm_malloc}" = "yes";
 then
     LGB_CPPFLAGS="${LGB_CPPFLAGS} -DMM_MALLOC=1"
 fi
-echo "LGB_CPPFLAGS: ${LGB_CPPFLAGS}"
 
 # Generate Makevars.win from Makevars.win.in
 sed -e \
