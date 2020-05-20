@@ -76,10 +76,10 @@ Write-Output "Building R package"
 # R CMD check is not used for MSVC builds
 if ($env:COMPILER -ne "MSVC") {
 
-  if ($env:R_BUILD_TYPE == "cmake") {
+  if ($env:R_BUILD_TYPE -eq "cmake") {
     Rscript build_r.R --skip-install ; Check-Output $?
     $PKG_TARBALL = Get-Item *.tar.gz
-  } elseif ($env:R_BUILD_TYPE == "cran") {
+  } elseif ($env:R_BUILD_TYPE -eq "cran") {
     sh build-cran-package.sh ; Check-Output $?
     $PKG_TARBALL = Get-Item *.tar.gz
     # Test CRAN source .tar.gz in a directory that is not this repo or below it.
