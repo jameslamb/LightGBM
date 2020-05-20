@@ -88,7 +88,8 @@ if ($env:COMPILER -ne "MSVC") {
     # like ../../CMakeLists.txt that would only work if you are in the repoo
     $R_CMD_CHECK_DIR="tmp-r-cmd-check"
     New-Item -Path "C:\" -Name $R_CMD_CHECK_DIR -ItemType "directory"
-    Move-Item -Path "$PKG_TARBALL" -Destination "C:\$R_CMD_CHECK_DIR\"
+    Get-ChildItem -Path "C:/$R_CMD_CHECK_DIR/"
+    Move-Item -Path "$PKG_TARBALL" -Destination "C:/$R_CMD_CHECK_DIR/" ; Check-Output  $?
     cd "C:\$R_CMD_CHECK_DIR\"
   }
 

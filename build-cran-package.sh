@@ -96,3 +96,5 @@ cd ${ORIG_WD}
 R CMD build \
     --keep-empty-dirs \
     lightgbm_r
+
+echo "Done building R package"
