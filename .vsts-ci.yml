@@ -135,6 +135,10 @@ jobs:
       # bdist:
       #   TASK: bdist
   steps:
+  - powershell: git config --global core.autocrlf false
+    displayName: $(System.JobName) git config core.autocrlf
+  - checkout: self
+    fetchDepth: 5
   - powershell: |
       Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
       Write-Host "##vso[task.setvariable variable=AZURE]true"
