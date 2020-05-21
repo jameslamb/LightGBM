@@ -1,3 +1,4 @@
+### configure.ac                    -*- Autoconf -*-
 # Template used by Autoconf to generate 'configure' script. For more see:
 #   * https://unconj.ca/blog/an-autoconf-primer-for-r-package-authors.html
 #   * https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Configure-and-cleanup
