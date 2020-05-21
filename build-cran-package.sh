@@ -28,11 +28,11 @@ cd ${TEMP_R_DIR}
 
     # recreate configure script if autoconf is available,
     # otherwise skip it 
-    echo "Creating 'configure' script with Autoconf"
-    autoconf \
-        --output configure \
-        configure.ac \
-        || echo "warning: not recreating configure from configure.ac"
+    # echo "Creating 'configure' script with Autoconf"
+    # autoconf \
+    #     --output configure \
+    #     configure.ac \
+    #     || echo "warning: not recreating configure from configure.ac"
 
     rm -r autom4te.cache || echo "no autoconf cache found"
 
