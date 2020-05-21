@@ -1,9 +1,9 @@
-# Template used by Autoconf to generate 'configure' script. For more see
+# Template used by Autoconf to generate 'configure' script. For more see:
 #   * https://unconj.ca/blog/an-autoconf-primer-for-r-package-authors.html
 #   * https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Configure-and-cleanup
 
 AC_PREREQ(2.69)
-AC_INIT([lightgbm],[2.3.2], [], [lightgbm], [])
+AC_INIT([lightgbm], [2.3.2], [], [lightgbm], [])
 
 ###########################
 # find compiler and flags #
@@ -14,10 +14,10 @@ AC_MSG_RESULT([${R_HOME}])
 
 # set up CPP flags
 # find the compiler and compiler flags used by R.
-: ${R_HOME=`R RHOME`}
+: ${R_HOME=`R HOME`}
 if test -z "${R_HOME}"; then
-  echo "could not determine R_HOME"
-  exit 1
+    echo "could not determine R_HOME"
+    exit 1
 fi
 CC=`"${R_HOME}/bin/R" CMD config CC`
 CXX=`"${R_HOME}/bin/R" CMD config CXX11`
@@ -82,7 +82,7 @@ AC_LANG_CONFTEST(
 ${CC} -o conftest conftest.c 2>/dev/null && ./conftest && ac_mmprefetch=yes
 AC_MSG_RESULT([${ac_mmprefetch}])
 if test "${ac_mmprefetch}" = yes; then
-     LGB_CPPFLAGS+=" -DMM_PREFETCH=1"
+    LGB_CPPFLAGS+=" -DMM_PREFETCH=1"
 fi
 
 ############
@@ -110,7 +110,7 @@ AC_LANG_CONFTEST(
 ${CC} -o conftest conftest.c 2>/dev/null && ./conftest && ac_mm_malloc=yes
 AC_MSG_RESULT([${ac_mm_malloc}])
 if test "${ac_mm_malloc}" = yes; then
-     LGB_CPPFLAGS+=" -DMM_MALLOC=1"
+    LGB_CPPFLAGS+=" -DMM_MALLOC=1"
 fi
 
 ##########
@@ -142,14 +142,15 @@ then
             )
         ]
     )
-    ${CC} -o conftest conftest.c /usr/local/lib/libomp.dylib -Xclang  -fopenmp 2>/dev/null && ./conftest && ac_pkg_openmp=yes
+    ${CC} -o conftest conftest.c ${OPENMP_LIB} ${OPENMP_CXXFLAGS} 2>/dev/null && ./conftest && ac_pkg_openmp=yes
     AC_MSG_RESULT([${ac_pkg_openmp}])
     if test "${ac_pkg_openmp}" = no; then
         OPENMP_CXXFLAGS=''
         OPENMP_LIB=''
         echo '***********************************************************************************************'
-        echo ' OpenMP is unavailable on this Mac OSX system. LightGBM code may be slower as a result.'
-        echo ' To use all CPU cores for training jobs, you should  install OpenMP by running'
+        echo ' OpenMP is unavailable on this Mac OSX system. LightGBM code may be slower as a result'
+        echo ' To use all CPU cores for training jobs, you should install OpenMP by running'
+        echo ''
         echo '     brew install libomp'
         echo '***********************************************************************************************'
     fi
