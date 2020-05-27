@@ -50,7 +50,7 @@ Write-Output "Done installing Rtools"
 
 Write-Output "Installing dependencies"
 $packages = "c('data.table', 'jsonlite', 'httr', 'Matrix', 'processx', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
-Rscript --vanilla -e "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH')" | Out-String -Stream
+Rscript --vanilla -e "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH')" > $null
 
 # MiKTeX and pandoc can be skipped on non-MINGW builds, since we don't
 # build the package documentation for those
@@ -65,7 +65,7 @@ if ($env:COMPILER -eq "MINGW") {
     .\miktex\download\miktexsetup.exe --remote-package-repository="$env:CTAN_MIRROR" --portable="$env:R_LIB_PATH/miktex" --quiet install ; Check-Output $?
     Write-Output "Done installing MiKTeX"
 
-    initexmf --set-config-value [MPM]AutoInstall=1 | Out-String -Stream
+    initexmf --set-config-value [MPM]AutoInstall=1 > $null
     conda install -q -y --no-deps pandoc
 }
 
