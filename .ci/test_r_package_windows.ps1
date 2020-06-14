@@ -154,7 +154,7 @@ if ($env:COMPILER -ne "MSVC") {
 } else {
   $env:TMPDIR = $env:USERPROFILE  # to avoid warnings about incremental builds inside a temp directory
   $INSTALL_LOG_FILE_NAME = "$env:BUILD_SOURCESDIRECTORY\00install_out.txt"
-  Rscript "out_file <- file(tempfile(), open = 'wt'); sink(out_file, type = 'message'); source('build_r.R'); sink()" *> $INSTALL_LOG_FILE_NAME ; $install_succeeded = $?
+  Rscript "out_file <- file('build-stderr.txt', open = 'wt'); sink(out_file, type = 'message'); source('build_r.R'); sink()" *> $INSTALL_LOG_FILE_NAME ; $install_succeeded = $?
 
   Write-Output "----- build and install logs -----"
   Get-Content -Path "$INSTALL_LOG_FILE_NAME"
