@@ -116,7 +116,7 @@ if ($env:COMPILER -ne "MSVC") {
 
 Write-Output "Installing dependencies"
 $packages = "c('data.table', 'jsonlite', 'Matrix', 'processx', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
-Rscript --vanilla -e "out_file <- file('file.txt', open = 'wt'); sink(out_file, type = 'message'); options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH'); sink()" ; Check-Output $?
+Rscript --vanilla -e "out_file <- file(tempfile(), open = 'wt'); sink(out_file, type = 'message'); options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH'); sink()" ; Check-Output $?
 
 Write-Output "Building R package"
 
@@ -154,7 +154,7 @@ if ($env:COMPILER -ne "MSVC") {
 } else {
   $env:TMPDIR = $env:USERPROFILE  # to avoid warnings about incremental builds inside a temp directory
   $INSTALL_LOG_FILE_NAME = "$env:BUILD_SOURCESDIRECTORY\00install_out.txt"
-  Rscript --vanilla -e "out_file <- file('$INSTALL_LOG_FILE_NAME', open = 'wt'); sink(out_file, type = 'message'); source('build_r.R'); sink()" ; Check-Output $?
+  Rscript "out_file <- file(tempfile(), open = 'wt'); sink(out_file, type = 'message'); source('build_r.R'); sink()" *> $INSTALL_LOG_FILE_NAME ; $install_succeeded = $?
 
   Write-Output "----- build and install logs -----"
   Get-Content -Path "$INSTALL_LOG_FILE_NAME"
@@ -184,7 +184,7 @@ if ($env:COMPILER -eq "MINGW") {
 if ($env:COMPILER -eq "MSVC") {
   Write-Output "Running tests with testthat.R"
   cd R-package/tests
-  Rscript --vanilla -e "out_file <- file('testthat.txt', open = 'wt'); sink(out_file, type = 'message'); source('testthat.R'); sink()" ; Check-Output $?
+  Rscript --vanilla -e "out_file <- file(tempfile(), open = 'wt'); sink(out_file, type = 'message'); source('testthat.R'); sink()" ; Check-Output $?
 }
 
 Write-Output "No issues were found checking the R package"
