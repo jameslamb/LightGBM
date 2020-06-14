@@ -1,3 +1,8 @@
+# NOTE: R code in this file is sometimes decorated with
+#       calls to sink(). This is to avoid failures in GitHub Actions
+#       PowerShell jobs.
+#       See https://github.community/t/powershell-steps-fail-nondeterministically/115496
+
 # Download a file and retry upon failure. This looks like
 # an infinite loop but CI-level timeouts will kill it
 function Download-File-With-Retries {
@@ -149,7 +154,8 @@ if ($env:COMPILER -ne "MSVC") {
 } else {
   $env:TMPDIR = $env:USERPROFILE  # to avoid warnings about incremental builds inside a temp directory
   $INSTALL_LOG_FILE_NAME = "$env:BUILD_SOURCESDIRECTORY\00install_out.txt"
-  Rscript build_r.R *> $INSTALL_LOG_FILE_NAME ; $install_succeeded = $?
+  Rscript --vanilla -e "out_file <- file('$INSTALL_LOG_FILE_NAME', open = 'wt'); sink(out_file, type = 'message'); source('build_r.R'); sink()" ; Check-Output $?
+
   Write-Output "----- build and install logs -----"
   Get-Content -Path "$INSTALL_LOG_FILE_NAME"
   Write-Output "----- end of build and install logs -----"
@@ -178,7 +184,7 @@ if ($env:COMPILER -eq "MINGW") {
 if ($env:COMPILER -eq "MSVC") {
   Write-Output "Running tests with testthat.R"
   cd R-package/tests
-  Rscript testthat.R ; Check-Output $?
+  Rscript --vanilla -e "out_file <- file('testthat.txt', open = 'wt'); sink(out_file, type = 'message'); source('testthat.R'); sink()" ; Check-Output $?
 }
 
 Write-Output "No issues were found checking the R package"
