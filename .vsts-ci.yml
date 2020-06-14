@@ -24,23 +24,23 @@ jobs:
   strategy:
     maxParallel: 6
     matrix:
-      regular:
-        TASK: regular
-      sdist:
-        TASK: sdist
-        PYTHON_VERSION: 3.5
+      # regular:
+      #   TASK: regular
+      # sdist:
+      #   TASK: sdist
+      #   PYTHON_VERSION: 3.5
       bdist:
         TASK: bdist
         PYTHON_VERSION: 3.7
-      inference:
-        TASK: if-else
-      mpi_source:
-        TASK: mpi
-        METHOD: source
-      gpu_source:
-        TASK: gpu
-        METHOD: source
-        PYTHON_VERSION: 3.6
+      # inference:
+      #   TASK: if-else
+      # mpi_source:
+      #   TASK: mpi
+      #   METHOD: source
+      # gpu_source:
+      #   TASK: gpu
+      #   METHOD: source
+      #   PYTHON_VERSION: 3.6
   steps:
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
@@ -74,12 +74,12 @@ jobs:
   strategy:
     maxParallel: 3
     matrix:
-      regular:
-        TASK: regular
-        PYTHON_VERSION: 3.7
-      sdist:
-        TASK: sdist
-        PYTHON_VERSION: 3.5
+      # regular:
+      #   TASK: regular
+      #   PYTHON_VERSION: 3.7
+      # sdist:
+      #   TASK: sdist
+      #   PYTHON_VERSION: 3.5
       bdist:
         TASK: bdist
   steps:
@@ -111,22 +111,22 @@ jobs:
   strategy:
     maxParallel: 5
     matrix:
-      r_package_msvc:
-        TASK: r-package
-        COMPILER: MSVC
-        R_VERSION: 3.6
-        TOOLCHAIN: MSVC
-      r_package_msys:
-        TASK: r-package
-        COMPILER: MINGW
-        R_VERSION: 4.0
-        TOOLCHAIN: MSYS
-      regular:
-        TASK: regular
-        PYTHON_VERSION: 3.6
-      sdist:
-        TASK: sdist
-        PYTHON_VERSION: 2.7
+      # r_package_msvc:
+      #   TASK: r-package
+      #   COMPILER: MSVC
+      #   R_VERSION: 3.6
+      #   TOOLCHAIN: MSVC
+      # r_package_msys:
+      #   TASK: r-package
+      #   COMPILER: MINGW
+      #   R_VERSION: 4.0
+      #   TOOLCHAIN: MSYS
+      # regular:
+      #   TASK: regular
+      #   PYTHON_VERSION: 3.6
+      # sdist:
+      #   TASK: sdist
+      #   PYTHON_VERSION: 2.7
       bdist:
         TASK: bdist
   steps:
