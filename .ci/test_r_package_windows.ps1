@@ -29,12 +29,12 @@ function Download-Miktex-Setup {
     Download-File-With-Retries $FileToDownload $destfile
 }
 
-# NOTE: External utilities like R.exe / Rscript.exe writing to stderr (even for harmless
-#       status information) can cause failures in GitHub Actions PowerShell jobs.
-#       See https://github.community/t/powershell-steps-fail-nondeterministically/115496
+# External utilities like R.exe / Rscript.exe writing to stderr (even for harmless
+# status information) can cause failures in GitHub Actions PowerShell jobs.
+# See https://github.community/t/powershell-steps-fail-nondeterministically/115496
 #
-#       Using standard Powershell redirection does not work to avoid these errors.
-#       This function uses R's built-in redirection mechanism, sink().
+# Using standard Powershell redirection does not work to avoid these errors.
+# This function uses R's built-in redirection mechanism, sink().
 function Run-R-Code-Suppress-Stderr {
   param(
     [string]$rcode
@@ -126,6 +126,19 @@ if ($env:COMPILER -ne "MSVC") {
 Write-Output "Installing dependencies"
 $packages = "c('data.table', 'jsonlite', 'Matrix', 'processx', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
 Run-R-Code-Suppress-Stderr "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH')" ; Check-Output $?
+
+Write-Output "Adding redirection to testthat.R"
+# Add redirection to testthat.R so it doesn't write to stderr
+# and trigger failures on some Powershell versions.
+#
+# See description of Run-R-Code-Suppress-Stderr for more information
+$testthat_file = "$env:BUILD_SOURCESDIRECTORY\R-package\tests\testthat.R"
+$testthat_content = Get-Content -Path "$testthat_file"
+Remove-Item -Path "$testthat_file"
+Add-Content -Path "$testthat_file" -Value "out_file <- file(tempfile(), open = 'wt')"
+Add-Content -Path "$testthat_file" -Value "sink(out_file, type = 'message')"
+Add-Content -Path "$testthat_file" -Value $testthat_content
+Add-Content -Path "$testthat_file" -Value "sink()"
 
 Write-Output "Building R package"
 

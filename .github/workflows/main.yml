@@ -71,41 +71,6 @@ jobs:
           ######################
           # extra testing jobs #
           ######################
-          - os: windows-latest
-            task: r-package
-            compiler: MSVC
-            toolchain: MSVC
-            r_version: 4.0
-          # - os: windows-latest
-          #   task: r-package
-          #   compiler: MINGW
-          #   toolchain: MSYS
-          #   r_version: 4.0
-          - os: windows-latest
-            task: r-package
-            compiler: MSVC
-            toolchain: MSVC
-            r_version: 4.0
-          # - os: windows-latest
-          #   task: r-package
-          #   compiler: MINGW
-          #   toolchain: MSYS
-          #   r_version: 4.0
-          - os: windows-latest
-            task: r-package
-            compiler: MSVC
-            toolchain: MSVC
-            r_version: 4.0
-          # - os: windows-latest
-          #   task: r-package
-          #   compiler: MINGW
-          #   toolchain: MSYS
-          #   r_version: 4.0
-          - os: windows-latest
-            task: r-package
-            compiler: MSVC
-            toolchain: MSVC
-            r_version: 4.0
     steps:
       - name: Checkout repository
         uses: actions/checkout@v1
