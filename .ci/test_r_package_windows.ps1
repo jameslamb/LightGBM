@@ -1,8 +1,3 @@
-# NOTE: R code in this file is sometimes decorated with
-#       calls to sink(). This is to avoid failures in GitHub Actions
-#       PowerShell jobs.
-#       See https://github.community/t/powershell-steps-fail-nondeterministically/115496
-
 # Download a file and retry upon failure. This looks like
 # an infinite loop but CI-level timeouts will kill it
 function Download-File-With-Retries {
@@ -32,6 +27,20 @@ function Download-Miktex-Setup {
     $SetupExeFile = $PageContent.Links.href | Select-String -Pattern 'miktexsetup.*'
     $FileToDownload = "${archive}/${SetupExeFile}"
     Download-File-With-Retries $FileToDownload $destfile
+}
+
+# NOTE: External utilities like R.exe / Rscript.exe writing to stderr (even for harmless
+#       status information) can cause failures in GitHub Actions PowerShell jobs.
+#       See https://github.community/t/powershell-steps-fail-nondeterministically/115496
+#
+#       Using standard Powershell redirection does not work to avoid these errors.
+#       This function uses R's built-in redirection mechanism, sink().
+function Run-R-Code-Suppress-Stderr {
+  param(
+    [string]$rcode
+  )
+  $decorated_code = "out_file <- file(tempfile(), open = 'wt'); sink(out_file, type = 'message'); $rcode; sink()"
+  Rscript --vanilla -e $decorated_code
 }
 
 $env:R_LIB_PATH = "$env:BUILD_SOURCESDIRECTORY/RLibrary" -replace '[\\]', '/'
@@ -116,13 +125,13 @@ if ($env:COMPILER -ne "MSVC") {
 
 Write-Output "Installing dependencies"
 $packages = "c('data.table', 'jsonlite', 'Matrix', 'processx', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
-Rscript --vanilla -e "out_file <- file(tempfile(), open = 'wt'); sink(out_file, type = 'message'); options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH'); sink()" ; Check-Output $?
+Run-R-Code-Suppress-Stderr "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH')" ; Check-Output $?
 
 Write-Output "Building R package"
 
 # R CMD check is not used for MSVC builds
 if ($env:COMPILER -ne "MSVC") {
-  Rscript build_r.R --skip-install ; Check-Output $?
+  Run-R-Code-Suppress-Stderr "commandArgs <- function(...){'--skip-install'}; source('build_r.R')"; Check-Output $?
 
   $PKG_FILE_NAME = Get-Item *.tar.gz
   $LOG_FILE_NAME = "lightgbm.Rcheck/00check.log"
@@ -154,8 +163,7 @@ if ($env:COMPILER -ne "MSVC") {
 } else {
   $env:TMPDIR = $env:USERPROFILE  # to avoid warnings about incremental builds inside a temp directory
   $INSTALL_LOG_FILE_NAME = "$env:BUILD_SOURCESDIRECTORY\00install_out.txt"
-  Rscript --vanilla -e "print(getwd())"
-  Rscript --vanilla -e "out_file <- file(tempfile(), open = 'wt'); sink(out_file, type = 'message'); source('build_r.R'); sink()" *> $INSTALL_LOG_FILE_NAME ; $install_succeeded = $?
+  Run-R-Code-Suppress-Stderr "source('build_r.R')" *> $INSTALL_LOG_FILE_NAME ; $install_succeeded = $?
 
   Write-Output "----- build and install logs -----"
   Get-Content -Path "$INSTALL_LOG_FILE_NAME"
@@ -185,7 +193,7 @@ if ($env:COMPILER -eq "MINGW") {
 if ($env:COMPILER -eq "MSVC") {
   Write-Output "Running tests with testthat.R"
   cd R-package/tests
-  Rscript --vanilla -e "out_file <- file(tempfile(), open = 'wt'); sink(out_file, type = 'message'); source('testthat.R'); sink()" ; Check-Output $?
+  Run-R-Code-Suppress-Stderr "source('testthat.R')" ; Check-Output $?
 }
 
 Write-Output "No issues were found checking the R package"
