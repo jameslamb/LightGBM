@@ -408,6 +408,7 @@ lightgbm_r/*
 lightgbm*.tar.gz
 lightgbm.Rcheck/
 **/autom4te.cache/
+*.def
 
 # Files created by R examples and tests
 **/lgb-Dataset.data

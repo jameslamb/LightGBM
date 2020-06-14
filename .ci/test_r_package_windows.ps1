@@ -12,16 +12,52 @@ function Download-File-With-Retries {
   } while(!$?);
 }
 
+# mirrors that host miktexsetup.zip do so only with explicitly-named
+# files like miktexsetup-2.4.5.zip, so hard-coding a link to an archive as a
+# way to peg to one mirror does not work
+#
+# this function will find the specific version of miktexsetup.zip at a given
+# mirror and download it
+function Download-Miktex-Setup {
+    param(
+        [string]$archive,
+        [string]$destfile
+    )
+    $PageContent = Invoke-WebRequest -Uri $archive -Method Get
+    $SetupExeFile = $PageContent.Links.href | Select-String -Pattern 'miktexsetup.*'
+    $FileToDownload = "${archive}/${SetupExeFile}"
+    Download-File-With-Retries $FileToDownload $destfile
+}
+
 # Rtools has to be installed at C:\Rtools\
 #     * https://stackoverflow.com/a/46619260/3986677
 $RTOOLS_INSTALL_PATH = "C:\Rtools"
 
-$env:R_WINDOWS_VERSION = "3.6.3"
 $env:R_LIB_PATH = "$env:BUILD_SOURCESDIRECTORY/RLibrary" -replace '[\\]', '/'
 $env:R_LIBS = "$env:R_LIB_PATH"
-$env:PATH = "$RTOOLS_INSTALL_PATH/bin;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + $env:PATH
+$env:PATH = "$RTOOLS_INSTALL_PATH/bin;" + "$env:R_LIB_PATH/Rtools/usr/bin;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + $env:PATH
 $env:CRAN_MIRROR = "https://cloud.r-project.org/"
-$env:CTAN_MIRROR = "https://ctan.math.illinois.edu/systems/win32/miktex/tm/packages/"
+$env:CTAN_MIRROR = "https://ctan.math.illinois.edu/systems/win32/miktex"
+$env:CTAN_MIKTEX_ARCHIVE = "$env:CTAN_MIRROR/setup/windows-x64/"
+$env:CTAN_PACKAGE_ARCHIVE = "$env:CTAN_MIRROR/tm/packages/"
+
+# Get details needed for installing R components
+#
+# NOTES:
+#    * some paths and file names are different on R4.0
+$env:R_MAJOR_VERSION = $env:R_VERSION.split('.')[0]
+if ($env:R_MAJOR_VERSION -eq "3") {
+  $env:RTOOLS_MINGW_BIN = "$env:R_LIB_PATH/Rtools/mingw_64/bin"
+  $env:RTOOLS_EXE_FILE = "Rtools35.exe"
+  $env:R_WINDOWS_VERSION = "3.6.3"
+} elseif ($env:R_MAJOR_VERSION -eq "4") {
+  $env:RTOOLS_MINGW_BIN = "$env:R_LIB_PATH/Rtools/mingw64/bin"
+  $env:RTOOLS_EXE_FILE = "rtools40-x86_64.exe"
+  $env:R_WINDOWS_VERSION = "4.0.0"
+} else {
+  Write-Output "[ERROR] Unrecognized R version: $env:R_VERSION"
+  Check-Output $false
+}
 
 if (($env:COMPILER -eq "MINGW") -and ($env:R_BUILD_TYPE -eq "cmake")) {
   $env:CXX = "$RTOOLS_INSTALL_PATH/mingw_64/bin/g++.exe"
@@ -33,16 +69,25 @@ tzutil /s "GMT Standard Time"
 [Void][System.IO.Directory]::CreateDirectory($env:R_LIB_PATH)
 $env:LGB_VER = Get-Content -Path VERSION.txt -TotalCount 1
 
-if (($env:COMPILER -eq "MINGW") -and ($env:R_BUILD_TYPE -eq "cmake")) {
+if (($env:TOOLCHAIN -eq "MINGW") -and ($env:R_BUILD_TYPE -eq "cmake")) {
   Write-Output "Telling R to use MinGW"
   $install_libs = "$env:BUILD_SOURCESDIRECTORY/R-package/src/install.libs.R"
-  ((Get-Content -path $install_libs -Raw) -replace 'use_mingw <- FALSE','use_mingw <- TRUE') | Set-Content -Path $install_libs
+  ((Get-Content -Path $install_libs -Raw) -Replace 'use_mingw <- FALSE','use_mingw <- TRUE') | Set-Content -Path $install_libs
+if (($env:TOOLCHAIN -eq "MSYS") -and ($env:R_BUILD_TYPE -eq "cmake")) {
+  Write-Output "Telling R to use MSYS"
+  $install_libs = "$env:BUILD_SOURCESDIRECTORY/R-package/src/install.libs.R"
+  ((Get-Content -Path $install_libs -Raw) -Replace 'use_msys2 <- FALSE','use_msys2 <- TRUE') | Set-Content -Path $install_libs
+} elseif ($env:TOOLCHAIN -eq "MSVC") {
+  # no customization for MSVC
+} else {
+  Write-Output "[ERROR] Unrecognized compiler: $env:TOOLCHAIN"
+  Check-Output $false
 }
 
 # download R and RTools
 Write-Output "Downloading R and Rtools"
 Download-File-With-Retries -url "https://cloud.r-project.org/bin/windows/base/old/$env:R_WINDOWS_VERSION/R-$env:R_WINDOWS_VERSION-win.exe" -destfile "R-win.exe"
-Download-File-With-Retries -url "https://cloud.r-project.org/bin/windows/Rtools/Rtools35.exe" -destfile "Rtools.exe"
+Download-File-With-Retries -url "https://cloud.r-project.org/bin/windows/Rtools/$env:RTOOLS_EXE_FILE" -destfile "Rtools.exe"
 
 # Install R
 Write-Output "Installing R"
@@ -53,19 +98,18 @@ Write-Output "Installing Rtools"
 Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$RTOOLS_INSTALL_PATH" ; Check-Output $?
 Write-Output "Done installing Rtools"
 
-# MiKTeX and pandoc can be skipped on non-MINGW builds CMake, since we don't
+# MiKTeX and pandoc can be skipped on non-MinGW builds, since we don't
 # build the package documentation for those.
 #
 # MiKTeX always needs to be built to test a CRAN package.
 if (($env:COMPILER -eq "MINGW") -or ($env:R_BUILD_TYPE -eq "cran")) {
-    Write-Output "Downloading MiKTeX"
-    Download-File-With-Retries -url "https://miktex.org/download/win/miktexsetup-x64.zip" -destfile "miktexsetup-x64.zip"
+    Download-Miktex-Setup "$env:CTAN_MIKTEX_ARCHIVE" "miktexsetup-x64.zip"
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     [System.IO.Compression.ZipFile]::ExtractToDirectory("miktexsetup-x64.zip", "miktex")
     Write-Output "Setting up MiKTeX"
-    .\miktex\miktexsetup.exe --remote-package-repository="$env:CTAN_MIRROR" --local-package-repository=./miktex/download --package-set=essential --quiet download ; Check-Output $?
+    .\miktex\miktexsetup.exe --remote-package-repository="$env:CTAN_PACKAGE_ARCHIVE" --local-package-repository=./miktex/download --package-set=essential --quiet download ; Check-Output $?
     Write-Output "Installing MiKTeX"
-    .\miktex\download\miktexsetup.exe --remote-package-repository="$env:CTAN_MIRROR" --portable="$env:R_LIB_PATH/miktex" --quiet install ; Check-Output $?
+    .\miktex\download\miktexsetup.exe --remote-package-repository="$env:CTAN_PACKAGE_ARCHIVE" --portable="$env:R_LIB_PATH/miktex" --quiet install ; Check-Output $?
     Write-Output "Done installing MiKTeX"
 
     initexmf --set-config-value [MPM]AutoInstall=1
@@ -80,9 +124,11 @@ Write-Output "Building R package"
 
 # R CMD check is not used for MSVC builds
 if ($env:COMPILER -ne "MSVC") {
+  Rscript build_r.R --skip-install ; Check-Output $?
 
   $PKG_FILE_NAME = "lightgbm_$env:LGB_VER.tar.gz"
   $LOG_FILE_NAME = "lightgbm.Rcheck/00check.log"
+
   if ($env:R_BUILD_TYPE -eq "cmake") {
     Rscript build_r.R --skip-install ; Check-Output $?
   } elseif ($env:R_BUILD_TYPE -eq "cran") {
@@ -116,12 +162,13 @@ if ($env:COMPILER -ne "MSVC") {
   $note_str = Get-Content "${LOG_FILE_NAME}" | Select-String -Pattern ' NOTE' | Out-String ; Check-Output $?
   $relevant_line = $note_str -match '.*Status: (\d+) NOTE.*'
   $NUM_CHECK_NOTES = $matches[1]
-  $ALLOWED_CHECK_NOTES = 3
+  $ALLOWED_CHECK_NOTES = 4
   if ([int]$NUM_CHECK_NOTES -gt $ALLOWED_CHECK_NOTES) {
       Write-Output "Found ${NUM_CHECK_NOTES} NOTEs from R CMD check. Only ${ALLOWED_CHECK_NOTES} are allowed"
       Check-Output $False
   }
 } else {
+  $env:TMPDIR = $env:USERPROFILE  # to avoid warnings about incremental builds inside a temp directory
   $INSTALL_LOG_FILE_NAME = "$env:BUILD_SOURCESDIRECTORY\00install_out.txt"
   Rscript build_r.R *> $INSTALL_LOG_FILE_NAME ; $install_succeeded = $?
   Write-Output "----- build and install logs -----"
@@ -133,10 +180,21 @@ if ($env:COMPILER -ne "MSVC") {
 # Checking that we actually got the expected compiler. The R package has some logic
 # to fail back to MinGW if MSVC fails, but for CI builds we need to check that the correct
 # compiler was used.
+$checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern "Check for working CXX compiler.*$env:COMPILER"
 if ($env:R_BUILD_TYPE -eq "cmake") {
   $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern "Check for working CXX compiler.*$env:COMPILER"
   if ($checks.Matches.length -eq 0) {
     Write-Output "The wrong compiler was used. Check the build logs."
+    Check-Output $False
+  }
+}
+
+# Checking that we got the right toolchain for MinGW. If using MinGW, both
+# MinGW and MSYS toolchains are supported
+if ($env:COMPILER -eq "MINGW") {
+  $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern "Trying to build with.*$env:TOOLCHAIN"
+  if ($checks.Matches.length -eq 0) {
+    Write-Output "The wrong toolchain was used. Check the build logs."
     Check-Output $False
   }
 }

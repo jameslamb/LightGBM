@@ -117,23 +117,28 @@ jobs:
   pool:
     vmImage: 'vs2017-win2016'
   strategy:
-    maxParallel: 4
+    maxParallel: 5
     matrix:
-      r_package_cmake:
+      r_package_msvc:
         TASK: r-package
         COMPILER: MSVC
+        R_VERSION: 3.6
+        TOOLCHAIN: MSVC
         R_BUILD_TYPE: cmake
-      r_package_cran:
+      r_package_msys:
         TASK: r-package
+        COMPILER: MINGW
+        R_VERSION: 4.0
+        TOOLCHAIN: MSYS
         R_BUILD_TYPE: cran
-      # regular:
-      #   TASK: regular
-      #   PYTHON_VERSION: 3.6
-      # sdist:
-      #   TASK: sdist
-      #   PYTHON_VERSION: 2.7
-      # bdist:
-      #   TASK: bdist
+      regular:
+        TASK: regular
+        PYTHON_VERSION: 3.6
+      sdist:
+        TASK: sdist
+        PYTHON_VERSION: 2.7
+      bdist:
+        TASK: bdist
   steps:
   - powershell: git config --global core.autocrlf false
     displayName: $(System.JobName) git config core.autocrlf
