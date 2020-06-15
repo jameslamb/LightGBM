@@ -155,8 +155,9 @@ if ($env:COMPILER -ne "MSVC") {
   $env:_R_CHECK_FORCE_SUGGESTS_ = 0
   Write-Output "Running R CMD check as CRAN"
 
-  #Run-R-Code-Redirect-Stderr "processx::run(command = 'R.exe', args = c('CMD', 'check', '--no-multiarch', '--as-cran', '$PKG_FILE_NAME'), windows_verbatim_args = TRUE, echo = TRUE)" ; Check-Output $?
-  Rscript --vanilla -e "processx::run(command = 'R.exe', args = c('CMD', 'check', '--no-multiarch', '--as-cran', '$PKG_FILE_NAME'), windows_verbatim_args = TRUE, echo = TRUE)" ; Check-Output $?
+  Write-Output "processx::run(command = 'R.exe', args = c('CMD', 'check', '--no-multiarch', '--as-cran', '$PKG_FILE_NAME'), windows_verbatim_args = FALSE, echo = TRUE)"
+  Run-R-Code-Redirect-Stderr "processx::run(command = 'R.exe', args = c('CMD', 'check', '--no-multiarch', '--as-cran', '$PKG_FILE_NAME'), windows_verbatim_args = FALSE, echo = TRUE)" ; Check-Output $?
+  #Rscript --vanilla -e "processx::run(command = 'R.exe', args = c('CMD', 'check', '--no-multiarch', '--as-cran', '$PKG_FILE_NAME'), windows_verbatim_args = FALSE, echo = TRUE)" ; Check-Output $?
 
   Write-Output "R CMD check build logs:"
   Get-ChildItem
