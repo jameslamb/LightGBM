@@ -150,6 +150,7 @@ if ($env:COMPILER -ne "MSVC") {
   Run-R-Code-Redirect-Stderr "commandArgs <- function(...){'--skip-install'}; source('build_r.R')"; Check-Output $?
 
   $PKG_FILE_NAME = Get-Item *.tar.gz
+  $PKG_FILE_NAME = $PKG_FILE_NAME -replace '[\\]', '/'
   $LOG_FILE_NAME = "lightgbm.Rcheck/00check.log"
 
   $env:_R_CHECK_FORCE_SUGGESTS_ = 0
