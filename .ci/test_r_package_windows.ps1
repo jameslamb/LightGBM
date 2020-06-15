@@ -121,7 +121,7 @@ if ($env:COMPILER -ne "MSVC") {
     Write-Output "Done installing MiKTeX"
 
     #initexmf --set-config-value [MPM]AutoInstall=1
-    Run-R-Code-Redirect-Stderr "processx::run(command = 'initexmf', args = c('--set-config-value', '[MPM]AutoInstall=1), windows_verbatim_args = TRUE)"
+    Run-R-Code-Redirect-Stderr "processx::run(command = 'initexmf', args = c('--set-config-value', '[MPM]AutoInstall=1), windows_verbatim_args = TRUE, echo = TRUE)"
 
     conda install -q -y --no-deps pandoc
 }
