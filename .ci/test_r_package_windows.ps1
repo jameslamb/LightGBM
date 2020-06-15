@@ -119,7 +119,9 @@ if ($env:COMPILER -ne "MSVC") {
     .\miktex\download\miktexsetup.exe --remote-package-repository="$env:CTAN_PACKAGE_ARCHIVE" --portable="$env:R_LIB_PATH/miktex" --quiet install ; Check-Output $?
     Write-Output "Done installing MiKTeX"
 
-    initexmf --set-config-value [MPM]AutoInstall=1
+    #initexmf --set-config-value [MPM]AutoInstall=1
+    Run-R-Code-Suppress-Stderr "processx::run(command = 'initexmf', args = c('--set-config-value', '[MPM]AutoInstall=1), windows_verbatim_args = TRUE)"
+
     conda install -q -y --no-deps pandoc
 }
 
@@ -151,7 +153,10 @@ if ($env:COMPILER -ne "MSVC") {
 
   $env:_R_CHECK_FORCE_SUGGESTS_ = 0
   Write-Output "Running R CMD check as CRAN"
-  R.exe CMD check --no-multiarch --as-cran ${PKG_FILE_NAME} ; $check_succeeded = $?
+
+  # This is hard to read, but necessary
+  # see https://github.community/t/powershell-steps-fail-nondeterministically/115496
+  Run-R-Code-Suppress-Stderr "processx::run(command = 'R', args = c('CMD', 'check', '--no-multiarch', '--as-cran', '$PKG_FILE_NAME'), windows_verbatim_args = TRUE)"
 
   Write-Output "R CMD check build logs:"
   $INSTALL_LOG_FILE_NAME = "$env:BUILD_SOURCESDIRECTORY\lightgbm.Rcheck\00install.out"
