@@ -124,7 +124,8 @@ if ($env:COMPILER -ne "MSVC") {
     .\miktex\download\miktexsetup.exe --remote-package-repository="$env:CTAN_PACKAGE_ARCHIVE" --portable="$env:R_LIB_PATH/miktex" --quiet install ; Check-Output $?
     Write-Output "Done installing MiKTeX"
 
-    Run-R-Code-Redirect-Stderr "processx::run(command = 'initexmf', args = c('--set-config-value', '[MPM]AutoInstall=1), windows_verbatim_args = TRUE, echo = TRUE)" ; Check-Output $?
+    initexmf --set-config-value [MPM]AutoInstall=1
+    #Run-R-Code-Redirect-Stderr "processx::run(command = 'initexmf', args = c('--set-config-value', '[MPM]AutoInstall=1), windows_verbatim_args = TRUE, echo = TRUE)" ; Check-Output $?
 
     conda install -q -y --no-deps pandoc
 }
