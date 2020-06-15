@@ -53,21 +53,21 @@ jobs:
             compiler: MINGW
             toolchain: MINGW
             r_version: 3.6
-          - os: windows-latest
-            task: r-package
-            compiler: MINGW
-            toolchain: MSYS
-            r_version: 4.0
-          - os: windows-latest
-            task: r-package
-            compiler: MSVC
-            toolchain: MSVC
-            r_version: 3.6
-          - os: windows-latest
-            task: r-package
-            compiler: MSVC
-            toolchain: MSVC
-            r_version: 4.0
+          # - os: windows-latest
+          #   task: r-package
+          #   compiler: MINGW
+          #   toolchain: MSYS
+          #   r_version: 4.0
+          # - os: windows-latest
+          #   task: r-package
+          #   compiler: MSVC
+          #   toolchain: MSVC
+          #   r_version: 3.6
+          # - os: windows-latest
+          #   task: r-package
+          #   compiler: MSVC
+          #   toolchain: MSVC
+          #   r_version: 4.0
           ######################
           # extra testing jobs #
           ######################

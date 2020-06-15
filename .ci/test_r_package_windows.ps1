@@ -34,8 +34,9 @@ function Download-Miktex-Setup {
 # See https://github.community/t/powershell-steps-fail-nondeterministically/115496
 #
 # Using standard Powershell redirection does not work to avoid these errors.
-# This function uses R's built-in redirection mechanism, sink().
-function Run-R-Code-Suppress-Stderr {
+# This function uses R's built-in redirection mechanism, sink(). Any place where
+# this function is used is a command that writes harmless messages to stderr
+function Run-R-Code-Redirect-Stderr {
   param(
     [string]$rcode
   )
@@ -120,20 +121,20 @@ if ($env:COMPILER -ne "MSVC") {
     Write-Output "Done installing MiKTeX"
 
     #initexmf --set-config-value [MPM]AutoInstall=1
-    Run-R-Code-Suppress-Stderr "processx::run(command = 'initexmf', args = c('--set-config-value', '[MPM]AutoInstall=1), windows_verbatim_args = TRUE)"
+    Run-R-Code-Redirect-Stderr "processx::run(command = 'initexmf', args = c('--set-config-value', '[MPM]AutoInstall=1), windows_verbatim_args = TRUE)"
 
     conda install -q -y --no-deps pandoc
 }
 
 Write-Output "Installing dependencies"
 $packages = "c('data.table', 'jsonlite', 'Matrix', 'processx', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
-Run-R-Code-Suppress-Stderr "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH')" ; Check-Output $?
+Run-R-Code-Redirect-Stderr "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH')" ; Check-Output $?
 
-Write-Output "Adding redirection to testthat.R"
 # Add redirection to testthat.R so it doesn't write to stderr
 # and trigger failures on some Powershell versions.
 #
-# See description of Run-R-Code-Suppress-Stderr for more information
+# See description of Run-R-Code-Redirect-Stderr for more information
+Write-Output "Adding redirection to testthat.R"
 $testthat_file = "$env:BUILD_SOURCESDIRECTORY\R-package\tests\testthat.R"
 $testthat_content = Get-Content -Path "$testthat_file"
 Remove-Item -Path "$testthat_file"
@@ -146,7 +147,7 @@ Write-Output "Building R package"
 
 # R CMD check is not used for MSVC builds
 if ($env:COMPILER -ne "MSVC") {
-  Run-R-Code-Suppress-Stderr "commandArgs <- function(...){'--skip-install'}; source('build_r.R')"; Check-Output $?
+  Run-R-Code-Redirect-Stderr "commandArgs <- function(...){'--skip-install'}; source('build_r.R')"; Check-Output $?
 
   $PKG_FILE_NAME = Get-Item *.tar.gz
   $LOG_FILE_NAME = "lightgbm.Rcheck/00check.log"
@@ -154,11 +155,10 @@ if ($env:COMPILER -ne "MSVC") {
   $env:_R_CHECK_FORCE_SUGGESTS_ = 0
   Write-Output "Running R CMD check as CRAN"
 
-  # This is hard to read, but necessary
-  # see https://github.community/t/powershell-steps-fail-nondeterministically/115496
-  Run-R-Code-Suppress-Stderr "processx::run(command = 'R', args = c('CMD', 'check', '--no-multiarch', '--as-cran', '$PKG_FILE_NAME'), windows_verbatim_args = TRUE)"
+  Run-R-Code-Redirect-Stderr "processx::run(command = 'R', args = c('CMD', 'check', '--no-multiarch', '--as-cran', '$PKG_FILE_NAME'), windows_verbatim_args = TRUE)" ; Check-Output $?
 
   Write-Output "R CMD check build logs:"
+  Get-ChildItem
   $INSTALL_LOG_FILE_NAME = "$env:BUILD_SOURCESDIRECTORY\lightgbm.Rcheck\00install.out"
   Get-Content -Path "$INSTALL_LOG_FILE_NAME"
 
@@ -181,7 +181,7 @@ if ($env:COMPILER -ne "MSVC") {
 } else {
   $env:TMPDIR = $env:USERPROFILE  # to avoid warnings about incremental builds inside a temp directory
   $INSTALL_LOG_FILE_NAME = "$env:BUILD_SOURCESDIRECTORY\00install_out.txt"
-  Run-R-Code-Suppress-Stderr "source('build_r.R')" *> $INSTALL_LOG_FILE_NAME ; $install_succeeded = $?
+  Run-R-Code-Redirect-Stderr "source('build_r.R')" *> $INSTALL_LOG_FILE_NAME ; $install_succeeded = $?
 
   Write-Output "----- build and install logs -----"
   Get-Content -Path "$INSTALL_LOG_FILE_NAME"
@@ -211,7 +211,7 @@ if ($env:COMPILER -eq "MINGW") {
 if ($env:COMPILER -eq "MSVC") {
   Write-Output "Running tests with testthat.R"
   cd R-package/tests
-  Run-R-Code-Suppress-Stderr "source('testthat.R')" ; Check-Output $?
+  Run-R-Code-Redirect-Stderr "source('testthat.R')" ; Check-Output $?
 }
 
 Write-Output "No issues were found checking the R package"
