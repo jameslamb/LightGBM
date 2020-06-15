@@ -108,6 +108,10 @@ Write-Output "Installing Rtools"
 Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH/Rtools" ; Check-Output $?
 Write-Output "Done installing Rtools"
 
+Write-Output "Installing dependencies"
+$packages = "c('data.table', 'jsonlite', 'Matrix', 'processx', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
+Run-R-Code-Redirect-Stderr "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH')" ; Check-Output $?
+
 # MiKTeX and pandoc can be skipped on MSVC builds, since we don't
 # build the package documentation for those
 if ($env:COMPILER -ne "MSVC") {
@@ -120,15 +124,10 @@ if ($env:COMPILER -ne "MSVC") {
     .\miktex\download\miktexsetup.exe --remote-package-repository="$env:CTAN_PACKAGE_ARCHIVE" --portable="$env:R_LIB_PATH/miktex" --quiet install ; Check-Output $?
     Write-Output "Done installing MiKTeX"
 
-    #initexmf --set-config-value [MPM]AutoInstall=1
-    Run-R-Code-Redirect-Stderr "processx::run(command = 'initexmf', args = c('--set-config-value', '[MPM]AutoInstall=1), windows_verbatim_args = TRUE, echo = TRUE)"
+    Run-R-Code-Redirect-Stderr "processx::run(command = 'initexmf', args = c('--set-config-value', '[MPM]AutoInstall=1), windows_verbatim_args = TRUE, echo = TRUE)" ; Check-Output $?
 
     conda install -q -y --no-deps pandoc
 }
-
-Write-Output "Installing dependencies"
-$packages = "c('data.table', 'jsonlite', 'Matrix', 'processx', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
-Run-R-Code-Redirect-Stderr "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH')" ; Check-Output $?
 
 # Add redirection to testthat.R so it doesn't write to stderr
 # and trigger failures on some Powershell versions.
@@ -155,13 +154,9 @@ if ($env:COMPILER -ne "MSVC") {
 
   $env:_R_CHECK_FORCE_SUGGESTS_ = 0
   Write-Output "Running R CMD check as CRAN"
-
-  Write-Output "processx::run(command = 'R.exe', args = c('CMD', 'check', '--no-multiarch', '--as-cran', '$PKG_FILE_NAME'), windows_verbatim_args = FALSE, echo = TRUE)"
   Run-R-Code-Redirect-Stderr "processx::run(command = 'R.exe', args = c('CMD', 'check', '--no-multiarch', '--as-cran', '$PKG_FILE_NAME'), windows_verbatim_args = FALSE, echo = TRUE)" ; Check-Output $?
-  #Rscript --vanilla -e "processx::run(command = 'R.exe', args = c('CMD', 'check', '--no-multiarch', '--as-cran', '$PKG_FILE_NAME'), windows_verbatim_args = FALSE, echo = TRUE)" ; Check-Output $?
 
   Write-Output "R CMD check build logs:"
-  Get-ChildItem
   $INSTALL_LOG_FILE_NAME = "$env:BUILD_SOURCESDIRECTORY\lightgbm.Rcheck\00install.out"
   Get-Content -Path "$INSTALL_LOG_FILE_NAME"
 

@@ -8,6 +8,8 @@ on:
     branches:
     - master
 
+# details on the software versions in the images used:
+# https://github.com/actions/virtual-environments
 jobs:
   test:
     name: ${{ matrix.task }} (${{ matrix.os }}, ${{ matrix.compiler }}, R ${{ matrix.r_version }})
@@ -53,24 +55,23 @@ jobs:
             compiler: MINGW
             toolchain: MINGW
             r_version: 3.6
-          # - os: windows-latest
-          #   task: r-package
-          #   compiler: MINGW
-          #   toolchain: MSYS
-          #   r_version: 4.0
-          # - os: windows-latest
-          #   task: r-package
-          #   compiler: MSVC
-          #   toolchain: MSVC
-          #   r_version: 3.6
-          # - os: windows-latest
-          #   task: r-package
-          #   compiler: MSVC
-          #   toolchain: MSVC
-          #   r_version: 4.0
-          ######################
-          # extra testing jobs #
-          ######################
+          - os: windows-latest
+            task: r-package
+            compiler: MINGW
+            toolchain: MSYS
+            r_version: 4.0
+          # Visual Studio 2017
+          - os: windows-2016
+            task: r-package
+            compiler: MSVC
+            toolchain: MSVC
+            r_version: 3.6
+          # Visual Studio 2019
+          - os: windows-2019
+            task: r-package
+            compiler: MSVC
+            toolchain: MSVC
+            r_version: 4.0
     steps:
       - name: Checkout repository
         uses: actions/checkout@v1
