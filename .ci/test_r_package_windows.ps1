@@ -124,8 +124,6 @@ if ($env:COMPILER -ne "MSVC") {
     .\miktex\download\miktexsetup.exe --remote-package-repository="$env:CTAN_PACKAGE_ARCHIVE" --portable="$env:R_LIB_PATH/miktex" --quiet install ; Check-Output $?
     Write-Output "Done installing MiKTeX"
 
-    #initexmf --set-config-value [MPM]AutoInstall=1
-    # this was missing a quote before!
     Run-R-Code-Redirect-Stderr "processx::run(command = 'initexmf', args = c('--set-config-value', '[MPM]AutoInstall=1'), windows_verbatim_args = TRUE, echo = TRUE)" ; Check-Output $?
 
     conda install -q -y --no-deps pandoc
@@ -135,14 +133,14 @@ if ($env:COMPILER -ne "MSVC") {
 # and trigger failures on some Powershell versions.
 #
 # See description of Run-R-Code-Redirect-Stderr for more information
-Write-Output "Adding redirection to testthat.R"
-$testthat_file = "$env:BUILD_SOURCESDIRECTORY\R-package\tests\testthat.R"
-$testthat_content = Get-Content -Path "$testthat_file"
-Remove-Item -Path "$testthat_file"
-Add-Content -Path "$testthat_file" -Value "out_file <- file(tempfile(), open = 'wt')"
-Add-Content -Path "$testthat_file" -Value "sink(out_file, type = 'message')"
-Add-Content -Path "$testthat_file" -Value $testthat_content
-Add-Content -Path "$testthat_file" -Value "sink()"
+# Write-Output "Adding redirection to testthat.R"
+# $testthat_file = "$env:BUILD_SOURCESDIRECTORY\R-package\tests\testthat.R"
+# $testthat_content = Get-Content -Path "$testthat_file"
+# Remove-Item -Path "$testthat_file"
+# Add-Content -Path "$testthat_file" -Value "out_file <- file(tempfile(), open = 'wt')"
+# Add-Content -Path "$testthat_file" -Value "sink(out_file, type = 'message')"
+# Add-Content -Path "$testthat_file" -Value $testthat_content
+# Add-Content -Path "$testthat_file" -Value "sink()"
 
 Write-Output "Building R package"
 
@@ -182,7 +180,6 @@ if ($env:COMPILER -ne "MSVC") {
   $env:TMPDIR = $env:USERPROFILE  # to avoid warnings about incremental builds inside a temp directory
   $INSTALL_LOG_FILE_NAME = "$env:BUILD_SOURCESDIRECTORY\00install_out.txt"
   Run-R-Code-Redirect-Stderr "source('build_r.R')" *> $INSTALL_LOG_FILE_NAME ; $install_succeeded = $?
-
   Write-Output "----- build and install logs -----"
   Get-Content -Path "$INSTALL_LOG_FILE_NAME"
   Write-Output "----- end of build and install logs -----"
