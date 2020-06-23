@@ -10,9 +10,7 @@
 set -e
 
 ORIG_WD=$(pwd)
-echo "woring-dir: ${ORIG_WD}"
 TEMP_R_DIR=$(pwd)/lightgbm_r
-echo "temp-dir: ${TEMP_R_DIR}"
 
 if test -d ${TEMP_R_DIR}; then
     rm -r ${TEMP_R_DIR}

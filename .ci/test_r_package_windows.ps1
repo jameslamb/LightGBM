@@ -141,13 +141,12 @@ Write-Output "Building R package"
 
 # R CMD check is not used for MSVC builds
 if ($env:COMPILER -ne "MSVC") {
-  Run-R-Code-Redirect-Stderr "commandArgs <- function(...){'--skip-install'}; source('build_r.R')"; Check-Output $?
 
   $PKG_FILE_NAME = "lightgbm_$env:LGB_VER.tar.gz"
   $LOG_FILE_NAME = "lightgbm.Rcheck/00check.log"
 
   if ($env:R_BUILD_TYPE -eq "cmake") {
-    Rscript build_r.R --skip-install ; Check-Output $?
+    Run-R-Code-Redirect-Stderr "commandArgs <- function(...){'--skip-install'}; source('build_r.R')"; Check-Output $?
   } elseif ($env:R_BUILD_TYPE -eq "cran") {
     sh build-cran-package.sh ; Check-Output $?
     # Test CRAN source .tar.gz in a directory that is not this repo or below it.
@@ -208,7 +207,7 @@ if ($env:R_BUILD_TYPE -eq "cmake") {
 
 # Checking that we got the right toolchain for MinGW. If using MinGW, both
 # MinGW and MSYS toolchains are supported
-if ($env:COMPILER -eq "MINGW") {
+if (($env:COMPILER -eq "MINGW") -and ($env:R_BUILD_TYPE -eq "cmake")) {
   $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern "Trying to build with.*$env:TOOLCHAIN"
   if ($checks.Matches.length -eq 0) {
     Write-Output "The wrong toolchain was used. Check the build logs."
