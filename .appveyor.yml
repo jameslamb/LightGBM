@@ -13,22 +13,10 @@ branches:
 
 environment:
   matrix:
-    - COMPILER: MINGW
-      TASK: r-package
-      R_BUILD_TYPE: cmake
     - COMPILER: MSVC
-      R_VERSION: 3.6
-      TOOLCHAIN: MINGW
-    - COMPILER: MSVC 
-      TASK: r-package
-      R_VERSION: 4.0
-      TOOLCHAIN: MSVC
-      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-      R_BUILD_TYPE: cmake
-    # - COMPILER: MSVC
-    #   TASK: python
-    # - COMPILER: MINGW
-    #   TASK: python
+      TASK: python
+    - COMPILER: MINGW
+      TASK: python
 
 clone_depth: 5
 
