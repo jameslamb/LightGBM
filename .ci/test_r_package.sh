@@ -97,6 +97,24 @@ conda install \
     --no-deps \
         pandoc
 
+
+which -a g++
+g++ -v
+
+which -a clang++
+clang++ --version
+
+which -a c++
+c++ -v
+
+/Applications/Xcode_11.5.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++ -v
+
+R CMD CONFIG CC
+R CMD CONFIG CXX
+R CMD CONFIG CXX11
+
+exit -1
+
 # Manually install Depends and Imports libraries + 'testthat'
 # to avoid a CI-time dependency on devtools (for devtools::install_deps())
 packages="c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat')"
