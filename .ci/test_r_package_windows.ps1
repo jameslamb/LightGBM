@@ -99,6 +99,12 @@ Write-Output "Downloading R and Rtools"
 Download-File-With-Retries -url "https://cran.r-project.org/bin/windows/base/old/$env:R_WINDOWS_VERSION/R-$env:R_WINDOWS_VERSION-win.exe" -destfile "R-win.exe"
 Download-File-With-Retries -url "https://github.com/microsoft/LightGBM/releases/download/v2.0.12/$env:RTOOLS_EXE_FILE" -destfile "Rtools.exe"
 
+Write-Output "----------- MD5 for Rtools.exe ------------"
+
+Get-FileHash ./Rtools.exe -Algorithm MD5
+
+Write-Output "--------------------------------------------"
+
 # Install R
 Write-Output "Installing R"
 Start-Process -FilePath R-win.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH/R /COMPONENTS=main,x64" ; Check-Output $?
