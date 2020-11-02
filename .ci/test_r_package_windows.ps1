@@ -100,9 +100,12 @@ Download-File-With-Retries -url "https://cran.r-project.org/bin/windows/base/old
 Download-File-With-Retries -url "https://github.com/microsoft/LightGBM/releases/download/v2.0.12/$env:RTOOLS_EXE_FILE" -destfile "Rtools.exe"
 
 Write-Output "----------- MD5 for Rtools.exe ------------"
-
 Get-FileHash ./Rtools.exe -Algorithm MD5
+Write-Output "--------------------------------------------"
 
+Write-Output "----------- where is ld ------------"
+Get-Command ld
+Get-Command ld.exe
 Write-Output "--------------------------------------------"
 
 # Install R
@@ -176,6 +179,13 @@ if ($env:COMPILER -ne "MSVC") {
   Write-Output "Looking for issues with R CMD check results"
   if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "ERROR" -CaseSensitive -Quiet) {
       echo "ERRORs have been found by R CMD check!"
+      Write-Output "-------- CMakeOutput -------------"
+      Get-Content "D:/a/LightGBM/LightGBM/lightgbm.Rcheck/00_pkg_src/lightgbm/src/build/CMakeFiles/CMakeOutput.log"
+      Write-Output "---------------------------------"
+  
+      Write-Output "-------- CMakeError -------------"
+      Get-Content "D:/a/LightGBM/LightGBM/lightgbm.Rcheck/00_pkg_src/lightgbm/src/build/CMakeFiles/CMakeError.log"
+      Write-Output "---------------------------------"
       Check-Output $False
   }
   if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "WARNING" -CaseSensitive -Quiet) {
