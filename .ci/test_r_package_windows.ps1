@@ -103,8 +103,7 @@ Write-Output "----------- MD5 for Rtools.exe ------------"
 Get-FileHash ./Rtools.exe -Algorithm MD5
 Write-Output "--------------------------------------------"
 
-Write-Output "----------- where is ld ------------"
-Get-Command ld
+Write-Output "----------- where is ld (before installs) ------------"
 Get-Command ld.exe
 Write-Output "--------------------------------------------"
 
@@ -116,6 +115,10 @@ Write-Output "Done installing R"
 Write-Output "Installing Rtools"
 ./Rtools.exe /VERYSILENT /SUPPRESSMSGBOXES /DIR=$RTOOLS_INSTALL_PATH ; Check-Output $?
 Write-Output "Done installing Rtools"
+
+Write-Output "----------- where is ld (after installs) ------------"
+Get-Command ld.exe
+Write-Output "--------------------------------------------"
 
 Write-Output "Installing dependencies"
 $packages = "c('data.table', 'jsonlite', 'Matrix', 'processx', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
@@ -182,7 +185,7 @@ if ($env:COMPILER -ne "MSVC") {
       Write-Output "-------- CMakeOutput -------------"
       Get-Content "D:/a/LightGBM/LightGBM/lightgbm.Rcheck/00_pkg_src/lightgbm/src/build/CMakeFiles/CMakeOutput.log"
       Write-Output "---------------------------------"
-  
+
       Write-Output "-------- CMakeError -------------"
       Get-Content "D:/a/LightGBM/LightGBM/lightgbm.Rcheck/00_pkg_src/lightgbm/src/build/CMakeFiles/CMakeError.log"
       Write-Output "---------------------------------"
