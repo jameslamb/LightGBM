@@ -36,7 +36,7 @@ if ($env:R_MAJOR_VERSION -eq "3") {
   # Rtools 3.x has to be installed at C:\Rtools\
   #     * https://stackoverflow.com/a/46619260/3986677
   $RTOOLS_INSTALL_PATH = "C:\Rtools"
-  $env:RTOOLS_MINGW_BIN = "$RTOOLS_INSTALL_PATH\mingw_64\bin"
+  $env:RTOOLS_MINGW_BIN = "$RTOOLS_INSTALL_PATH/mingw_32/bin"
   $env:RTOOLS_EXE_FILE = "rtools35-x86_64.exe"
   $env:R_WINDOWS_VERSION = "3.6.3"
 } elseif ($env:R_MAJOR_VERSION -eq "4") {
@@ -51,7 +51,7 @@ if ($env:R_MAJOR_VERSION -eq "3") {
 
 $env:R_LIB_PATH = "$env:BUILD_SOURCESDIRECTORY/RLibrary" -replace '[\\]', '/'
 $env:R_LIBS = "$env:R_LIB_PATH"
-$env:PATH = "$RTOOLS_INSTALL_PATH\bin;" + "$RTOOLS_INSTALL_PATH\usr\bin;" + "$env:RTOOLS_MINGW_BIN;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + $env:PATH
+$env:PATH = "$RTOOLS_INSTALL_PATH/bin;" + "$RTOOLS_INSTALL_PATH/usr/bin;" + "$env:RTOOLS_MINGW_BIN;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + $env:PATH
 $env:CRAN_MIRROR = "https://cloud.r-project.org/"
 $env:CTAN_MIRROR = "https://ctan.math.illinois.edu/systems/win32/miktex"
 $env:CTAN_PACKAGE_ARCHIVE = "$env:CTAN_MIRROR/tm/packages/"
