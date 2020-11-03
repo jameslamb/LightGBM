@@ -36,7 +36,7 @@ if ($env:R_MAJOR_VERSION -eq "3") {
   # Rtools 3.x has to be installed at C:\Rtools\
   #     * https://stackoverflow.com/a/46619260/3986677
   $RTOOLS_INSTALL_PATH = "C:\Rtools"
-  $env:RTOOLS_MINGW_BIN = "$RTOOLS_INSTALL_PATH/mingw_32/bin"
+  $env:RTOOLS_MINGW_BIN = "$RTOOLS_INSTALL_PATH/mingw_64/bin"
   $env:RTOOLS_EXE_FILE = "rtools35-x86_64.exe"
   $env:R_WINDOWS_VERSION = "3.6.3"
 } elseif ($env:R_MAJOR_VERSION -eq "4") {
