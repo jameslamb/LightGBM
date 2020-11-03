@@ -162,6 +162,12 @@ Rscript -e "print(Sys.which('mingw32-make.exe'))"
 Rscript -e "print(Sys.which('ld.exe'))"
 Write-Output "--------------------------------------------"
 
+Write-Output "-------- check PATH -------"
+$env:PATH -Split ";"
+Write-Output "----------------"
+(gci env:*).GetEnumerator() | Sort-Object Name | Out-String
+Write-Output "----------------"
+
 Write-Output "Building R package"
 
 # R CMD check is not used for MSVC builds
