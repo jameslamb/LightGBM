@@ -116,19 +116,6 @@ Write-Output "Installing Rtools"
 ./Rtools.exe /VERYSILENT /SUPPRESSMSGBOXES /DIR=$RTOOLS_INSTALL_PATH ; Check-Output $?
 Write-Output "Done installing Rtools"
 
-Write-Output "----------- where is ld (after installs) ------------"
-Get-Command ld.exe
-Write-Output "--------------------------------------------"
-
-Write-Output "----------- where is make.exe (after installs) ------------"
-Get-Command make.exe
-Write-Output "--------------------------------------------"
-
-Write-Output "----------- where is mingw32-make.exe (after installs) ------------"
-Get-Command mingw32-make.exe
-Write-Output "--------------------------------------------"
-
-
 Write-Output "Installing dependencies"
 $packages = "c('data.table', 'jsonlite', 'Matrix', 'processx', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
 Run-R-Code-Redirect-Stderr "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH')" ; Check-Output $?
@@ -150,6 +137,30 @@ if (($env:COMPILER -eq "MINGW") -or ($env:R_BUILD_TYPE -eq "cran")) {
     Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'initexmf', args = c('--set-config-value', '[MPM]AutoInstall=1'), echo = TRUE, windows_verbatim_args = TRUE, error_on_status = TRUE)" ; Check-Output $?
     conda install -q -y --no-deps pandoc
 }
+
+Write-Output "----------- (after installs) -------"
+
+Write-Output "----------- where is ld ------------"
+Get-Command ld.exe
+Write-Output "--------------------------------------------"
+
+Write-Output "----------- where is make.exe ------------"
+Get-Command make.exe
+Write-Output "--------------------------------------------"
+
+Write-Output "----------- where is mingw32-make.exe ------------"
+Get-Command mingw32-make.exe
+Write-Output "--------------------------------------------"
+
+Write-Output "----------- where version of CMake do we have ------------"
+cmake --version
+Write-Output "--------------------------------------------"
+
+Write-Output "----------- where R thinks things are ------------"
+Rscript -e "print(Sys.which('make.exe'))"
+Rscript -e "print(Sys.which('mingw32-make.exe'))"
+Rscript -e "print(Sys.which('ld.exe'))"
+Write-Output "--------------------------------------------"
 
 Write-Output "Building R package"
 
