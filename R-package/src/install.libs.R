@@ -137,7 +137,7 @@ lib_folder <- file.path(source_dir, fsep = "/")
 
 WINDOWS_BUILD_TOOLS <- list(
   "MinGW" = c(
-    build_tool = "mingw32-make.exe"
+    build_tool = "C:\\Rtools\\mingw_64\\bin\\mingw32-make.exe"
     , makefile_generator = "MinGW Makefiles"
   )
   , "MSYS2" = c(
