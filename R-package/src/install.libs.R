@@ -155,10 +155,8 @@ if (use_mingw) {
   # Visual Studio install but that fails, fall back to the toolchain
   # supported in Rtools
   if (R_ver >= 4.0) {
-    stop("HEY NOW")
     windows_toolchain <- "MSYS2"
   } else {
-    stop("HEY NOW")
     windows_toolchain <- "MinGW"
   }
 }
