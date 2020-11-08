@@ -23,7 +23,7 @@ OPTION(__INTEGRATE_OPENCL "Set to ON if building LightGBM with the OpenCL ICD Lo
 # https://stackoverflow.com/questions/53633705/cmake-the-c-compiler-is-not-able-to-compile-a-simple-test-program/53635241
 # message(FATAL_ERROR "REACHED THIS LINE")
 
-IF(__BUILD_FOR_R)
+if(__BUILD_FOR_R)
     set(CMAKE_TRY_COMPILE_TARGET_TYPE "STATIC_LIBRARY")
 endif(__BUILD_FOR_R)
 
