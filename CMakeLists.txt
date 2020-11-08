@@ -8,14 +8,6 @@ else()
   cmake_minimum_required(VERSION 3.0)
 endif()
 
-if(USE_CUDA)
-  PROJECT(lightgbm LANGUAGES C CXX CUDA)
-else()
-  PROJECT(lightgbm LANGUAGES C CXX)
-endif()
-
-message(FATAL_ERROR "REACHED THIS LINE")
-
 OPTION(USE_MPI "Enable MPI-based parallel learning" OFF)
 OPTION(USE_OPENMP "Enable OpenMP" ON)
 OPTION(USE_GPU "Enable GPU-accelerated training" OFF)
@@ -27,6 +19,19 @@ OPTION(USE_DEBUG "Set to ON for Debug mode" OFF)
 OPTION(BUILD_STATIC_LIB "Build static library" OFF)
 OPTION(__BUILD_FOR_R "Set to ON if building lib_lightgbm for use with the R package" OFF)
 OPTION(__INTEGRATE_OPENCL "Set to ON if building LightGBM with the OpenCL ICD Loader and its dependencies included" OFF)
+
+# https://stackoverflow.com/questions/53633705/cmake-the-c-compiler-is-not-able-to-compile-a-simple-test-program/53635241
+# message(FATAL_ERROR "REACHED THIS LINE")
+
+IF(__BUILD_FOR_R)
+    set(CMAKE_TRY_COMPILE_TARGET_TYPE "STATIC_LIBRARY")
+endif(__BUILD_FOR_R)
+
+if(USE_CUDA)
+  PROJECT(lightgbm LANGUAGES C CXX CUDA)
+else()
+  PROJECT(lightgbm LANGUAGES C CXX)
+endif()
 
 if(APPLE)
     OPTION(APPLE_OUTPUT_DYLIB "Output dylib shared library" OFF)
