@@ -1,3 +1,5 @@
+message(FATAL_ERROR "REACHED THIS LINE")
+
 if(__INTEGRATE_OPENCL)
   cmake_minimum_required(VERSION 3.11)
 elseif(USE_GPU OR APPLE)

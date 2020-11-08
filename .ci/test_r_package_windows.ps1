@@ -71,10 +71,10 @@ Write-Output "----------------"
 # https://stat.ethz.ch/pipermail/r-package-devel/2020q3/005930.html
 $env:_R_CHECK_SYSTEM_CLOCK_ = 0
 
-# if (($env:COMPILER -eq "MINGW") -and ($env:R_BUILD_TYPE -eq "cmake")) {
-#   $env:CXX = "$env:RTOOLS_MINGW_BIN/g++.exe"
-#   $env:CC = "$env:RTOOLS_MINGW_BIN/gcc.exe"
-# }
+if (($env:COMPILER -eq "MINGW") -and ($env:R_BUILD_TYPE -eq "cmake")) {
+  $env:CXX = "$env:RTOOLS_MINGW_BIN/g++.exe"
+  $env:CC = "$env:RTOOLS_MINGW_BIN/gcc.exe"
+}
 
 cd $env:BUILD_SOURCESDIRECTORY
 tzutil /s "GMT Standard Time"
