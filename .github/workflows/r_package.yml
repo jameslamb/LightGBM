@@ -20,46 +20,46 @@ jobs:
           ################
           # CMake builds #
           ################
-          - os: ubuntu-latest
-            task: r-package
-            compiler: gcc
-            r_version: 3.6
-            build_type: cmake
-          - os: ubuntu-latest
-            task: r-package
-            compiler: gcc
-            r_version: 4.0
-            build_type: cmake
-          - os: ubuntu-latest
-            task: r-package
-            compiler: clang
-            r_version: 3.6
-            build_type: cmake
-          - os: ubuntu-latest
-            task: r-package
-            compiler: clang
-            r_version: 4.0
-            build_type: cmake
-          - os: macOS-latest
-            task: r-package
-            compiler: gcc
-            r_version: 3.6
-            build_type: cmake
-          - os: macOS-latest
-            task: r-package
-            compiler: gcc
-            r_version: 4.0
-            build_type: cmake
-          - os: macOS-latest
-            task: r-package
-            compiler: clang
-            r_version: 3.6
-            build_type: cmake
-          - os: macOS-latest
-            task: r-package
-            compiler: clang
-            r_version: 4.0
-            build_type: cmake
+          # - os: ubuntu-latest
+          #   task: r-package
+          #   compiler: gcc
+          #   r_version: 3.6
+          #   build_type: cmake
+          # - os: ubuntu-latest
+          #   task: r-package
+          #   compiler: gcc
+          #   r_version: 4.0
+          #   build_type: cmake
+          # - os: ubuntu-latest
+          #   task: r-package
+          #   compiler: clang
+          #   r_version: 3.6
+          #   build_type: cmake
+          # - os: ubuntu-latest
+          #   task: r-package
+          #   compiler: clang
+          #   r_version: 4.0
+          #   build_type: cmake
+          # - os: macOS-latest
+          #   task: r-package
+          #   compiler: gcc
+          #   r_version: 3.6
+          #   build_type: cmake
+          # - os: macOS-latest
+          #   task: r-package
+          #   compiler: gcc
+          #   r_version: 4.0
+          #   build_type: cmake
+          # - os: macOS-latest
+          #   task: r-package
+          #   compiler: clang
+          #   r_version: 3.6
+          #   build_type: cmake
+          # - os: macOS-latest
+          #   task: r-package
+          #   compiler: clang
+          #   r_version: 4.0
+          #   build_type: cmake
           - os: windows-latest
             task: r-package
             compiler: MINGW
@@ -95,16 +95,16 @@ jobs:
             toolchain: MSYS
             r_version: 4.0
             build_type: cran
-          - os: ubuntu-latest
-            task: r-package
-            compiler: gcc
-            r_version: 4.0
-            build_type: cran
-          - os: macOS-latest
-            task: r-package
-            compiler: clang
-            r_version: 4.0
-            build_type: cran
+          # - os: ubuntu-latest
+          #   task: r-package
+          #   compiler: gcc
+          #   r_version: 4.0
+          #   build_type: cran
+          # - os: macOS-latest
+          #   task: r-package
+          #   compiler: clang
+          #   r_version: 4.0
+          #   build_type: cran
     steps:
       - name: Prevent conversion of line endings on Windows
         if: startsWith(matrix.os, 'windows')
@@ -117,6 +117,8 @@ jobs:
           submodules: true
       - name: Install pandoc
         uses: r-lib/actions/setup-pandoc@v1
+      - name: Install tinytex
+        uses: r-lib/actions/setup-tinytex@v1
       - name: Setup and run tests on Linux and macOS
         if: matrix.os == 'macOS-latest' || matrix.os == 'ubuntu-latest'
         shell: bash
