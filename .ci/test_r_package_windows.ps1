@@ -147,6 +147,9 @@ if ($env:COMPILER -ne "MSVC") {
   $INSTALL_LOG_FILE_NAME = "lightgbm.Rcheck\00install.out"
   Get-Content -Path "$INSTALL_LOG_FILE_NAME"
 
+  Write-Output "------- MANUAL LOGS -------"
+  Get-Content -Path "lightgbm.Rcheck\lightgbm-manual.log"
+
   Check-Output $check_succeeded
 
   Write-Output "Looking for issues with R CMD check results"
