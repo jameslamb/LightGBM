@@ -60,12 +60,12 @@ jobs:
           #   compiler: clang
           #   r_version: 4.0
           #   build_type: cmake
-          - os: windows-latest
-            task: r-package
-            compiler: MINGW
-            toolchain: MSYS
-            r_version: 4.0
-            build_type: cmake
+          # - os: windows-latest
+          #   task: r-package
+          #   compiler: MINGW
+          #   toolchain: MSYS
+          #   r_version: 4.0
+          #   build_type: cmake
           # # Visual Studio 2017
           # - os: windows-2016
           #   task: r-package
@@ -83,12 +83,12 @@ jobs:
           ###############
           # CRAN builds #
           ###############
-          - os: windows-latest
-            task: r-package
-            compiler: MINGW
-            toolchain: MINGW
-            r_version: 3.6
-            build_type: cran
+          # - os: windows-latest
+          #   task: r-package
+          #   compiler: MINGW
+          #   toolchain: MINGW
+          #   r_version: 3.6
+          #   build_type: cran
           - os: windows-latest
             task: r-package
             compiler: MINGW
@@ -116,10 +116,8 @@ jobs:
           fetch-depth: 5
           submodules: true
       - name: Install pandoc
-        uses: r-lib/actions/setup-pandoc@v1
-      - name: Install tinytex
         if: startsWith(matrix.os, 'windows')
-        uses: r-lib/actions/setup-tinytex@v1
+        uses: r-lib/actions/setup-pandoc@v1
       - name: Setup and run tests on Linux and macOS
         if: matrix.os == 'macOS-latest' || matrix.os == 'ubuntu-latest'
         shell: bash
