@@ -28,6 +28,25 @@ function Run-R-Code-Redirect-Stderr {
   Rscript --vanilla -e $decorated_code
 }
 
+# https://stackoverflow.com/a/39012021/3986677
+function Remove-From-Path {
+  param(
+    [string]$item_to_remove
+  )
+  # Get it
+  $path = $env:path
+  # Remove unwanted elements
+  $path = ($path.Split(';') | Where-Object { $_ -ne "$item_to_remove" }) -join ';'
+  $env:path = $path
+}
+
+Remove-From-Path "C:\Program Files\Git\mingw64\bin"
+Remove-From-Path "C:\Program Files\Git\mingw64\bin\"
+
+Remove-Item "C:\rtools40" -Recurse
+Remove-Item "C:\Program Files\R" -Recurse
+Remove-Item "C:\Program Files\Git\mingw64" -Recurse
+
 # Get details needed for installing R components
 #
 # NOTES:
