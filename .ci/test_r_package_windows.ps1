@@ -13,6 +13,14 @@ function Download-File-With-Retries {
   } while(!$?);
 }
 
+# function Check-Output {
+#   param( [bool]$success )
+#   if (!$success) {
+#     $host.SetShouldExit(-1)
+#     Exit -1
+#   }
+# }
+
 # External utilities like R.exe / Rscript.exe writing to stderr (even for harmless
 # status information) can cause failures in GitHub Actions PowerShell jobs.
 # See https://github.community/t/powershell-steps-fail-nondeterministically/115496
@@ -40,8 +48,14 @@ function Remove-From-Path {
   $env:path = $path
 }
 
-Remove-From-Path "C:\Program Files\Git\mingw64\bin"
-Remove-From-Path "C:\Program Files\Git\mingw64\bin\"
+# $env:GITHUB_ACTIONS = "true"
+# $env:BUILD_SOURCESDIRECTORY = "D:\a\LightGBM\LightGBM"
+# $env:TOOLCHAIN = "MINGW"
+# $env:R_VERSION = "3.6"
+# $env:R_BUILD_TYPE = "cmake"
+# $env:COMPILER = "MINGW"
+# $env:GITHUB_ACTIONS = "true"
+# $env:TASK = "r-package"
 
 Remove-Item "C:\rtools40" -Recurse
 Remove-Item "C:\Program Files\R" -Recurse
@@ -107,7 +121,7 @@ Download-File-With-Retries -url "https://github.com/microsoft/LightGBM/releases/
 
 # Install R
 Write-Output "Installing R"
-Start-Process -FilePath R-win.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH/R /COMPONENTS=main,x64,i386" ; Check-Output $?
+Start-Process -FilePath .\R-win.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH/R /COMPONENTS=main,x64,i386" ; Check-Output $?
 Write-Output "Done installing R"
 
 Write-Output "Installing Rtools"
