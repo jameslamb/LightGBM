@@ -40,14 +40,14 @@ function Remove-From-Path {
   $env:path = $path
 }
 
-# $env:GITHUB_ACTIONS = "true"
-# $env:BUILD_SOURCESDIRECTORY = "D:\a\LightGBM\LightGBM"
-# $env:TOOLCHAIN = "MINGW"
-# $env:R_VERSION = "3.6"
-# $env:R_BUILD_TYPE = "cmake"
-# $env:COMPILER = "MINGW"
-# $env:GITHUB_ACTIONS = "true"
-# $env:TASK = "r-package"
+$env:GITHUB_ACTIONS = "true"
+$env:BUILD_SOURCESDIRECTORY = "D:\a\LightGBM\LightGBM"
+$env:TOOLCHAIN = "MINGW"
+$env:R_VERSION = "3.6"
+$env:R_BUILD_TYPE = "cmake"
+$env:COMPILER = "MINGW"
+$env:GITHUB_ACTIONS = "true"
+$env:TASK = "r-package"
 
 # remove some details that exist in the GitHub Actions images
 # which can cause conflicts with R and other components installed
@@ -131,6 +131,9 @@ Write-Output "Done installing R"
 Write-Output "Installing Rtools"
 ./Rtools.exe /VERYSILENT /SUPPRESSMSGBOXES /DIR=$RTOOLS_INSTALL_PATH ; Check-Output $?
 Write-Output "Done installing Rtools"
+
+# wait for all Rtools files to be written
+Start-Sleep -Seconds 60
 
 Write-Output "Installing dependencies"
 $packages = "c('data.table', 'jsonlite', 'Matrix', 'processx', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
