@@ -13,14 +13,6 @@ function Download-File-With-Retries {
   } while(!$?);
 }
 
-# function Check-Output {
-#   param( [bool]$success )
-#   if (!$success) {
-#     $host.SetShouldExit(-1)
-#     Exit -1
-#   }
-# }
-
 # External utilities like R.exe / Rscript.exe writing to stderr (even for harmless
 # status information) can cause failures in GitHub Actions PowerShell jobs.
 # See https://github.community/t/powershell-steps-fail-nondeterministically/115496
@@ -44,7 +36,7 @@ function Remove-From-Path {
   # Get it
   $path = $env:path
   # Remove unwanted elements
-  $path = ($path.Split(';') | Where-Object { $_ -ne "$item_to_remove" }) -join ';'
+  $path = ($path.Split(';') | Where-Object { $_ -notmatch "$item_to_remove" }) -join ';'
   $env:path = $path
 }
 
@@ -57,9 +49,21 @@ function Remove-From-Path {
 # $env:GITHUB_ACTIONS = "true"
 # $env:TASK = "r-package"
 
-Remove-Item "C:\rtools40" -Recurse
-Remove-Item "C:\Program Files\R" -Recurse
-Remove-Item "C:\Program Files\Git\mingw64" -Recurse
+# remove some details that exist in the GitHub Actions images
+# which can cause conflicts with R and other components installed
+# by this script
+$env:RTOOLS40_HOME = ""
+Remove-From-Path ".*chocolatey.*"
+Remove-From-Path ".*Chocolatey.*"
+Remove-From-Path ".*Git.*mingw64.*"
+Remove-From-Path ".*msys64.*"
+Remove-From-Path ".*rtools40.*"
+Remove-From-Path ".*Strawberry.*"
+
+# ($path.Split(';') | Where-Object { $_ -match ".*Strawberry.*" })
+# Remove-Item "C:\rtools40" -Recurse
+# Remove-Item "C:\Program Files\R" -Recurse
+# Remove-Item "C:\Program Files\Git\mingw64" -Recurse
 
 # Get details needed for installing R components
 #
@@ -139,7 +143,9 @@ Run-R-Code-Redirect-Stderr "options(install.packages.check.source = 'no'); insta
 if (($env:COMPILER -eq "MINGW") -or ($env:R_BUILD_TYPE -eq "cran")) {
     Download-File-With-Retries "https://github.com/microsoft/LightGBM/releases/download/v2.0.12/miktexsetup-4.0-x64.zip" -destfile "miktexsetup-x64.zip"
     Add-Type -AssemblyName System.IO.Compression.FileSystem
-    [System.IO.Compression.ZipFile]::ExtractToDirectory("miktexsetup-x64.zip", "miktex")
+    # [System.IO.Compression.ZipFile]::ExtractToDirectory("miktexsetup-x64.zip", "miktex")
+    expand-archive -path '.\miktexsetup-x64.zip' -destinationpath '.\miktex'
+
     Write-Output "Setting up MiKTeX"
     .\miktex\miktexsetup.exe --remote-package-repository="$env:CTAN_PACKAGE_ARCHIVE" --local-package-repository=./miktex/download --package-set=essential --quiet download ; Check-Output $?
     Write-Output "Installing MiKTeX"
