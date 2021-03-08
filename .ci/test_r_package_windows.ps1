@@ -28,30 +28,16 @@ function Run-R-Code-Redirect-Stderr {
   Rscript --vanilla -e $decorated_code
 }
 
-# https://stackoverflow.com/a/39012021/3986677
+# Remove all items matching some pattern from PATH environment variable
 function Remove-From-Path {
   param(
     [string]$item_to_remove
   )
-  # Get it
-  $path = $env:path
-  # Remove unwanted elements
-  $path = ($path.Split(';') | Where-Object { $_ -notmatch "$item_to_remove" }) -join ';'
-  $env:path = $path
+  $env:path = ($env:path.Split(';') | Where-Object { $_ -notmatch "$item_to_remove" }) -join ';'
 }
 
-$env:GITHUB_ACTIONS = "true"
-$env:BUILD_SOURCESDIRECTORY = "D:\a\LightGBM\LightGBM"
-$env:TOOLCHAIN = "MINGW"
-$env:R_VERSION = "3.6"
-$env:R_BUILD_TYPE = "cmake"
-$env:COMPILER = "MINGW"
-$env:GITHUB_ACTIONS = "true"
-$env:TASK = "r-package"
-
-# remove some details that exist in the GitHub Actions images
-# which can cause conflicts with R and other components installed
-# by this script
+# remove some details that exist in the GitHub Actions images which can
+# cause conflicts with R and other components installed by this script
 $env:RTOOLS40_HOME = ""
 Remove-From-Path ".*chocolatey.*"
 Remove-From-Path ".*Chocolatey.*"
@@ -133,6 +119,7 @@ Write-Output "Installing Rtools"
 Write-Output "Done installing Rtools"
 
 # wait for all Rtools files to be written
+Write-Output "Sleeping to allow Rtools install to finish"
 Start-Sleep -Seconds 60
 
 Write-Output "Installing dependencies"
