@@ -31,12 +31,12 @@ function Run-R-Code-Redirect-Stderr {
 # Remove all items matching some pattern from PATH environment variable
 function Remove-From-Path {
   param(
-    [string]$item_to_remove
+    [string]$pattern_to_remove
   )
-  $env:path = ($env:path.Split(';') | Where-Object { $_ -notmatch "$item_to_remove" }) -join ';'
+  $env:PATH = ($env:PATH.Split(';') | Where-Object { $_ -notmatch "$pattern_to_remove" }) -join ';'
 }
 
-# remove some details that exist in the GitHub Actions images which can
+# remove some details that exist in the GitHub Actions images which might
 # cause conflicts with R and other components installed by this script
 $env:RTOOLS40_HOME = ""
 Remove-From-Path ".*chocolatey.*"
@@ -46,10 +46,7 @@ Remove-From-Path ".*msys64.*"
 Remove-From-Path ".*rtools40.*"
 Remove-From-Path ".*Strawberry.*"
 
-# ($path.Split(';') | Where-Object { $_ -match ".*Strawberry.*" })
-# Remove-Item "C:\rtools40" -Recurse
-# Remove-Item "C:\Program Files\R" -Recurse
-# Remove-Item "C:\Program Files\Git\mingw64" -Recurse
+Remove-Item C:\rtools40 -Force -Recurse -ErrorAction Ignore
 
 # Get details needed for installing R components
 #
@@ -111,16 +108,12 @@ Download-File-With-Retries -url "https://github.com/microsoft/LightGBM/releases/
 
 # Install R
 Write-Output "Installing R"
-Start-Process -FilePath .\R-win.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH/R /COMPONENTS=main,x64,i386" ; Check-Output $?
+Start-Process -FilePath R-win.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH/R /COMPONENTS=main,x64,i386" ; Check-Output $?
 Write-Output "Done installing R"
 
 Write-Output "Installing Rtools"
-./Rtools.exe /VERYSILENT /SUPPRESSMSGBOXES /DIR=$RTOOLS_INSTALL_PATH ; Check-Output $?
+Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /DIR=$RTOOLS_INSTALL_PATH" ; Check-Output $?
 Write-Output "Done installing Rtools"
-
-# wait for all Rtools files to be written
-Write-Output "Sleeping to allow Rtools install to finish"
-Start-Sleep -Seconds 60
 
 Write-Output "Installing dependencies"
 $packages = "c('data.table', 'jsonlite', 'Matrix', 'processx', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
@@ -133,9 +126,7 @@ Run-R-Code-Redirect-Stderr "options(install.packages.check.source = 'no'); insta
 if (($env:COMPILER -eq "MINGW") -or ($env:R_BUILD_TYPE -eq "cran")) {
     Download-File-With-Retries "https://github.com/microsoft/LightGBM/releases/download/v2.0.12/miktexsetup-4.0-x64.zip" -destfile "miktexsetup-x64.zip"
     Add-Type -AssemblyName System.IO.Compression.FileSystem
-    # [System.IO.Compression.ZipFile]::ExtractToDirectory("miktexsetup-x64.zip", "miktex")
-    expand-archive -path '.\miktexsetup-x64.zip' -destinationpath '.\miktex'
-
+    [System.IO.Compression.ZipFile]::ExtractToDirectory("miktexsetup-x64.zip", "miktex")
     Write-Output "Setting up MiKTeX"
     .\miktex\miktexsetup.exe --remote-package-repository="$env:CTAN_PACKAGE_ARCHIVE" --local-package-repository=./miktex/download --package-set=essential --quiet download ; Check-Output $?
     Write-Output "Installing MiKTeX"
