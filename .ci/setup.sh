@@ -1,7 +1,11 @@
 #!/bin/bash
 
 if [[ $OS_NAME == "macos" ]]; then
+    echo "----- start -----"
+    date
     brew update-reset && brew update
+    date
+    echo "----- end -----"
     if  [[ $COMPILER == "clang" ]]; then
         brew install libomp
         if [[ $AZURE == "true" ]]; then
