@@ -6,6 +6,7 @@ if [[ $OS_NAME == "macos" ]]; then
     brew update-reset && brew update
     date
     echo "----- end -----"
+    exit -1
     if  [[ $COMPILER == "clang" ]]; then
         brew install libomp
         if [[ $AZURE == "true" ]]; then
@@ -24,6 +25,7 @@ if [[ $OS_NAME == "macos" ]]; then
     fi
     curl -sL -o conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
 else  # Linux
+    exit -1
     if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then
         # fixes error "unable to initialize frontend: Dialog"
         # https://github.com/moby/moby/issues/27988#issuecomment-462809153
