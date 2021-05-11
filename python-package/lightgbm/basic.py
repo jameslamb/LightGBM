@@ -9,13 +9,12 @@ from copy import deepcopy
 from functools import wraps
 from logging import Logger
 from tempfile import NamedTemporaryFile
-from typing import Any, Dict
+from typing import Any, Dict, List, Set, Union
 
 import numpy as np
 import scipy.sparse
 
-from .compat import (PANDAS_INSTALLED, concat, dt_DataTable, is_dtype_sparse,
-                     pd_DataFrame, pd_Series)
+from .compat import PANDAS_INSTALLED, concat, dt_DataTable, is_dtype_sparse, pd_DataFrame, pd_Series
 from .libpath import find_lib_path
 
 
@@ -127,6 +126,21 @@ def is_numpy_1d_array(data):
     return isinstance(data, np.ndarray) and len(data.shape) == 1
 
 
+def is_numpy_column_array(data):
+    """Check whether data is a column numpy array."""
+    if not isinstance(data, np.ndarray):
+        return False
+    shape = data.shape
+    return len(shape) == 2 and shape[1] == 1
+
+
+def cast_numpy_1d_array_to_dtype(array, dtype):
+    """Cast numpy 1d array to given dtype."""
+    if array.dtype == dtype:
+        return array
+    return array.astype(dtype=dtype, copy=False)
+
+
 def is_1d_list(data):
     """Check whether data is a 1-D list."""
     return isinstance(data, list) and (not data or is_numeric(data[0]))
@@ -135,10 +149,11 @@ def is_1d_list(data):
 def list_to_1d_numpy(data, dtype=np.float32, name='list'):
     """Convert data to numpy 1-D array."""
     if is_numpy_1d_array(data):
-        if data.dtype == dtype:
-            return data
-        else:
-            return data.astype(dtype=dtype, copy=False)
+        return cast_numpy_1d_array_to_dtype(data, dtype)
+    elif is_numpy_column_array(data):
+        _log_warning('Converting column-vector to 1d array')
+        array = data.ravel()
+        return cast_numpy_1d_array_to_dtype(array, dtype)
     elif is_1d_list(data):
         return np.array(data, dtype=dtype, copy=False)
     elif isinstance(data, pd_Series):
@@ -153,7 +168,7 @@ def list_to_1d_numpy(data, dtype=np.float32, name='list'):
 def cfloat32_array_to_numpy(cptr, length):
     """Convert a ctypes float pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_float)):
-        return np.fromiter(cptr, dtype=np.float32, count=length)
+        return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
     else:
         raise RuntimeError('Expected float pointer')
 
@@ -161,7 +176,7 @@ def cfloat32_array_to_numpy(cptr, length):
 def cfloat64_array_to_numpy(cptr, length):
     """Convert a ctypes double pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_double)):
-        return np.fromiter(cptr, dtype=np.float64, count=length)
+        return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
     else:
         raise RuntimeError('Expected double pointer')
 
@@ -169,7 +184,7 @@ def cfloat64_array_to_numpy(cptr, length):
 def cint32_array_to_numpy(cptr, length):
     """Convert a ctypes int pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_int32)):
-        return np.fromiter(cptr, dtype=np.int32, count=length)
+        return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
     else:
         raise RuntimeError('Expected int32 pointer')
 
@@ -177,7 +192,7 @@ def cint32_array_to_numpy(cptr, length):
 def cint64_array_to_numpy(cptr, length):
     """Convert a ctypes int pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_int64)):
-        return np.fromiter(cptr, dtype=np.int64, count=length)
+        return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
     else:
         raise RuntimeError('Expected int64 pointer')
 
@@ -2321,8 +2336,13 @@ class Booster:
         self.__is_predicted_cur_iter = []
         return self
 
-    def set_network(self, machines, local_listen_port=12400,
-                    listen_time_out=120, num_machines=1):
+    def set_network(
+        self,
+        machines: Union[List[str], Set[str], str],
+        local_listen_port: int = 12400,
+        listen_time_out: int = 120,
+        num_machines: int = 1
+    ) -> "Booster":
         """Set the network configuration.
 
         Parameters
@@ -2334,13 +2354,15 @@ class Booster:
         listen_time_out : int, optional (default=120)
             Socket time-out in minutes.
         num_machines : int, optional (default=1)
-            The number of machines for parallel learning application.
+            The number of machines for distributed learning application.
 
         Returns
         -------
         self : Booster
             Booster with set network.
         """
+        if isinstance(machines, (list, set)):
+            machines = ','.join(machines)
         _safe_call(_LIB.LGBM_NetworkInit(c_str(machines),
                                          ctypes.c_int(local_listen_port),
                                          ctypes.c_int(listen_time_out),
@@ -2578,14 +2600,17 @@ class Booster:
 
                 preds : list or numpy 1-D array
                     The predicted values.
+                    Predicted values are returned before any transformation,
+                    e.g. they are raw margin instead of probability of positive class for binary task.
                 train_data : Dataset
                     The training dataset.
                 grad : list or numpy 1-D array
-                    The value of the first order derivative (gradient) for each sample point.
+                    The value of the first order derivative (gradient) of the loss
+                    with respect to the elements of preds for each sample point.
                 hess : list or numpy 1-D array
-                    The value of the second order derivative (Hessian) for each sample point.
+                    The value of the second order derivative (Hessian) of the loss
+                    with respect to the elements of preds for each sample point.
 
-            For binary task, the preds is probability of positive class (or margin in case of specified ``fobj``).
             For multi-class task, the preds is group by class_id first, then group by row_id.
             If you want to get i-th row preds in j-th class, the access way is score[j * num_data + i]
             and you should group grad and hess in this way as well.
@@ -2634,7 +2659,8 @@ class Booster:
 
         .. note::
 
-            For binary task, the score is probability of positive class (or margin in case of custom objective).
+            Score is returned before any transformation,
+            e.g. it is raw margin instead of probability of positive class for binary task.
             For multi-class task, the score is group by class_id first, then group by row_id.
             If you want to get i-th row score in j-th class, the access way is score[j * num_data + i]
             and you should group grad and hess in this way as well.
@@ -2642,9 +2668,11 @@ class Booster:
         Parameters
         ----------
         grad : list or numpy 1-D array
-            The first order derivative (gradient).
+            The value of the first order derivative (gradient) of the loss
+            with respect to the elements of score for each sample point.
         hess : list or numpy 1-D array
-            The second order derivative (Hessian).
+            The value of the second order derivative (Hessian) of the loss
+            with respect to the elements of score for each sample point.
 
         Returns
         -------
@@ -2766,16 +2794,17 @@ class Booster:
 
                 preds : list or numpy 1-D array
                     The predicted values.
+                    If ``fobj`` is specified, predicted values are returned before any transformation,
+                    e.g. they are raw margin instead of probability of positive class for binary task in this case.
                 eval_data : Dataset
                     The evaluation dataset.
                 eval_name : string
-                    The name of evaluation function (without whitespaces).
+                    The name of evaluation function (without whitespace).
                 eval_result : float
                     The eval result.
                 is_higher_better : bool
                     Is eval result higher better, e.g. AUC is ``is_higher_better``.
 
-            For binary task, the preds is probability of positive class (or margin in case of specified ``fobj``).
             For multi-class task, the preds is group by class_id first, then group by row_id.
             If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
 
@@ -2813,16 +2842,17 @@ class Booster:
 
                 preds : list or numpy 1-D array
                     The predicted values.
+                    If ``fobj`` is specified, predicted values are returned before any transformation,
+                    e.g. they are raw margin instead of probability of positive class for binary task in this case.
                 train_data : Dataset
                     The training dataset.
                 eval_name : string
-                    The name of evaluation function (without whitespaces).
+                    The name of evaluation function (without whitespace).
                 eval_result : float
                     The eval result.
                 is_higher_better : bool
                     Is eval result higher better, e.g. AUC is ``is_higher_better``.
 
-            For binary task, the preds is probability of positive class (or margin in case of specified ``fobj``).
             For multi-class task, the preds is group by class_id first, then group by row_id.
             If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
 
@@ -2845,16 +2875,17 @@ class Booster:
 
                 preds : list or numpy 1-D array
                     The predicted values.
+                    If ``fobj`` is specified, predicted values are returned before any transformation,
+                    e.g. they are raw margin instead of probability of positive class for binary task in this case.
                 valid_data : Dataset
                     The validation dataset.
                 eval_name : string
-                    The name of evaluation function (without whitespaces).
+                    The name of evaluation function (without whitespace).
                 eval_result : float
                     The eval result.
                 is_higher_better : bool
                     Is eval result higher better, e.g. AUC is ``is_higher_better``.
 
-            For binary task, the preds is probability of positive class (or margin in case of specified ``fobj``).
             For multi-class task, the preds is group by class_id first, then group by row_id.
             If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
 
@@ -3421,7 +3452,7 @@ class Booster:
                 ctypes.byref(out_num_eval)))
             self.__num_inner_eval = out_num_eval.value
             if self.__num_inner_eval > 0:
-                # Get name of evals
+                # Get name of eval metrics
                 tmp_out_len = ctypes.c_int(0)
                 reserved_string_buffer_size = 255
                 required_string_buffer_size = ctypes.c_size_t(0)

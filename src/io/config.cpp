@@ -347,7 +347,7 @@ void Config::CheckParamConflict() {
     Log::Warning("CUDA currently requires double precision calculations.");
     gpu_use_dp = true;
   }
-  // linear tree learner must be serial type and run on cpu device
+  // linear tree learner must be serial type and run on CPU device
   if (linear_tree) {
     if (device_type != std::string("cpu")) {
       device_type = "cpu";
@@ -374,7 +374,7 @@ void Config::CheckParamConflict() {
   }
   if (is_parallel && (monotone_constraints_method == std::string("intermediate") || monotone_constraints_method == std::string("advanced"))) {
     // In distributed mode, local node doesn't have histograms on all features, cannot perform "intermediate" monotone constraints.
-    Log::Warning("Cannot use \"intermediate\" or \"advanced\" monotone constraints in parallel learning, auto set to \"basic\" method.");
+    Log::Warning("Cannot use \"intermediate\" or \"advanced\" monotone constraints in distributed learning, auto set to \"basic\" method.");
     monotone_constraints_method = "basic";
   }
   if (feature_fraction_bynode != 1.0 && (monotone_constraints_method == std::string("intermediate") || monotone_constraints_method == std::string("advanced"))) {

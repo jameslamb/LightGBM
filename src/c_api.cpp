@@ -416,9 +416,8 @@ class Booster {
       is_raw_score = false;
     }
 
-    Predictor predictor(boosting_.get(), start_iteration, num_iteration, is_raw_score, is_predict_leaf, predict_contrib,
+    return Predictor(boosting_.get(), start_iteration, num_iteration, is_raw_score, is_predict_leaf, predict_contrib,
                         config.pred_early_stop, config.pred_early_stop_freq, config.pred_early_stop_margin);
-    return predictor;
   }
 
   void Predict(int start_iteration, int num_iteration, int predict_type, int nrow, int ncol,
@@ -710,7 +709,8 @@ class Booster {
     Predictor predictor(boosting_.get(), start_iteration, num_iteration, is_raw_score, is_predict_leaf, predict_contrib,
                         config.pred_early_stop, config.pred_early_stop_freq, config.pred_early_stop_margin);
     bool bool_data_has_header = data_has_header > 0 ? true : false;
-    predictor.Predict(data_filename, result_filename, bool_data_has_header, config.predict_disable_shape_check);
+    predictor.Predict(data_filename, result_filename, bool_data_has_header, config.predict_disable_shape_check,
+                      config.precise_float_parser);
   }
 
   void GetPredictAt(int data_idx, double* out_result, int64_t* out_len) const {
