@@ -189,6 +189,7 @@ class VotingParallelTreeLearner: public TREELEARNER_T {
 
 // To-do: reduce the communication cost by using bitset to communicate.
 inline void SyncUpGlobalBestSplit(char* input_buffer_, char* output_buffer_, SplitInfo* smaller_best_split, SplitInfo* larger_best_split, int max_cat_threshold) {
+  Log::Info("SyncUpGlobalBestSplit() - start");
   // sync global best info
   int size = SplitInfo::Size(max_cat_threshold);
   smaller_best_split->CopyTo(input_buffer_);
@@ -211,6 +212,7 @@ inline void SyncUpGlobalBestSplit(char* input_buffer_, char* output_buffer_, Spl
   // copy back
   smaller_best_split->CopyFrom(output_buffer_);
   larger_best_split->CopyFrom(output_buffer_ + size);
+  Log::Info("SyncUpGlobalBestSplit() - end");
 }
 
 }  // namespace LightGBM

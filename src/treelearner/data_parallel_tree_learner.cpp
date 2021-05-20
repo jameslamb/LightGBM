@@ -21,6 +21,8 @@ DataParallelTreeLearner<TREELEARNER_T>::~DataParallelTreeLearner() {
 
 template <typename TREELEARNER_T>
 void DataParallelTreeLearner<TREELEARNER_T>::Init(const Dataset* train_data, bool is_constant_hessian) {
+
+  Log::Info("DataParallelTreeLearner::Init() - start");
   // initialize SerialTreeLearner
   TREELEARNER_T::Init(train_data, is_constant_hessian);
   // Get local rank and global machine size
@@ -46,6 +48,7 @@ void DataParallelTreeLearner<TREELEARNER_T>::Init(const Dataset* train_data, boo
   buffer_write_start_pos_.resize(this->num_features_);
   buffer_read_start_pos_.resize(this->num_features_);
   global_data_count_in_leaf_.resize(this->config_->num_leaves);
+  Log::Info("DataParallelTreeLearner::Init() - end");
 }
 
 template <typename TREELEARNER_T>
@@ -56,6 +59,7 @@ void DataParallelTreeLearner<TREELEARNER_T>::ResetConfig(const Config* config) {
 
 template <typename TREELEARNER_T>
 void DataParallelTreeLearner<TREELEARNER_T>::BeforeTrain() {
+  Log::Info("DataParallelTreeLearner::BeforeTrain() - start");
   TREELEARNER_T::BeforeTrain();
   // generate feature partition for current tree
   std::vector<std::vector<int>> feature_distribution(num_machines_, std::vector<int>());
@@ -149,10 +153,12 @@ void DataParallelTreeLearner<TREELEARNER_T>::BeforeTrain() {
   this->smaller_leaf_splits_->Init(std::get<1>(data), std::get<2>(data));
   // init global data count in leaf
   global_data_count_in_leaf_[0] = std::get<0>(data);
+  Log::Info("DataParallelTreeLearner::BeforeTrain() - end");
 }
 
 template <typename TREELEARNER_T>
 void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplits(const Tree* tree) {
+  Log::Info("DataParallelTreeLearner::FindBestSplits() - start");
   TREELEARNER_T::ConstructHistograms(
       this->col_sampler_.is_feature_used_bytree(), true);
   const int smaller_leaf_index = this->smaller_leaf_splits_->leaf_index();
@@ -186,10 +192,12 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplits(const Tree* tree) {
                          block_len_.data(), output_buffer_.data(), static_cast<comm_size_t>(output_buffer_.size()), &HistogramSumReducer);
   this->FindBestSplitsFromHistograms(
       this->col_sampler_.is_feature_used_bytree(), true, tree);
+  Log::Info("DataParallelTreeLearner::FindBestSplit() - end");
 }
 
 template <typename TREELEARNER_T>
 void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const std::vector<int8_t>&, bool, const Tree* tree) {
+  Log::Info("DataParallelTreeLearner::FindBestSplitsFromHistograms() - start");
   std::vector<SplitInfo> smaller_bests_per_thread(this->share_state_->num_threads);
   std::vector<SplitInfo> larger_bests_per_thread(this->share_state_->num_threads);
   std::vector<int8_t> smaller_node_used_features =
@@ -264,6 +272,7 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const 
   if (this->larger_leaf_splits_->leaf_index() >= 0) {
     this->best_split_per_leaf_[this->larger_leaf_splits_->leaf_index()] = larger_best_split;
   }
+  Log::Info("DataParallelTreeLearner::FindBestSplitsFromHistograms() - end");
 }
 
 template <typename TREELEARNER_T>

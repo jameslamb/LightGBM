@@ -28,6 +28,7 @@ BruckMap::BruckMap(int n) {
 
 BruckMap BruckMap::Construct(int rank, int num_machines) {
   // distance at k-th communication, distance[k] = 2^k
+  Log::Info("BruckMap::Construct()");
   std::vector<int> distance;
   int k = 0;
   for (k = 0; (1 << k) < num_machines; ++k) {
@@ -50,6 +51,7 @@ RecursiveHalvingMap::RecursiveHalvingMap() {
 }
 
 RecursiveHalvingMap::RecursiveHalvingMap(int in_k, RecursiveHalvingNodeType _type, bool _is_power_of_2) {
+  Log::Info("RecursiveHalvingMap::RecursiveHalvingMap()");
   type = _type;
   k = in_k;
   is_power_of_2 = _is_power_of_2;
@@ -66,6 +68,7 @@ RecursiveHalvingMap::RecursiveHalvingMap(int in_k, RecursiveHalvingNodeType _typ
 }
 
 RecursiveHalvingMap RecursiveHalvingMap::Construct(int rank, int num_machines) {
+  Log::Info("RecursiveHalvingMap::Construct()");
   // construct all recursive halving map for all machines
   int k = 0;
   while ((1 << k) <= num_machines) { ++k; }

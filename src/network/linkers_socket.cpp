@@ -22,6 +22,7 @@
 namespace LightGBM {
 
 Linkers::Linkers(Config config) {
+  Log::Info("Linkers::Linkers(Config) - start");
   is_init_ = false;
   // start up socket
   TcpSocket::Startup();
@@ -64,6 +65,7 @@ Linkers::Linkers(Config config) {
   // free listener
   listener_->Close();
   is_init_ = true;
+  Log::Info("Linkers::Linkers(Config) - stop");
 }
 
 Linkers::~Linkers() {
@@ -79,6 +81,7 @@ Linkers::~Linkers() {
 }
 
 void Linkers::ParseMachineList(const std::string& machines, const std::string& filename) {
+  Log::Info("Linkers::ParseMachineList()");
   std::vector<std::string> lines;
   if (machines.empty()) {
     TextReader<size_t> machine_list_reader(filename.c_str(), false);
@@ -164,6 +167,7 @@ void Linkers::ListenThread(int incoming_cnt) {
 }
 
 void Linkers::Construct() {
+  Log::Info("Linkers::Construct()");
   // save ranks that need to connect with
   std::unordered_map<int, int> need_connect;
   for (int i = 0; i < num_machines_; ++i) {
@@ -221,6 +225,7 @@ void Linkers::Construct() {
 }
 
 bool Linkers::CheckLinker(int rank) {
+  Log::Info("Linkers::CheckLinker()");
   if (linkers_[rank] == nullptr || linkers_[rank]->IsClosed()) {
     return false;
   }

@@ -48,6 +48,7 @@ GBDT::~GBDT() {
 
 void GBDT::Init(const Config* config, const Dataset* train_data, const ObjectiveFunction* objective_function,
                 const std::vector<const Metric*>& training_metrics) {
+  Log::Info("GBDT::Init() - start");
   CHECK_NOTNULL(train_data);
   train_data_ = train_data;
   if (!config->monotone_constraints.empty()) {
@@ -135,6 +136,7 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   if (config_->linear_tree) {
     linear_tree_ = true;
   }
+  Log::Info("GBDT::Init() - end");
 }
 
 void GBDT::AddValidDataset(const Dataset* valid_data,
@@ -262,6 +264,7 @@ void GBDT::Bagging(int iter) {
 }
 
 void GBDT::Train(int snapshot_freq, const std::string& model_output_path) {
+  Log::Info("GBDT::Train() - start");
   Common::FunctionTimer fun_timer("GBDT::Train", global_timer);
   bool is_finished = false;
   auto start_time = std::chrono::steady_clock::now();
@@ -280,6 +283,7 @@ void GBDT::Train(int snapshot_freq, const std::string& model_output_path) {
       SaveModelToFile(0, -1, config_->saved_feature_importance_type, snapshot_out.c_str());
     }
   }
+  Log::Info("GBDT::Train() - end");
 }
 
 void GBDT::RefitTree(const std::vector<std::vector<int>>& tree_leaf_prediction) {
@@ -367,6 +371,7 @@ double GBDT::BoostFromAverage(int class_id, bool update_scorer) {
 }
 
 bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
+  Log::Info("GBDT::TrainOneIter() - start (iteration %d)", iter_);
   Common::FunctionTimer fun_timer("GBDT::TrainOneIter", global_timer);
   std::vector<double> init_scores(num_tree_per_iteration_, 0.0);
   // boosting first
@@ -436,6 +441,8 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
     // add model
     models_.push_back(std::move(new_tree));
   }
+
+  Log::Info("GBDT::TrainOneIter() - end (iteration %d)", iter_);
 
   if (!should_continue) {
     Log::Warning("Stopped training because there are no more leaves that meet the split requirements");
