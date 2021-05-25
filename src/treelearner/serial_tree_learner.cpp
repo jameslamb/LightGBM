@@ -26,6 +26,7 @@ SerialTreeLearner::~SerialTreeLearner() {
 }
 
 void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian) {
+  Log::Info("SerialTreeLearner::Init() - begin");
   train_data_ = train_data;
   num_data_ = train_data_->num_data();
   num_features_ = train_data_->num_features();
@@ -69,6 +70,7 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
     cegb_.reset(new CostEfficientGradientBoosting(this));
     cegb_->Init();
   }
+  Log::Info("SerialTreeLearner::Init() - end");
 }
 
 void SerialTreeLearner::GetShareStates(const Dataset* dataset,
