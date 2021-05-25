@@ -28,39 +28,58 @@ SerialTreeLearner::~SerialTreeLearner() {
 void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian) {
   Log::Info("SerialTreeLearner::Init() - begin");
   train_data_ = train_data;
+  Log::Info("SerialTreeLearner::Init() - line 31");
   num_data_ = train_data_->num_data();
+  Log::Info("SerialTreeLearner::Init() - line 33");
   num_features_ = train_data_->num_features();
+  Log::Info("SerialTreeLearner::Init() - line 35");
   int max_cache_size = 0;
   // Get the max size of pool
   if (config_->histogram_pool_size <= 0) {
+    Log::Info("SerialTreeLearner::Init() - line 39");
     max_cache_size = config_->num_leaves;
+    Log::Info("SerialTreeLearner::Init() - line 41");
   } else {
+    Log::Info("SerialTreeLearner::Init() - line 43");
     size_t total_histogram_size = 0;
     for (int i = 0; i < train_data_->num_features(); ++i) {
       total_histogram_size += kHistEntrySize * train_data_->FeatureNumBin(i);
     }
+    Log::Info("SerialTreeLearner::Init() - line 48");
     max_cache_size = static_cast<int>(config_->histogram_pool_size * 1024 * 1024 / total_histogram_size);
+    Log::Info("SerialTreeLearner::Init() - line 50");
   }
   // at least need 2 leaves
   max_cache_size = std::max(2, max_cache_size);
   max_cache_size = std::min(max_cache_size, config_->num_leaves);
+  Log::Info("SerialTreeLearner::Init() - line 55");
 
   // push split information for all leaves
   best_split_per_leaf_.resize(config_->num_leaves);
+  Log::Info("SerialTreeLearner::Init() - line 59");
   constraints_.reset(LeafConstraintsBase::Create(config_, config_->num_leaves, train_data_->num_features()));
+  Log::Info("SerialTreeLearner::Init() - line 60");
 
   // initialize splits for leaf
+  Log::Info("SerialTreeLearner::Init() - line 64");
   smaller_leaf_splits_.reset(new LeafSplits(train_data_->num_data(), config_));
+  Log::Info("SerialTreeLearner::Init() - line 66");
   larger_leaf_splits_.reset(new LeafSplits(train_data_->num_data(), config_));
+  Log::Info("SerialTreeLearner::Init() - line 68");
 
   // initialize data partition
   data_partition_.reset(new DataPartition(num_data_, config_->num_leaves));
+  Log::Info("SerialTreeLearner::Init() - line 72");
   col_sampler_.SetTrainingData(train_data_);
+  Log::Info("SerialTreeLearner::Init() - line 74");
   // initialize ordered gradients and hessians
   ordered_gradients_.resize(num_data_);
+  Log::Info("SerialTreeLearner::Init() - line 77");
   ordered_hessians_.resize(num_data_);
+  Log::Info("SerialTreeLearner::Init() - line 79");
 
   GetShareStates(train_data_, is_constant_hessian, true);
+  Log::Info("SerialTreeLearner::Init() - line 82");
   histogram_pool_.DynamicChangeSize(train_data_,
   share_state_->num_hist_total_bin(),
   share_state_->feature_hist_offsets(),
