@@ -96,19 +96,25 @@ void SerialTreeLearner::GetShareStates(const Dataset* dataset,
                                        bool is_constant_hessian,
                                        bool is_first_time) {
   if (is_first_time) {
+    Log::Info("SerialTreeLearner::GetShareStates() - line 99");
     share_state_.reset(dataset->GetShareStates(
         ordered_gradients_.data(), ordered_hessians_.data(),
         col_sampler_.is_feature_used_bytree(), is_constant_hessian,
         config_->force_col_wise, config_->force_row_wise));
+    Log::Info("SerialTreeLearner::GetShareStates() - line 104");
   } else {
+    Log::Info("SerialTreeLearner::GetShareStates() - line 106");
     CHECK_NOTNULL(share_state_);
+    Log::Info("SerialTreeLearner::GetShareStates() - line 108");
     // cannot change is_hist_col_wise during training
     share_state_.reset(dataset->GetShareStates(
         ordered_gradients_.data(), ordered_hessians_.data(), col_sampler_.is_feature_used_bytree(),
         is_constant_hessian, share_state_->is_col_wise,
         !share_state_->is_col_wise));
+    Log::Info("SerialTreeLearner::GetShareStates() - line 114");
   }
   CHECK_NOTNULL(share_state_);
+  Log::Info("SerialTreeLearner::GetShareStates() - line 117");
 }
 
 void SerialTreeLearner::ResetTrainingDataInner(const Dataset* train_data,

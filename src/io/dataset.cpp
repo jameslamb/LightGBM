@@ -589,6 +589,8 @@ TrainingShareStates* Dataset::GetShareStates(
     score_t* gradients, score_t* hessians,
     const std::vector<int8_t>& is_feature_used, bool is_constant_hessian,
     bool force_col_wise, bool force_row_wise) const {
+  
+  Log::Info("Dataset::GetShareStates() - line 593");
   Common::FunctionTimer fun_timer("Dataset::TestMultiThreadingMethod",
                                   global_timer);
   if (force_col_wise && force_row_wise) {
@@ -597,58 +599,94 @@ TrainingShareStates* Dataset::GetShareStates(
         "the same time");
   }
   if (num_groups_ <= 0) {
+    Log::Info("Dataset::GetShareStates() - line 602");
     TrainingShareStates* share_state = new TrainingShareStates();
+    Log::Info("Dataset::GetShareStates() - line 604");
     share_state->is_col_wise = true;
     share_state->is_constant_hessian = is_constant_hessian;
     return share_state;
   }
+  Log::Info("Dataset::GetShareStates() - line 609");
   if (force_col_wise) {
+    Log::Info("Dataset::GetShareStates() - line 611");
     TrainingShareStates* share_state = new TrainingShareStates();
+    Log::Info("Dataset::GetShareStates() - line 613");
     std::vector<uint32_t> offsets;
+    Log::Info("Dataset::GetShareStates() - line 615");
     share_state->CalcBinOffsets(
       feature_groups_, &offsets, true);
+    Log::Info("Dataset::GetShareStates() - line 618");
     share_state->SetMultiValBin(GetMultiBinFromSparseFeatures(offsets),
       num_data_, feature_groups_, false, true);
+    Log::Info("Dataset::GetShareStates() - line 621");
     share_state->is_col_wise = true;
     share_state->is_constant_hessian = is_constant_hessian;
+    Log::Info("Dataset::GetShareStates() - line 624");
     return share_state;
   } else if (force_row_wise) {
+    Log::Info("Dataset::GetShareStates() - line 627");
     TrainingShareStates* share_state = new TrainingShareStates();
+    Log::Info("Dataset::GetShareStates() - line 629");
     std::vector<uint32_t> offsets;
+    Log::Info("Dataset::GetShareStates() - line 631");
     share_state->CalcBinOffsets(
       feature_groups_, &offsets, false);
+    Log::Info("Dataset::GetShareStates() - line 634");
     share_state->SetMultiValBin(GetMultiBinFromAllFeatures(offsets), num_data_,
       feature_groups_, false, false);
+    Log::Info("Dataset::GetShareStates() - line 637");
     share_state->is_col_wise = false;
+    Log::Info("Dataset::GetShareStates() - line 639");
     share_state->is_constant_hessian = is_constant_hessian;
+    Log::Info("Dataset::GetShareStates() - line 641");
     return share_state;
   } else {
+    Log::Info("Dataset::GetShareStates() - line 644");
     std::unique_ptr<MultiValBin> sparse_bin;
+    Log::Info("Dataset::GetShareStates() - line 646");
     std::unique_ptr<MultiValBin> all_bin;
+    Log::Info("Dataset::GetShareStates() - line 648");
     std::unique_ptr<TrainingShareStates> col_wise_state;
+    Log::Info("Dataset::GetShareStates() - line 650");
     std::unique_ptr<TrainingShareStates> row_wise_state;
+    Log::Info("Dataset::GetShareStates() - line 652");
     col_wise_state.reset(new TrainingShareStates());
+    Log::Info("Dataset::GetShareStates() - line 654");
     row_wise_state.reset(new TrainingShareStates());
+    Log::Info("Dataset::GetShareStates() - line 656");
 
     std::chrono::duration<double, std::milli> col_wise_init_time, row_wise_init_time;
+    Log::Info("Dataset::GetShareStates() - line 659");
     auto start_time = std::chrono::steady_clock::now();
+    Log::Info("Dataset::GetShareStates() - line 660");
     std::vector<uint32_t> col_wise_offsets;
+    Log::Info("Dataset::GetShareStates() - line 663");
     col_wise_state->CalcBinOffsets(feature_groups_, &col_wise_offsets, true);
+    Log::Info("Dataset::GetShareStates() - line 665");
     col_wise_state->SetMultiValBin(GetMultiBinFromSparseFeatures(col_wise_offsets), num_data_,
       feature_groups_, false, true);
+    Log::Info("Dataset::GetShareStates() - line 668");
     col_wise_init_time = std::chrono::steady_clock::now() - start_time;
+    Log::Info("Dataset::GetShareStates() - line 670");
 
     start_time = std::chrono::steady_clock::now();
+    Log::Info("Dataset::GetShareStates() - line 673");
     std::vector<uint32_t> row_wise_offsets;
+    Log::Info("Dataset::GetShareStates() - line 675");
     row_wise_state->CalcBinOffsets(feature_groups_, &row_wise_offsets, false);
+    Log::Info("Dataset::GetShareStates() - line 677");
     row_wise_state->SetMultiValBin(GetMultiBinFromAllFeatures(row_wise_offsets), num_data_,
       feature_groups_, false, false);
+    Log::Info("Dataset::GetShareStates() - line 680");
     row_wise_init_time = std::chrono::steady_clock::now() - start_time;
+    Log::Info("Dataset::GetShareStates() - line 682");
 
     uint64_t max_total_bin = std::max<uint64_t>(row_wise_state->num_hist_total_bin(),
       col_wise_state->num_hist_total_bin());
+    Log::Info("Dataset::GetShareStates() - line 686");
     std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>>
         hist_data(max_total_bin * 2);
+      Log::Info("Dataset::GetShareStates() - line 689");
 
     Log::Debug(
       "init for col-wise cost %f seconds, init for row-wise cost %f seconds",
@@ -662,14 +700,18 @@ TrainingShareStates* Dataset::GetShareStates(
     InitTrain(is_feature_used, row_wise_state.get());
     std::chrono::duration<double, std::milli> col_wise_time, row_wise_time;
     start_time = std::chrono::steady_clock::now();
+    Log::Info("Dataset::GetShareStates() - line 703");
     ConstructHistograms(is_feature_used, nullptr, num_data_, gradients,
                         hessians, gradients, hessians, col_wise_state.get(),
                         hist_data.data());
+    Log::Info("Dataset::GetShareStates() - line 707");
     col_wise_time = std::chrono::steady_clock::now() - start_time;
     start_time = std::chrono::steady_clock::now();
+    Log::Info("Dataset::GetShareStates() - line 710");
     ConstructHistograms(is_feature_used, nullptr, num_data_, gradients,
                         hessians, gradients, hessians, row_wise_state.get(),
                         hist_data.data());
+    Log::Info("Dataset::GetShareStates() - line 714");
     row_wise_time = std::chrono::steady_clock::now() - start_time;
 
     if (col_wise_time < row_wise_time) {
@@ -696,6 +738,7 @@ TrainingShareStates* Dataset::GetShareStates(
       return row_wise_state.release();
     }
   }
+  Log::Info("Dataset::GetShareStates() - end");
 }
 
 void Dataset::CopyFeatureMapperFrom(const Dataset* dataset) {

@@ -556,7 +556,7 @@ class LGBMModel(_LGBMModelBase):
             feature_name='auto', categorical_feature='auto',
             callbacks=None, init_model=None):
         """Docstring is set after definition, using a template."""
-        _log_info("LGBMModel.git() - begin")
+        _log_info("LGBMModel.fit() - begin")
         if self._objective is None:
             if isinstance(self, LGBMRegressor):
                 self._objective = "regression"
@@ -571,9 +571,9 @@ class LGBMModel(_LGBMModelBase):
         else:
             self._fobj = None
         evals_result = {}
-        _log_info("LGBMModel.git() - line 574")
+        _log_info("LGBMModel.fit() - line 574")
         params = self.get_params()
-        _log_info("LGBMModel.git() - line 576")
+        _log_info("LGBMModel.fit() - line 576")
         # user can set verbose with kwargs, it has higher priority
         if not any(verbose_alias in params for verbose_alias in _ConfigAliases.get("verbosity")) and self.silent:
             params['verbose'] = -1
@@ -604,10 +604,10 @@ class LGBMModel(_LGBMModelBase):
             eval_metric_list = [eval_metric_list]
 
         # Separate built-in from callable evaluation metrics
-        _log_info("LGBMModel.git() - line 607")
+        _log_info("LGBMModel.fit() - line 607")
         eval_metrics_callable = [_EvalFunctionWrapper(f) for f in eval_metric_list if callable(f)]
         eval_metrics_builtin = [m for m in eval_metric_list if isinstance(m, str)]
-        _log_info("LGBMModel.git() - line 610")
+        _log_info("LGBMModel.fit() - line 610")
 
         # register default metric for consistency with callable eval_metric case
         original_metric = self._objective if isinstance(self._objective, str) else None
@@ -628,14 +628,14 @@ class LGBMModel(_LGBMModelBase):
         params['metric'] = [e for e in eval_metrics_builtin if e not in params['metric']] + params['metric']
         params['metric'] = [metric for metric in params['metric'] if metric is not None]
 
-        _log_info("LGBMModel.git() - line 631")
+        _log_info("LGBMModel.fit() - line 631")
         if not isinstance(X, (pd_DataFrame, dt_DataTable)):
             _X, _y = _LGBMCheckXY(X, y, accept_sparse=True, force_all_finite=False, ensure_min_samples=2)
             if sample_weight is not None:
                 sample_weight = _LGBMCheckSampleWeight(sample_weight, _X)
         else:
             _X, _y = X, y
-        _log_info("LGBMModel.git() - line 638")
+        _log_info("LGBMModel.fit() - line 638")
 
         if self._class_weight is None:
             self._class_weight = self.class_weight
@@ -645,7 +645,7 @@ class LGBMModel(_LGBMModelBase):
                 sample_weight = class_sample_weight
             else:
                 sample_weight = np.multiply(sample_weight, class_sample_weight)
-        _log_info("LGBMModel.git() - line 648")
+        _log_info("LGBMModel.fit() - line 648")
         self._n_features = _X.shape[1]
         # copy for consistency
         self._n_features_in = self._n_features
@@ -655,14 +655,14 @@ class LGBMModel(_LGBMModelBase):
             return Dataset(X, label=y, weight=sample_weight, group=group,
                            init_score=init_score, params=params,
                            categorical_feature=categorical_feature)
-        _log_info("LGBMModel.git() - line 658")
+        _log_info("LGBMModel.fit() - line 658")
         train_set = _construct_dataset(_X, _y, sample_weight, init_score, group, params,
                                        categorical_feature=categorical_feature)
-        _log_info("LGBMModel.git() - line 661")
+        _log_info("LGBMModel.fit() - line 661")
 
         valid_sets = []
         if eval_set is not None:
-            _log_info("LGBMModel.git() - line 665")
+            _log_info("LGBMModel.fit() - line 665")
             def _get_meta_data(collection, name, i):
                 if collection is None:
                     return None
@@ -692,23 +692,23 @@ class LGBMModel(_LGBMModelBase):
                             valid_weight = np.multiply(valid_weight, valid_class_sample_weight)
                     valid_init_score = _get_meta_data(eval_init_score, 'eval_init_score', i)
                     valid_group = _get_meta_data(eval_group, 'eval_group', i)
-                    _log_info("LGBMModel.git() - line 695")
+                    _log_info("LGBMModel.fit() - line 695")
                     valid_set = _construct_dataset(valid_data[0], valid_data[1],
                                                    valid_weight, valid_init_score, valid_group, params)
-                    _log_info("LGBMModel.git() - line 698")
+                    _log_info("LGBMModel.fit() - line 698")
                 valid_sets.append(valid_set)
 
         if isinstance(init_model, LGBMModel):
             init_model = init_model.booster_
 
-        _log_info("LGBMModel.git() - line 704")
+        _log_info("LGBMModel.fit() - line 704")
         self._Booster = train(params, train_set,
                               self.n_estimators, valid_sets=valid_sets, valid_names=eval_names,
                               early_stopping_rounds=early_stopping_rounds,
                               evals_result=evals_result, fobj=self._fobj, feval=eval_metrics_callable,
                               verbose_eval=verbose, feature_name=feature_name,
                               callbacks=callbacks, init_model=init_model)
-        _log_info("LGBMModel.git() - line 711")
+        _log_info("LGBMModel.fit() - line 711")
 
         if evals_result:
             self._evals_result = evals_result
@@ -721,9 +721,9 @@ class LGBMModel(_LGBMModelBase):
         self.fitted_ = True
 
         # free dataset
-        _log_info("LGBMModel.git() - line 724")
+        _log_info("LGBMModel.fit() - line 724")
         self._Booster.free_dataset()
-        _log_info("LGBMModel.git() - line 726")
+        _log_info("LGBMModel.fit() - line 726")
         del train_set, valid_sets
         return self
 
