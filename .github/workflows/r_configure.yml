@@ -22,7 +22,6 @@ jobs:
         with:
           fetch-depth: 5
           submodules: true
-          repository: microsoft/LightGBM
           ref: "refs/heads/${{ fromJSON(github.event.client_payload.pr_branch) }}"
           token: ${{ secrets.WORKFLOW }}
           persist-credentials: true
