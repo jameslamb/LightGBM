@@ -31,8 +31,8 @@ jobs:
       - name: Send init status
         if: ${{ always() }}
         run: |
-          $GITHUB_WORKSPACE/.ci/set_commit_status.sh "${{ github.workflow }}" "pending" "${{ github.event.client_payload.pr_sha }}"
-          $GITHUB_WORKSPACE/.ci/append_comment.sh \
+          .ci/set_commit_status.sh "${{ github.workflow }}" "pending" "${{ github.event.client_payload.pr_sha }}"
+          .ci/append_comment.sh \
             "${{ github.event.client_payload.comment_number }}" \
             "Workflow **${{ github.workflow }}** has been triggered! 🚀\r\n${GITHUB_SERVER_URL}/jameslamb/LightGBM/actions/runs/${GITHUB_RUN_ID}"
       - name: Install packages
@@ -47,14 +47,14 @@ jobs:
       - name: Send final status
         if: ${{ always() }}
         run: |
-          $GITHUB_WORKSPACE/.ci/set_commit_status.sh "${{ github.workflow }}" "${{ job.status }}" "${{ github.event.client_payload.pr_sha }}"
-          $GITHUB_WORKSPACE/.ci/append_comment.sh \
+          .ci/set_commit_status.sh "${{ github.workflow }}" "${{ job.status }}" "${{ github.event.client_payload.pr_sha }}"
+          .ci/append_comment.sh \
             "${{ github.event.client_payload.comment_number }}" \
             "Status: ${{ job.status }}."
       - name: Rerun workflow-indicator
         if: ${{ always() }}
         run: |
-          bash $GITHUB_WORKSPACE/.ci/rerun_workflow.sh \
+          bash .ci/rerun_workflow.sh \
             "optional_checks.yml" \
             "${{ github.event.client_payload.pr_number }}" \
             "${{ github.event.client_payload.pr_branch }}" \
