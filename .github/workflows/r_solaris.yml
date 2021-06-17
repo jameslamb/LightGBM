@@ -26,6 +26,7 @@ jobs:
         with:
           fetch-depth: 5
           submodules: true
+          repository: jameslamb/LightGBM
           ref: "refs/pull/${{ github.event.client_payload.pr_number }}/merge"
       - name: Send init status
         if: ${{ always() }}
