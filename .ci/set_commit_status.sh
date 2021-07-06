@@ -40,7 +40,7 @@ sha=$3
 data=$(
   jq -n \
     --arg state $status \
-    --arg url "${GITHUB_SERVER_URL}/microsoft/LightGBM/actions/runs/${GITHUB_RUN_ID}" \
+    --arg url "${GITHUB_SERVER_URL}/jameslamb/LightGBM/actions/runs/${GITHUB_RUN_ID}" \
     --arg name "$name" \
     '{"state":$state,"target_url":$url,"context":$name}'
 )
@@ -50,4 +50,4 @@ curl -sL \
   -H "Accept: application/vnd.github.v3+json" \
   -H "Authorization: token $SECRETS_WORKFLOW" \
   -d "$data" \
-  "${GITHUB_API_URL}/repos/microsoft/LightGBM/statuses/$sha"
+  "${GITHUB_API_URL}/repos/jameslamb/LightGBM/statuses/$sha"

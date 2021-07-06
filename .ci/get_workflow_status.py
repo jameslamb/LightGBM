@@ -33,7 +33,7 @@ def get_runs(trigger_phrase):
     pr_runs = []
     if environ.get("GITHUB_EVENT_NAME", "") == "pull_request":
         pr_number = int(environ.get("GITHUB_REF").split('/')[-2])
-        req = request.Request(url="{}/repos/microsoft/LightGBM/issues/{}/comments".format(environ.get("GITHUB_API_URL"),
+        req = request.Request(url="{}/repos/jameslamb/LightGBM/issues/{}/comments".format(environ.get("GITHUB_API_URL"),
                                                                                           pr_number),
                               headers={"Accept": "application/vnd.github.v3+json"})
         url = request.urlopen(req)
