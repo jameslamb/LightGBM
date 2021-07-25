@@ -317,6 +317,7 @@ inline int Network::rank() {
 }
 
 inline int Network::num_machines() {
+  Log::Info("num_machines - start");
   return num_machines_;
 }
 

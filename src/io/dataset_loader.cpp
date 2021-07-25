@@ -621,32 +621,47 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
 Dataset* DatasetLoader::ConstructFromSampleData(double** sample_values,
                                                 int** sample_indices, int num_col, const int* num_per_col,
                                                 size_t total_sample_size, data_size_t num_data) {
+  Log::Info("[dataset_loader.cpp] ConstructFromSampleData() - line 624");
   CheckSampleSize(total_sample_size, static_cast<size_t>(num_data));
+  Log::Info("[dataset_loader.cpp] ConstructFromSampleData() - line 626");
   int num_total_features = num_col;
-  if (Network::num_machines() > 1) {
-    num_total_features = Network::GlobalSyncUpByMax(num_total_features);
-  }
+  Log::Info("[dataset_loader.cpp] ConstructFromSampleData() - line 628");
+  // if (Network::num_machines() > 1) {
+  //   Log::Info("[dataset_loader.cpp] ConstructFromSampleData() - line 630");
+  //   num_total_features = Network::GlobalSyncUpByMax(num_total_features);
+  //   Log::Info("[dataset_loader.cpp] ConstructFromSampleData() - line 632");
+  // }
+  Log::Info("[dataset_loader.cpp] ConstructFromSampleData() - line 634");
   std::vector<std::unique_ptr<BinMapper>> bin_mappers(num_total_features);
+  Log::Info("[dataset_loader.cpp] ConstructFromSampleData() - line 636");
   // fill feature_names_ if not header
   if (feature_names_.empty()) {
+    Log::Info("[dataset_loader.cpp] ConstructFromSampleData() - line 639");
     for (int i = 0; i < num_col; ++i) {
       std::stringstream str_buf;
       str_buf << "Column_" << i;
       feature_names_.push_back(str_buf.str());
     }
+    Log::Info("[dataset_loader.cpp] ConstructFromSampleData() - line 645");
   }
+  Log::Info("[dataset_loader.cpp] ConstructFromSampleData() - line 647");
   if (!config_.max_bin_by_feature.empty()) {
     CHECK_EQ(static_cast<size_t>(num_col), config_.max_bin_by_feature.size());
     CHECK_GT(*(std::min_element(config_.max_bin_by_feature.begin(), config_.max_bin_by_feature.end())), 1);
   }
+  Log::Info("[dataset_loader.cpp] ConstructFromSampleData() - line 652");
 
   // get forced split
+  Log::Info("[dataset_loader.cpp] ConstructFromSampleData() - line 655");
   std::string forced_bins_path = config_.forcedbins_filename;
+  Log::Info("[dataset_loader.cpp] ConstructFromSampleData() - line 657");
   std::vector<std::vector<double>> forced_bin_bounds = DatasetLoader::GetForcedBins(forced_bins_path, num_col, categorical_features_);
-
+  Log::Info("[dataset_loader.cpp] ConstructFromSampleData() - line 659");
   const data_size_t filter_cnt = static_cast<data_size_t>(
     static_cast<double>(config_.min_data_in_leaf * total_sample_size) / num_data);
-  if (Network::num_machines() == 1) {
+  // if (Network::num_machines() == 1) {
+  if (2 > 1) {
+    Log::Info("[dataset_loader.cpp] ConstructFromSampleData() - line 663");
     // if only one machine, find bin locally
     OMP_INIT_EX();
     #pragma omp parallel for schedule(guided)
@@ -678,6 +693,7 @@ Dataset* DatasetLoader::ConstructFromSampleData(double** sample_values,
       }
       OMP_LOOP_EX_END();
     }
+    Log::Info("[dataset_loader.cpp] ConstructFromSampleData() - line 695");
     OMP_THROW_EX();
   } else {
     // if have multi-machines, need to find bin distributed
@@ -725,6 +741,7 @@ Dataset* DatasetLoader::ConstructFromSampleData(double** sample_values,
       }
       OMP_LOOP_EX_END();
     }
+    Log::Info("[dataset_loader.cpp] ConstructFromSampleData() - line 743");
     OMP_THROW_EX();
     comm_size_t self_buf_size = 0;
     for (int i = 0; i < len[rank]; ++i) {
@@ -765,12 +782,19 @@ Dataset* DatasetLoader::ConstructFromSampleData(double** sample_values,
       cp_ptr += bin_mappers[i]->SizesInByte();
     }
   }
+  Log::Info("[dataset_loader.cpp] ConstructFromSampleData() - line 784");
   auto dataset = std::unique_ptr<Dataset>(new Dataset(num_data));
+  Log::Info("[dataset_loader.cpp] ConstructFromSampleData() - line 786");
   dataset->Construct(&bin_mappers, num_total_features, forced_bin_bounds, sample_indices, sample_values, num_per_col, num_col, total_sample_size, config_);
+  Log::Info("[dataset_loader.cpp] ConstructFromSampleData() - line 788");
   if (dataset->has_raw()) {
+    Log::Info("[dataset_loader.cpp] ConstructFromSampleData() - line 790");
     dataset->ResizeRaw(num_data);
+    Log::Info("[dataset_loader.cpp] ConstructFromSampleData() - line 792");
   }
+  Log::Info("[dataset_loader.cpp] ConstructFromSampleData() - line 794");
   dataset->set_feature_names(feature_names_);
+  Log::Info("[dataset_loader.cpp] ConstructFromSampleData() - line 796");
   return dataset.release();
 }
 

@@ -1092,13 +1092,18 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
                                const char* parameters,
                                const DatasetHandle reference,
                                DatasetHandle* out) {
+  Log::Info("[c_api.cpp] LGBM_DatasetCreateFromMats - line 1095");
   API_BEGIN();
+  Log::Info("[c_api.cpp] LGBM_DatasetCreateFromMats - line 1097");
   auto param = Config::Str2Map(parameters);
+  Log::Info("[c_api.cpp] LGBM_DatasetCreateFromMats - line 1099");
   Config config;
   config.Set(param);
+  Log::Info("[c_api.cpp] LGBM_DatasetCreateFromMats - line 1102");
   if (config.num_threads > 0) {
     omp_set_num_threads(config.num_threads);
   }
+  Log::Info("[c_api.cpp] LGBM_DatasetCreateFromMats - line 1106");
   std::unique_ptr<Dataset> ret;
   int32_t total_nrow = 0;
   for (int j = 0; j < nmat; ++j) {
@@ -1109,16 +1114,23 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
   for (int j = 0; j < nmat; ++j) {
     get_row_fun.push_back(RowFunctionFromDenseMatric(data[j], nrow[j], ncol, data_type, is_row_major));
   }
-
+  
+  Log::Info("[c_api.cpp] LGBM_DatasetCreateFromMats - line 1118");
   if (reference == nullptr) {
+    Log::Info("[c_api.cpp] LGBM_DatasetCreateFromMats - line 1120");
     // sample data first
     auto sample_indices = CreateSampleIndices(total_nrow, config);
+    Log::Info("[c_api.cpp] LGBM_DatasetCreateFromMats - line 1123");
     int sample_cnt = static_cast<int>(sample_indices.size());
+    Log::Info("[c_api.cpp] LGBM_DatasetCreateFromMats - line 1125");
     std::vector<std::vector<double>> sample_values(ncol);
+    Log::Info("[c_api.cpp] LGBM_DatasetCreateFromMats - line 1127");
     std::vector<std::vector<int>> sample_idx(ncol);
+    Log::Info("[c_api.cpp] LGBM_DatasetCreateFromMats - line 1129");
 
     int offset = 0;
     int j = 0;
+    Log::Info("[c_api.cpp] LGBM_DatasetCreateFromMats - line 1133");
     for (size_t i = 0; i < sample_indices.size(); ++i) {
       auto idx = sample_indices[i];
       while ((idx - offset) >= nrow[j]) {
@@ -1134,12 +1146,15 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
         }
       }
     }
+    Log::Info("[c_api.cpp] LGBM_DatasetCreateFromMats - line 1149");
     DatasetLoader loader(config, nullptr, 1, nullptr);
+    Log::Info("[c_api.cpp] LGBM_DatasetCreateFromMats - line 1151");
     ret.reset(loader.ConstructFromSampleData(Vector2Ptr<double>(&sample_values).data(),
                                              Vector2Ptr<int>(&sample_idx).data(),
                                              ncol,
                                              VectorSize<double>(sample_values).data(),
                                              sample_cnt, total_nrow));
+    Log::Info("[c_api.cpp] LGBM_DatasetCreateFromMats - line 1157");
   } else {
     ret.reset(new Dataset(total_nrow));
     ret->CreateValid(
@@ -1148,6 +1163,7 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
       ret->ResizeRaw(total_nrow);
     }
   }
+  Log::Info("[c_api.cpp] LGBM_DatasetCreateFromMats - line 1166");
   int32_t start_row = 0;
   for (int j = 0; j < nmat; ++j) {
     OMP_INIT_EX();

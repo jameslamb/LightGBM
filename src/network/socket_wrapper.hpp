@@ -63,6 +63,7 @@ const int INVALID_SOCKET = -1;
 #ifndef _MSC_VER
 // not using visual studio in windows
 inline int inet_pton(int af, const char *src, void *dst) {
+  Log::Info("inet_pton - start");
   struct sockaddr_storage ss;
   int size = sizeof(ss);
   char src_copy[INET6_ADDRSTRLEN + 1];

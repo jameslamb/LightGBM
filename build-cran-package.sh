@@ -97,7 +97,7 @@ cd ${TEMP_R_DIR}
         -e 's/^.*#pragma warning.*$//' \
         "${file}"
     done
-    find . -name '*.h.bak' -o -name '*.hpp.bak' -o -name '*.cpp.bak' -exec rm {} \;
+    #find . -name '*.h.bak' -o -name '*.hpp.bak' -o -name '*.cpp.bak' -exec rm {} \;
 
     sed \
         -i.bak \

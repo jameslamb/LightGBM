@@ -114,43 +114,52 @@ Dataset <- R6::R6Class(
 
     # Dataset constructor
     construct = function() {
-
+      
+      print("line 118")
       # Check for handle null
       if (!lgb.is.null.handle(x = private$handle)) {
         return(invisible(self))
       }
-
+      
+      print("line 124")
       # Get feature names
       cnames <- NULL
+      print("line 127")
       if (is.matrix(private$raw_data) || methods::is(private$raw_data, "dgCMatrix")) {
         cnames <- colnames(private$raw_data)
       }
 
       # set feature names if they do not exist
+      print("line 133")
       if (is.null(private$colnames) && !is.null(cnames)) {
         private$colnames <- as.character(cnames)
       }
 
       # Get categorical feature index
+      print("line 139")
       if (!is.null(private$categorical_feature)) {
-
+        print("line 141")
         # Check for character name
         if (is.character(private$categorical_feature)) {
-
+            print("line 144")
             cate_indices <- as.list(match(private$categorical_feature, private$colnames) - 1L)
 
             # Provided indices, but some indices are missing?
+            print("line 148")
             if (sum(is.na(cate_indices)) > 0L) {
+              print("line 152")
               stop(
                 "lgb.self.get.handle: supplied an unknown feature in categorical_feature: "
                 , sQuote(private$categorical_feature[is.na(cate_indices)])
               )
             }
+            print("line 156")
 
           } else {
-
+            print("line 159")
             # Check if more categorical features were output over the feature space
             if (max(private$categorical_feature) > length(private$colnames)) {
+              print("line 162")
               stop(
                 "lgb.self.get.handle: supplied a too large value in categorical_feature: "
                 , max(private$categorical_feature)
@@ -159,51 +168,64 @@ Dataset <- R6::R6Class(
                 , " features"
               )
             }
+            print("line 171")
 
             # Store indices as [0, n-1] indexed instead of [1, n] indexed
             cate_indices <- as.list(private$categorical_feature - 1L)
-
+            print("line 175")
           }
-
+        
+        print("line 178")
         # Store indices for categorical features
         private$params$categorical_feature <- cate_indices
+        print("line 181")
 
       }
 
       # Check has header or not
+      print("line 186")
       has_header <- FALSE
       if (!is.null(private$params$has_header) || !is.null(private$params$header)) {
+        print("line 189")
         params_has_header <- tolower(as.character(private$params$has_header)) == "true"
+        print("line 191")
         params_header <- tolower(as.character(private$params$header)) == "true"
+        print("line 193")
         if (params_has_header || params_header) {
+          print("line 195")
           has_header <- TRUE
         }
+        print("line 198")
       }
-
+      print("line 200")
       # Generate parameter str
       params_str <- lgb.params2str(params = private$params)
-
+      print("line 203")
       # Get handle of reference dataset
       ref_handle <- NULL
+      print("line 206")
       if (!is.null(private$reference)) {
+        print("line 208")
         ref_handle <- private$reference$.__enclos_env__$private$get_handle()
       }
+      print("line 211")
 
       # Not subsetting
       if (is.null(private$used_indices)) {
-
+        print("line 215")
         # Are we using a data file?
         if (is.character(private$raw_data)) {
-
+          print("line 218")
           handle <- .Call(
             LGBM_DatasetCreateFromFile_R
             , private$raw_data
             , params_str
             , ref_handle
           )
+          print("line 225")
 
         } else if (is.matrix(private$raw_data)) {
-
+          print("line 228")
           # Are we using a matrix?
           handle <- .Call(
             LGBM_DatasetCreateFromMat_R
@@ -213,11 +235,16 @@ Dataset <- R6::R6Class(
             , params_str
             , ref_handle
           )
+          print("line 238")
 
         } else if (methods::is(private$raw_data, "dgCMatrix")) {
+          print("line 241")
           if (length(private$raw_data@p) > 2147483647L) {
+            print("line 243")
             stop("Cannot support large CSC matrix")
+            print("line 245")
           }
+          print("line 247")
           # Are we using a dgCMatrix (sparsed matrix column compressed)
           handle <- .Call(
             LGBM_DatasetCreateFromCSC_R
@@ -230,25 +257,30 @@ Dataset <- R6::R6Class(
             , params_str
             , ref_handle
           )
+          print("line 260")
 
         } else {
-
+          print("line 263")
           # Unknown data type
           stop(
             "lgb.Dataset.construct: does not support constructing from "
             , sQuote(class(private$raw_data))
           )
+          print("line 269")
 
         }
 
       } else {
-
+        print("line 274")
         # Reference is empty
         if (is.null(private$reference)) {
+          print("line 277")
           stop("lgb.Dataset.construct: reference cannot be NULL for constructing data subset")
+          print("line 279")
         }
 
         # Construct subset
+        print("line 283")
         handle <- .Call(
           LGBM_DatasetGetSubset_R
           , ref_handle
@@ -256,58 +288,81 @@ Dataset <- R6::R6Class(
           , length(private$used_indices)
           , params_str
         )
+        print("line 291")
 
       }
+      print("line 294")
       if (lgb.is.null.handle(x = handle)) {
+        print("line 296")
         stop("lgb.Dataset.construct: cannot create Dataset handle")
+        print("line 298")
       }
+      print("line 300")
       # Setup class and private type
       class(handle) <- "lgb.Dataset.handle"
+      print("line 303")
       private$handle <- handle
+      print("line 305")
 
       # Set feature names
       if (!is.null(private$colnames)) {
+        print("line 309")
         self$set_colnames(colnames = private$colnames)
+        print("line 311")
       }
+      print("line 313")
 
       # Load init score if requested
       if (!is.null(private$predictor) && is.null(private$used_indices)) {
-
+        print("line 317")
         # Setup initial scores
         init_score <- private$predictor$predict(
           data = private$raw_data
           , rawscore = TRUE
           , reshape = TRUE
         )
+        print("line 324")
 
         # Not needed to transpose, for is col_marjor
         init_score <- as.vector(init_score)
+        print("line 328")
         private$info$init_score <- init_score
+        print("line 330")
 
       }
+      print("line 333")
 
       # Should we free raw data?
       if (isTRUE(private$free_raw_data)) {
+        print("line 337")
         private$raw_data <- NULL
+        print("line 339")
       }
+      print("line 341")
 
       # Get private information
       if (length(private$info) > 0L) {
-
+        print("line 345")
         # Set infos
         for (i in seq_along(private$info)) {
-
+          print(paste0("line 348 - ", i))
           p <- private$info[i]
           self$setinfo(name = names(p), info = p[[1L]])
+          print(paste0("line 351 - ", i))
 
         }
+        print("line 354")
 
       }
-
+      
+      print("line 358")
       # Get label information existence
       if (is.null(self$getinfo(name = "label"))) {
+        print("line 361")
         stop("lgb.Dataset.construct: label should be set")
+        print("line 363")
       }
+      print("line 365")
 
       return(invisible(self))
 

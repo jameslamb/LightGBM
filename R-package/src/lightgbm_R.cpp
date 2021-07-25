@@ -105,23 +105,40 @@ SEXP LGBM_DatasetCreateFromMat_R(SEXP data,
   SEXP num_col,
   SEXP parameters,
   SEXP reference) {
+  Log::Info("LGBM_DatasetCreateFromMat_R - line 108");
   SEXP ret;
+  Log::Info("LGBM_DatasetCreateFromMat_R - line 110");
   int32_t nrow = static_cast<int32_t>(Rf_asInteger(num_row));
+  Log::Info("LGBM_DatasetCreateFromMat_R - line 112");
   int32_t ncol = static_cast<int32_t>(Rf_asInteger(num_col));
+  Log::Info("LGBM_DatasetCreateFromMat_R - line 114");
   double* p_mat = REAL(data);
+  Log::Info("LGBM_DatasetCreateFromMat_R - line 116");
   const char* parameters_ptr = CHAR(PROTECT(Rf_asChar(parameters)));
+  Log::Info("LGBM_DatasetCreateFromMat_R - line 118");
   DatasetHandle handle = nullptr;
+  Log::Info("LGBM_DatasetCreateFromMat_R - line 120");
   DatasetHandle ref = nullptr;
+  Log::Info("LGBM_DatasetCreateFromMat_R - line 122");
   if (!Rf_isNull(reference)) {
+    Log::Info("LGBM_DatasetCreateFromMat_R - line 124");
     ref = R_ExternalPtrAddr(reference);
+    Log::Info("LGBM_DatasetCreateFromMat_R - line 126");
   }
+  Log::Info("LGBM_DatasetCreateFromMat_R - line 128");
   R_API_BEGIN();
+  Log::Info("LGBM_DatasetCreateFromMat_R - line 130");
   CHECK_CALL(LGBM_DatasetCreateFromMat(p_mat, C_API_DTYPE_FLOAT64, nrow, ncol, COL_MAJOR,
     parameters_ptr, ref, &handle));
+  Log::Info("LGBM_DatasetCreateFromMat_R - line 133");
   R_API_END();
+  Log::Info("LGBM_DatasetCreateFromMat_R - line 135");
   ret = PROTECT(R_MakeExternalPtr(handle, R_NilValue, R_NilValue));
+  Log::Info("LGBM_DatasetCreateFromMat_R - line 137");
   R_RegisterCFinalizerEx(ret, _DatasetFinalizer, TRUE);
+  Log::Info("LGBM_DatasetCreateFromMat_R - line 139");
   UNPROTECT(2);
+  Log::Info("LGBM_DatasetCreateFromMat_R - line 141");
   return ret;
 }
 
