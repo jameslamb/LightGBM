@@ -626,11 +626,11 @@ Dataset* DatasetLoader::ConstructFromSampleData(double** sample_values,
   Log::Info("[dataset_loader.cpp] ConstructFromSampleData() - line 626");
   int num_total_features = num_col;
   Log::Info("[dataset_loader.cpp] ConstructFromSampleData() - line 628");
-  // if (Network::num_machines() > 1) {
-  //   Log::Info("[dataset_loader.cpp] ConstructFromSampleData() - line 630");
-  //   num_total_features = Network::GlobalSyncUpByMax(num_total_features);
-  //   Log::Info("[dataset_loader.cpp] ConstructFromSampleData() - line 632");
-  // }
+  if (Network::num_machines() > 1) {
+    Log::Info("[dataset_loader.cpp] ConstructFromSampleData() - line 630");
+    num_total_features = Network::GlobalSyncUpByMax(num_total_features);
+    Log::Info("[dataset_loader.cpp] ConstructFromSampleData() - line 632");
+  }
   Log::Info("[dataset_loader.cpp] ConstructFromSampleData() - line 634");
   std::vector<std::unique_ptr<BinMapper>> bin_mappers(num_total_features);
   Log::Info("[dataset_loader.cpp] ConstructFromSampleData() - line 636");
@@ -659,8 +659,7 @@ Dataset* DatasetLoader::ConstructFromSampleData(double** sample_values,
   Log::Info("[dataset_loader.cpp] ConstructFromSampleData() - line 659");
   const data_size_t filter_cnt = static_cast<data_size_t>(
     static_cast<double>(config_.min_data_in_leaf * total_sample_size) / num_data);
-  // if (Network::num_machines() == 1) {
-  if (2 > 1) {
+  if (Network::num_machines() == 1) {
     Log::Info("[dataset_loader.cpp] ConstructFromSampleData() - line 663");
     // if only one machine, find bin locally
     OMP_INIT_EX();

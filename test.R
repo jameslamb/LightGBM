@@ -1,13 +1,15 @@
 # reproducible example for https://github.com/microsoft/LightGBM/issues/4464
 
-original_options <- options()
+#original_options <- options()
 
-library(fansi)
+library(RPostgreSQL)
 library(lightgbm)
 
-new_options <- options()
+#dyn.unload(file.path(.libPaths()[1], "fansi", "libs", "x64", "fansi.dll"))
 
-getLoadedDLLs()
+#new_options <- options()
+
+#getLoadedDLLs()
 
 # create a dataset from a dcgMatrix
 # data(agaricus.train, package='lightgbm')
@@ -16,14 +18,17 @@ getLoadedDLLs()
 # dtrain$construct()
 
 # create a dataset from a regular R matrix
-dtrain <- lgb.Dataset(matrix(rnorm(1000), nrow = 100), label = rnorm(100))
+dtrain <- lgb.Dataset(
+    data = matrix(rnorm(1000), nrow = 100)
+    , label = rnorm(100)
+)
 dtrain$construct()
 
 print("done")
 
 # investigating DLL
 
-# dll_info <- getLoadedDLLs()[c("fansi", "lightgbm", "internet")]
+#dll_info <- getLoadedDLLs()[c("fansi", "lightgbm", "internet")]
 # 
 # getDLLRegisteredRoutines(dll_info$fansi[["path"]])
 # getDLLRegisteredRoutines(dll_info$internet[["path"]])
