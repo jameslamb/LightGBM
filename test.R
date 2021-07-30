@@ -2,8 +2,14 @@
 
 #original_options <- options()
 
-library(RPostgreSQL)
+print("--- before ---")
+gctorture(TRUE)
+getLoadedDLLs()
+library(fansi)
 library(lightgbm)
+Sys.sleep(60)
+print("--- after ---")
+getLoadedDLLs()
 
 #dyn.unload(file.path(.libPaths()[1], "fansi", "libs", "x64", "fansi.dll"))
 

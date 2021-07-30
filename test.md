@@ -23,6 +23,8 @@ Rscript -e "install.packages('fansi', repos='https://cran.r-project.org')"
 "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.24.28314\bin\Hostx64\x64\dumpbin.exe" /EXPORTS "C:\Users\James\Documents\R\win-library\4.1\xgboost\libs\x64\xgboost.dll" > xgboost-dumpbin.txt
 
 "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.24.28314\bin\Hostx64\x64\dumpbin.exe" /EXPORTS "C:/Users/James/Documents/R/win-library/4.1/data.table/libs/x64/datatable.dll"
+
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.24.28314\bin\Hostx64\x64\dumpbin.exe" /ALL "C:\\Program Files\\R\\R-4.1.0\\modules\\x64\\internet.dll"
 ```
 
 From https://cran.r-project.org/doc/manuals/R-exts.html#useDynLib
@@ -125,6 +127,76 @@ intersect(rlapack_symbols, lightgbm_symbols)
 intersect(fansi_symbols, lightgbm_symbols)
 ```
 
+And here's the complete list of loaded DLLs.
+
+```text
+Listdlls v3.2 - Listdlls
+Copyright (C) 1997-2016 Mark Russinovich
+Sysinternals
+
+------------------------------------------------------------------------------
+Rscript.exe pid: 14312
+Command line: Rscript  test.R
+
+Base                Size      Path
+0x0000000000400000  0x1f000   C:\Program Files\R\R-4.1.0\bin\x64\Rscript.exe
+0x0000000031c60000  0x1ed000  C:\WINDOWS\SYSTEM32\ntdll.dll
+0x000000002f4d0000  0xb3000   C:\WINDOWS\System32\KERNEL32.DLL
+0x000000002e710000  0x295000  C:\WINDOWS\System32\KERNELBASE.dll
+0x000000002f590000  0x9e000   C:\WINDOWS\System32\msvcrt.dll
+0x000000002ee80000  0x52000   C:\WINDOWS\System32\SHLWAPI.dll
+0x00000000311c0000  0x32d000  C:\WINDOWS\System32\combase.dll
+0x000000002e610000  0xfa000   C:\WINDOWS\System32\ucrtbase.dll
+0x000000002f7a0000  0x122000  C:\WINDOWS\System32\RPCRT4.dll
+0x000000002dd10000  0x7e000   C:\WINDOWS\System32\bcryptPrimitives.dll
+0x000000002f360000  0x29000   C:\WINDOWS\System32\GDI32.dll
+0x000000002eb00000  0x19c000  C:\WINDOWS\System32\gdi32full.dll
+0x000000002e9b0000  0xa0000   C:\WINDOWS\System32\msvcp_win.dll
+0x0000000031020000  0x197000  C:\WINDOWS\System32\USER32.dll
+0x000000002e5a0000  0x20000   C:\WINDOWS\System32\win32u.dll
+0x0000000063540000  0xaf000   C:\Program Files\R\R-4.1.0\bin\x64\Rgraphapp.dll
+0x000000006c700000  0x1f6f000  C:\Program Files\R\R-4.1.0\bin\x64\R.dll
+0x00000000319a0000  0x127000  C:\WINDOWS\System32\comdlg32.dll
+0x0000000030f70000  0xa3000   C:\WINDOWS\System32\ADVAPI32.dll
+0x00000000314f0000  0x9e000   C:\WINDOWS\System32\sechost.dll
+0x0000000031ad0000  0xa8000   C:\WINDOWS\System32\shcore.dll
+0x000000002f8d0000  0x14f9000  C:\WINDOWS\System32\SHELL32.dll
+0x0000000030ed0000  0x2e000   C:\WINDOWS\System32\IMM32.dll
+0x0000000064e80000  0x82000   C:\Program Files\R\R-4.1.0\bin\x64\Rblas.dll
+0x000000002e5c0000  0x4a000   C:\WINDOWS\System32\cfgmgr32.dll
+0x000000002dd90000  0x753000  C:\WINDOWS\System32\windows.storage.dll
+0x000000002dce0000  0x24000   C:\WINDOWS\System32\profapi.dll
+0x000000002dc80000  0x5d000   C:\WINDOWS\System32\powrprof.dll
+0x00000000234b0000  0x279000  C:\WINDOWS\WinSxS\amd64_microsoft.windows.common-controls_6595b64144ccf1df_6.0.17763.1577_none_de7444545348a3d0\COMCTL32.dll
+0x000000002dc40000  0x11000   C:\WINDOWS\System32\kernel.appcore.dll
+0x000000002eae0000  0x17000   C:\WINDOWS\System32\cryptsp.dll
+0x00000000292b0000  0x7000    C:\WINDOWS\SYSTEM32\MSIMG32.dll
+0x00000000641c0000  0x60000   C:\Program Files\R\R-4.1.0\bin\x64\Riconv.dll
+0x00000000263b0000  0xa000    C:\WINDOWS\SYSTEM32\VERSION.dll
+0x0000000026380000  0x24000   C:\WINDOWS\SYSTEM32\WINMM.dll
+0x0000000026350000  0x2d000   C:\WINDOWS\SYSTEM32\winmmbase.dll
+0x000000002be10000  0x9c000   C:\WINDOWS\system32\uxtheme.dll
+0x0000000031840000  0x156000  C:\WINDOWS\System32\ole32.dll
+0x0000000031760000  0xc4000   C:\WINDOWS\System32\OLEAUT32.dll
+0x0000000031b80000  0xa2000   C:\WINDOWS\System32\clbcatq.dll
+0x000000002a0d0000  0x1a9000  C:\WINDOWS\SYSTEM32\PROPSYS.dll
+0x0000000064a40000  0x14000   C:\Program Files\R\R-4.1.0\library\methods\libs\x64\methods.dll
+0x00000000187b0000  0x2d000   C:\Program Files\R\R-4.1.0\library\utils\libs\x64\utils.dll
+0x000000006fc80000  0x189000  C:\Program Files\R\R-4.1.0\library\grDevices\libs\x64\grDevices.dll
+0x0000000063740000  0x52000   C:\Program Files\R\R-4.1.0\library\graphics\libs\x64\graphics.dll
+0x0000000071100000  0xa9000   C:\Program Files\R\R-4.1.0\library\stats\libs\x64\stats.dll
+0x0000000018ab0000  0x28e000  C:\Program Files\R\R-4.1.0\bin\x64\Rlapack.dll
+0x00000000625c0000  0x1e000   C:\Users\James\Documents\R\win-library\4.1\fansi\libs\x64\fansi.dll
+0x000000006ea80000  0x2c000   C:\Program Files\R\R-4.1.0\library\grid\libs\x64\grid.dll
+0x0000000019ba0000  0xf000    C:\Program Files\R\R-4.1.0\library\lattice\libs\x64\lattice.dll
+0x0000000065800000  0xc0000   C:\Program Files\R\R-4.1.0\library\Matrix\libs\x64\Matrix.dll
+0x0000000069300000  0xb5000   C:\Users\James\Documents\R\win-library\4.1\data.table\libs\x64\datatable.dll
+0x00000000640c0000  0x22000   C:\Program Files\R\R-4.1.0\library\jsonlite\libs\x64\jsonlite.dll
+0x00000000219f0000  0x354000  C:\Users\James\Documents\R\win-library\4.1\lightgbm\libs\x64\lightgbm.dll
+0x0000000030f00000  0x6d000   C:\WINDOWS\System32\WS2_32.dll
+0x000000002d170000  0x3d000   C:\WINDOWS\SYSTEM32\IPHLPAPI.DLL
+```
+
 ## Possibly-relevant notes in Writing R Extensions
 
 > Linkers have a lot of freedom in how to resolve entry points in dynamically-loaded code, so the results may differ by platform. One area that has caused grief is packages including copies of standard system software such as libz (especially those already linked into R). In the case in point, entry point gzgets was sometimes resolved against the old version compiled into the package, sometimes against the copy compiled into R and sometimes against the system dynamic library. The only safe solution is to rename the entry points in the copy in the package. We have even seen problems with entry point name myprintf, which is a system entry point on some Linux systems.
@@ -150,3 +222,4 @@ https://github.com/search?q=org%3Acran+filename%3AMakevars.win+LAPACK_LIBS&type=
 ## References
 
 * https://developer.r-project.org/Blog/public/2018/03/23/maximum-number-of-dlls/index.html
+* https://stat.ethz.ch/pipermail/r-help/2012-December/342542.html
