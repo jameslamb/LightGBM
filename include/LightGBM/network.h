@@ -318,6 +318,9 @@ inline int Network::rank() {
 
 inline int Network::num_machines() {
   Log::Info("num_machines - start");
+  #ifdef LGB_R_BUILD
+    return 1;
+  #endif
   return num_machines_;
 }
 

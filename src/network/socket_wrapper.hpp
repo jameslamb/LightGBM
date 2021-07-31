@@ -27,8 +27,6 @@
 #include <ws2tcpip.h>
 #include <iphlpapi.h>
 
-#pragma comment(lib, "Ws2_32.lib")
-
 #else
 
 #include <arpa/inet.h>
@@ -106,11 +104,13 @@ const int kNoDelay = 1;
 class TcpSocket {
  public:
   TcpSocket() {
+    Log::Info("Creating TcpSocket");
     sockfd_ = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (sockfd_ == INVALID_SOCKET) {
       Log::Fatal("Socket construction error");
       return;
     }
+    Log::Info("Running ConfigSocket()");
     ConfigSocket();
   }
 
@@ -133,6 +133,7 @@ class TcpSocket {
     setsockopt(sockfd_, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<char*>(&timeout), sizeof(timeout));
   }
   inline void ConfigSocket() {
+    Log::Info("ConfigSocket() - line 136");
     if (sockfd_ == INVALID_SOCKET) {
       return;
     }
@@ -151,6 +152,7 @@ class TcpSocket {
 
   inline static void Startup() {
 #if defined(_WIN32)
+    Log::Info("TcpSocket::Startup()");
     WSADATA wsa_data;
     if (WSAStartup(MAKEWORD(2, 2), &wsa_data) == -1) {
       Log::Fatal("Socket error: WSAStartup error");

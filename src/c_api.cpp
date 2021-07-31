@@ -2359,6 +2359,7 @@ int LGBM_NetworkInit(const char* machines,
                      int local_listen_port,
                      int listen_time_out,
                      int num_machines) {
+  Log::Info("[c_api.cpp] LGBM_NetworkInit() - start");
   API_BEGIN();
   Config config;
   config.machines = RemoveQuotationSymbol(std::string(machines));
@@ -2368,6 +2369,7 @@ int LGBM_NetworkInit(const char* machines,
   if (num_machines > 1) {
     Network::Init(config);
   }
+  Log::Info("[c_api.cpp] LGBM_NetworkInit() - end");
   API_END();
 }
 
@@ -2380,10 +2382,12 @@ int LGBM_NetworkFree() {
 int LGBM_NetworkInitWithFunctions(int num_machines, int rank,
                                   void* reduce_scatter_ext_fun,
                                   void* allgather_ext_fun) {
+  Log::Info("[c_api.cpp] LGBM_NetworkInitWithFunctions() - start");
   API_BEGIN();
   if (num_machines > 1) {
     Network::Init(num_machines, rank, (ReduceScatterFunction)reduce_scatter_ext_fun, (AllgatherFunction)allgather_ext_fun);
   }
+  Log::Info("[c_api.cpp] LGBM_NetworkInitWithFunctions() - end");
   API_END();
 }
 

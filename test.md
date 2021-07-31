@@ -278,3 +278,5 @@ C:/rtools40/mingw64/bin/g++ \
     - "The Iphlpapi.h header file is required if an application is using the IP Helper APIs. When the Iphlpapi.h header file is required, the #include line for the Winsock2.h header file should be placed before the #include line for the Iphlpapi.h header file."
 * you also might need this pragma, see the ClickHouse source (https://github.com/cran/RClickhouse/blob/ce495690e90cbcb874ec9c48ef7e6629cbe6db06/src/vendor/clickhouse-cpp/clickhouse/base/socket.h#L10)
     - this is mentioned in https://docs.microsoft.com/en-us/windows/win32/winsock/creating-a-basic-winsock-application
+* https://r-pkgs.org/src.html
+* read about DLL search order at https://syedhasan010.medium.com/what-are-dlls-8027048051fc

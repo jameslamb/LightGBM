@@ -28,6 +28,7 @@ THREAD_LOCAL AllgatherFunction Network::allgather_ext_fun_ = nullptr;
 
 
 void Network::Init(Config config) {
+  Log::Info("Network::Init(config) - start");
   if (config.num_machines > 1) {
     linkers_.reset(new Linkers(config));
     rank_ = linkers_->rank();
@@ -40,10 +41,12 @@ void Network::Init(Config config) {
     buffer_.resize(buffer_size_);
     Log::Info("Local rank: %d, total number of machines: %d", rank_, num_machines_);
   }
+  Log::Info("Network::Init(config) - end");
 }
 
 void Network::Init(int num_machines, int rank,
                    ReduceScatterFunction reduce_scatter_ext_fun, AllgatherFunction allgather_ext_fun) {
+  Log::Info("Network::Init(num_machines, rank) - start");
   if (num_machines > 1) {
     rank_ = rank;
     num_machines_ = num_machines;
@@ -55,6 +58,7 @@ void Network::Init(int num_machines, int rank,
     allgather_ext_fun_ = allgather_ext_fun;
     Log::Info("Local rank: %d, total number of machines: %d", rank_, num_machines_);
   }
+  Log::Info("Network::Init(num_machines, rank) - end");
 }
 
 void Network::Dispose() {

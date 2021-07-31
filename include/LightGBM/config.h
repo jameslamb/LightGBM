@@ -81,10 +81,6 @@ struct Config {
   static void KV2Map(std::unordered_map<std::string, std::string>* params, const char* kv);
   static std::unordered_map<std::string, std::string> Str2Map(const char* parameters);
 
-  #pragma region Parameters
-
-  #pragma region Core Parameters
-
   // [no-save]
   // [doc-only]
   // alias = config_file
@@ -226,10 +222,6 @@ struct Config {
   // desc = **Note**: setting this to ``true`` may slow down the training
   // desc = **Note**: to avoid potential instability due to numerical issues, please set ``force_col_wise=true`` or ``force_row_wise=true`` when setting ``deterministic=true``
   bool deterministic = false;
-
-  #pragma endregion
-
-  #pragma region Learning Control Parameters
 
   // desc = used only with ``cpu`` device type
   // desc = set this to ``true`` to force col-wise histogram building
@@ -567,12 +559,6 @@ struct Config {
   // desc = **Note**: can be used only in CLI version
   int snapshot_freq = -1;
 
-  #pragma endregion
-
-  #pragma region IO Parameters
-
-  #pragma region Dataset Parameters
-
   // alias = linear_trees
   // desc = fit piecewise linear gradient boosting tree
   // descl2 = tree splits are chosen in the usual way, but the model at each leaf is linear instead of constant
@@ -719,10 +705,6 @@ struct Config {
   // desc = **Note**: setting this to ``true`` may lead to much slower text parsing
   bool precise_float_parser = false;
 
-  #pragma endregion
-
-  #pragma region Predict Parameters
-
   // [no-save]
   // desc = used only in ``prediction`` task
   // desc = used to specify from which iteration to start the prediction
@@ -790,10 +772,6 @@ struct Config {
   // desc = **Note**: can be used only in CLI version
   std::string output_result = "LightGBM_predict_result.txt";
 
-  #pragma endregion
-
-  #pragma region Convert Parameters
-
   // [no-save]
   // desc = used only in ``convert_model`` task
   // desc = only ``cpp`` is supported yet; for conversion model to other languages consider using `m2cgen <https://github.com/BayesWitnesses/m2cgen>`__ utility
@@ -807,12 +785,6 @@ struct Config {
   // desc = output filename of converted model
   // desc = **Note**: can be used only in CLI version
   std::string convert_model = "gbdt_prediction.cpp";
-
-  #pragma endregion
-
-  #pragma endregion
-
-  #pragma region Objective Parameters
 
   // desc = used only in ``rank_xendcg`` objective
   // desc = random seed for objectives, if random process is needed
@@ -892,10 +864,6 @@ struct Config {
   // desc = separate by ``,``
   std::vector<double> label_gain;
 
-  #pragma endregion
-
-  #pragma region Metric Parameters
-
   // [doc-only]
   // alias = metrics, metric_types
   // default = ""
@@ -966,10 +934,6 @@ struct Config {
   // desc = if not specified, will use equal weights for all classes
   std::vector<double> auc_mu_weights;
 
-  #pragma endregion
-
-  #pragma region Network Parameters
-
   // check = >0
   // alias = num_machine
   // desc = the number of machines for distributed learning application
@@ -997,10 +961,6 @@ struct Config {
   // desc = list of machines in the following format: ``ip1:port1,ip2:port2``
   std::string machines = "";
 
-  #pragma endregion
-
-  #pragma region GPU Parameters
-
   // desc = OpenCL platform ID. Usually each GPU vendor exposes one OpenCL platform
   // desc = ``-1`` means the system-wide default platform
   // desc = **Note**: refer to `GPU Targets <./GPU-Targets.rst#query-opencl-devices-in-your-system>`__ for more details
@@ -1019,10 +979,6 @@ struct Config {
   // desc = number of GPUs
   // desc = **Note**: can be used only in CUDA implementation
   int num_gpu = 1;
-
-  #pragma endregion
-
-  #pragma endregion
 
   size_t file_load_progress_interval_bytes = size_t(10) * 1024 * 1024 * 1024;
 
