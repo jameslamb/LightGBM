@@ -223,3 +223,4 @@ https://github.com/search?q=org%3Acran+filename%3AMakevars.win+LAPACK_LIBS&type=
 
 * https://developer.r-project.org/Blog/public/2018/03/23/maximum-number-of-dlls/index.html
 * https://stat.ethz.ch/pipermail/r-help/2012-December/342542.html
+* http://mingw.5.n7.nabble.com/Finding-dependent-dll-files-with-objdump-td4035.html

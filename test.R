@@ -3,13 +3,14 @@
 #original_options <- options()
 
 print("--- before ---")
-gctorture(TRUE)
 getLoadedDLLs()
+print("ok go")
+Sys.sleep(60)
 library(fansi)
 library(lightgbm)
-Sys.sleep(60)
 print("--- after ---")
 getLoadedDLLs()
+
 
 #dyn.unload(file.path(.libPaths()[1], "fansi", "libs", "x64", "fansi.dll"))
 
