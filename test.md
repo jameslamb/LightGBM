@@ -219,8 +219,62 @@ https://github.com/search?q=org%3Acran+filename%3AMakevars.win+LAPACK_LIBS&type=
 
 > A macro containing the LAPACK libraries (and paths where appropriate) used when building R. This may need to be included in PKG_LIBS. It may point to a dynamic library libRlapack which contains the main double-precision LAPACK routines as well as those double-complex LAPACK routines needed to build R, or it may point to an external LAPACK library, or may be empty if an external BLAS library also contains LAPACK.
 
+## Checking imports
+
+Can use `dependencies.exe` to check what LightGBM needs to import.
+
+```shell
+Set dependencies="C:\Users\James\Downloads\Dependencies_x64_Release\Dependencies.exe"
+
+%dependencies% -imports "C:\Users\James\Documents\R\win-library\4.1\lightgbm\libs\x64\lightgbm.dll"
+```
+
+Or add `-chain` to see all the DLLs loaded (recursively).
+
+```shell
+%dependencies% -imports -chain "C:\Users\James\Documents\R\win-library\4.1\fansi\libs\x64\fansi.dll"
+```
+
+## Following the ws2_32 advice
+
+This is the linker command we got
+
+```shell
+C:/rtools40/mingw64/bin/g++ \
+    -shared \
+    -s \
+    -static-libgcc \
+    -o lightgbm.dll \
+    lightgbm-win.def \
+        boosting/boosting.o \
+        boosting/gbdt.o \
+        boosting/gbdt_model_text.o \
+        boosting/gbdt_prediction.o \
+        boosting/prediction_early_stop.o \
+        io/bin.o \
+        io/config.o \
+        io/config_auto.o \
+        io/dataset.o io/dataset_loader.o io/file_io.o io/json11.o io/metadata.o io/parser.o io/train_share_states.o io/tree.o metric/dcg_calculator.o metric/metric.o objective/objective_function.o network/ifaddrs_patch.o network/linker_topo.o network/linkers_mpi.o network/linkers_socket.o network/network.o treelearner/data_parallel_tree_learner.o treelearner/feature_parallel_tree_learner.o treelearner/gpu_tree_learner.o treelearner/linear_tree_learner.o treelearner/serial_tree_learner.o treelearner/tree_learner.o treelearner/voting_parallel_tree_learner.o c_api.o lightgbm_R.o \
+    -fopenmp \
+    -pthread \
+    -lws2_32 \
+    -lIphlpapi \
+    -LC:/PROGRA~1/R/R-41~1.0/bin/x64 \
+    -lR
+```
+
 ## References
 
 * https://developer.r-project.org/Blog/public/2018/03/23/maximum-number-of-dlls/index.html
 * https://stat.ethz.ch/pipermail/r-help/2012-December/342542.html
 * http://mingw.5.n7.nabble.com/Finding-dependent-dll-files-with-objdump-td4035.html
+* https://docs.microsoft.com/en-us/troubleshoot/windows-client/deployment/dynamic-link-library
+* https://www.jimhester.com/post/2020-08-20-best-os-for-r/
+* https://stackoverflow.com/questions/57831867/do-i-actually-have-to-link-ws2-32-lib
+* `{ps}` also links to `iphlpapi` and `ws2_32`! https://github.com/cran/ps/blob/31e82ffa43afb5edfe00200cab80e99ee2c43785/configure
+* this thing says you need to add a new define before pulling in winsock2.h, to avoid some conflicts with an old version of `<windows.h>`!! - https://stackoverflow.com/a/11040230
+    - discovered in the source of `{ps}`: https://github.com/cran/ps/blob/31e82ffa43afb5edfe00200cab80e99ee2c43785/src/api-windows-conn.c#L2-L3
+    - and more on this: https://docs.microsoft.com/en-us/windows/win32/winsock/creating-a-basic-winsock-application
+    - "The Iphlpapi.h header file is required if an application is using the IP Helper APIs. When the Iphlpapi.h header file is required, the #include line for the Winsock2.h header file should be placed before the #include line for the Iphlpapi.h header file."
+* you also might need this pragma, see the ClickHouse source (https://github.com/cran/RClickhouse/blob/ce495690e90cbcb874ec9c48ef7e6629cbe6db06/src/vendor/clickhouse-cpp/clickhouse/base/socket.h#L10)
+    - this is mentioned in https://docs.microsoft.com/en-us/windows/win32/winsock/creating-a-basic-winsock-application

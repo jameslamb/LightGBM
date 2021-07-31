@@ -5,7 +5,6 @@
 print("--- before ---")
 getLoadedDLLs()
 print("ok go")
-Sys.sleep(60)
 library(fansi)
 library(lightgbm)
 print("--- after ---")
@@ -29,6 +28,7 @@ dtrain <- lgb.Dataset(
     data = matrix(rnorm(1000), nrow = 100)
     , label = rnorm(100)
 )
+print("constructing")
 dtrain$construct()
 
 print("done")

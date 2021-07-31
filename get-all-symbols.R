@@ -1,6 +1,77 @@
 # get all exported symbols for all loaded DLLs
 
 library(processx)
+library(stringr)
+
+.get_all_dependency_dlls <- function(dll_path) {
+    dep_exe <- "C:/Users/James/Downloads/Dependencies_x64_Release/Dependencies.exe"
+    out_file <- tempfile()
+    result <- processx::run(
+        command = dep_exe
+        , args = c(
+            "-imports"
+            , "-chain"
+            , dll_path
+        )
+        , stdout = out_file
+        , error_on_status = FALSE
+        , windows_verbatim_args = FALSE
+    )
+    contents <- readLines(out_file)
+    return(contents)
+}
+
+.parse_deps <- function(deps_content) {
+    dll_paths <- stringr::str_extract(
+        string = tolower(deps_content)
+        , pattern = "[a-z0-9\\-\\._]+ \\([a-z0-9_]+\\) : c:\\\\[a-z0-9\\\\_\\-\\. ]+\\.dll"
+    )
+    num_not_found <- sum(grepl("\\(not_found\\)", deps_content))
+    print(paste0("DLLs not found by dependencies.exe: ", num_not_found))
+    dll_paths <- dll_paths[!is.na(dll_paths)]
+    print(paste0(length(dll_paths), " of the ", length(deps_content), " lines in input had paths to DLLs"))
+    # https://stackoverflow.com/a/7199074
+    dll_paths <- unique(tolower(dll_paths))
+    print(paste0("maps to ", length(dll_paths), " unique DLLs"))
+    splits <- lapply(
+        X = strsplit(
+            x = dll_paths
+            , split = " : "
+        )
+        , FUN = function(split_vec){
+            return(data.table::data.table(
+                name = split_vec[[1]]
+                , path = split_vec[[2]]
+            ))
+        }
+    )
+    splitDT <- data.table::rbindlist(
+        l = splits
+        , use.names = TRUE
+    )
+    
+    return(splitDT)
+}
+
+lightgbm_dll <- "C:/Users/James/Documents/R/win-library/4.1/lightgbm/libs/x64/lightgbm.dll"
+lightgbmDT <- .parse_deps(
+    .get_all_dependency_dlls(lightgbm_dll)
+)
+lightgbm_paths <- lightgbmDT[, sort(unique(path))]
+
+
+fansi_dll <- "C:/Users/James/Documents/R/win-library/4.1/fansi/libs/x64/fansi.dll"
+fansiDT <- .parse_deps(
+    .get_all_dependency_dlls(fansi_dll)
+)
+fansi_paths <- fansiDT[, sort(unique(path))]
+
+datatable_dll <- "C:/Users/James/Documents/R/win-library/4.1/data.table/libs/x64/datatable.dll"
+datatableDT <- .parse_deps(
+    .get_all_dependency_dlls(datatable_dll)
+)
+datatable_paths <- datatableDT[, sort(unique(path))]
+
 
 .dumpbin <- function(dll_path) {
     print(paste0("working on path ", dll_path))
