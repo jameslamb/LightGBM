@@ -283,3 +283,4 @@ C:/rtools40/mingw64/bin/g++ \
 * something about num_machines needing to be initialized?
     - https://stackoverflow.com/a/22794969
     - aha! this is uninitialized, somehow: https://stackoverflow.com/a/1226497
+* maybe this is relevant, I have no idea: https://stackoverflow.com/a/58366171
