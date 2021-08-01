@@ -1,4 +1,5 @@
 library(testthat)
+library(fansi)
 library(lightgbm)
 
 test_check(

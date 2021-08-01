@@ -280,3 +280,6 @@ C:/rtools40/mingw64/bin/g++ \
     - this is mentioned in https://docs.microsoft.com/en-us/windows/win32/winsock/creating-a-basic-winsock-application
 * https://r-pkgs.org/src.html
 * read about DLL search order at https://syedhasan010.medium.com/what-are-dlls-8027048051fc
+* something about num_machines needing to be initialized?
+    - https://stackoverflow.com/a/22794969
+    - aha! this is uninitialized, somehow: https://stackoverflow.com/a/1226497
