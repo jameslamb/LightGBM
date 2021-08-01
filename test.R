@@ -2,13 +2,8 @@
 
 #original_options <- options()
 
-print("--- before ---")
-getLoadedDLLs()
-print("ok go")
 library(fansi)
 library(lightgbm)
-print("--- after ---")
-getLoadedDLLs()
 
 
 #dyn.unload(file.path(.libPaths()[1], "fansi", "libs", "x64", "fansi.dll"))
