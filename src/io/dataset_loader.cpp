@@ -625,8 +625,6 @@ Dataset* DatasetLoader::ConstructFromSampleData(double** sample_values,
   Log::Info("[dataset_loader.cpp] ConstructFromSampleData() - line 626");
   int num_total_features = num_col;
   Log::Info("[dataset_loader.cpp] ConstructFromSampleData() - line 628");
-  int some_random_nonsense = Network::num_machines();
-  Log::Info("[dataset_loader.cpp] ConstructFromSampleData() - trying to get num_machines before if statement");
   if (Network::num_machines() > 1) {
     Log::Info("[dataset_loader.cpp] ConstructFromSampleData() - line 630");
     num_total_features = Network::GlobalSyncUpByMax(num_total_features);
