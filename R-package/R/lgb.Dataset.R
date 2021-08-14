@@ -34,7 +34,10 @@ Dataset <- R6::R6Class(
                           free_raw_data = TRUE,
                           used_indices = NULL,
                           info = list(),
-                          ...) {
+                          label = NULL,
+                          weight = NULL,
+                          init_score = NULL,
+                          group = NULL) {
 
       # validate inputs early to avoid unnecessary computation
       if (!(is.null(reference) || lgb.is.Dataset(reference))) {
@@ -44,25 +47,17 @@ Dataset <- R6::R6Class(
           stop("lgb.Dataset: If provided, predictor must be a ", sQuote("lgb.Predictor"))
       }
 
-      # Check for additional parameters
-      additional_params <- list(...)
-
-      # Check if attribute key is in the known attribute list
-      for (key in names(additional_params)) {
-
-        # Key existing
-        if (key %in% .INFO_KEYS()) {
-
-          # Store as info
-          info[[key]] <- additional_params[[key]]
-
-        } else {
-
-          # Store as param
-          params[[key]] <- additional_params[[key]]
-
-        }
-
+      if (!is.null(label)) {
+        info[["label"]] <- label
+      }
+      if (!is.null(weight)) {
+        info[["weight"]] <- weight
+      }
+      if (!is.null(init_score)) {
+        info[["init_score"]] <- init_score
+      }
+      if (!is.null(group)) {
+        info[["group"]] <- group
       }
 
       # Check for matrix format
@@ -92,7 +87,10 @@ Dataset <- R6::R6Class(
 
     create_valid = function(data,
                             info = list(),
-                            ...) {
+                            label = NULL,
+                            weight = NULL,
+                            init_score = NULL,
+                            group = NULL) {
 
       # Create new dataset
       ret <- Dataset$new(
@@ -105,7 +103,10 @@ Dataset <- R6::R6Class(
         , free_raw_data = private$free_raw_data
         , used_indices = NULL
         , info = info
-        , ...
+        , label = label
+        , weight = weight
+        , init_score = init_score
+        , group = group
       )
 
       return(invisible(ret))
@@ -728,7 +729,7 @@ Dataset <- R6::R6Class(
 #'                      cannot be changed after it has been constructed. If you'd prefer to be able to
 #'                      change the Dataset object after construction, set \code{free_raw_data = FALSE}.
 #' @param info a list of information of the \code{lgb.Dataset} object
-#' @param ... other information to pass to \code{info} or parameters pass to \code{params}
+#' @param ... other parameters passed to \code{params}
 #'
 #' @return constructed dataset
 #'
@@ -750,7 +751,21 @@ lgb.Dataset <- function(data,
                         categorical_feature = NULL,
                         free_raw_data = TRUE,
                         info = list(),
+                        label = NULL,
+                        weight = NULL,
+                        init_score = NULL,
+                        group = NULL,
                         ...) {
+
+  additional_params <- list(...)
+  if (length(additional_params) > 0L) {
+    warning(paste0(
+      "lgb.Dataset: found parameters passed through '...'. "
+      , "This behavior is deprecated and will be removed in future releases of lightgbm. "
+      , "Pass these parameters as elements in list 'params' instead."
+    ))
+  }
+  params <- modifyList(params, additional_params)
 
   # Create new dataset
   return(
@@ -764,7 +779,10 @@ lgb.Dataset <- function(data,
       , free_raw_data = free_raw_data
       , used_indices = NULL
       , info = info
-      , ...
+      , label = label
+      , weight = weight
+      , init_score = init_score
+      , group = group
     ))
   )
 
@@ -790,15 +808,41 @@ lgb.Dataset <- function(data,
 #' dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
 #' }
 #' @export
-lgb.Dataset.create.valid <- function(dataset, data, info = list(), ...) {
+lgb.Dataset.create.valid <- function(dataset,
+                                     data,
+                                     info = list(),
+                                     label = NULL,
+                                     weight = NULL,
+                                     init_score = NULL,
+                                     group = NULL,
+                                     ...) {
 
   # Check if dataset is not a dataset
   if (!lgb.is.Dataset(x = dataset)) {
     stop("lgb.Dataset.create.valid: input data should be an lgb.Dataset object")
   }
 
+  additional_args <- list(...)
+  if (length(additional_args) > 0L) {
+    warning(paste0(
+      "lgb.Dataset.create.valid: Found the following passed through '...': "
+      , paste(names(additional_args), collapse = ", ")
+      , ". These are ignored. In future releases of lightgbm, this warning will become an error. "
+      , "See ?lgb.Dataset.create.valid for documentation on how to call this function."
+    ))
+  }
+
   # Create validation dataset
-  return(invisible(dataset$create_valid(data = data, info = info, ...)))
+  return(invisible(
+    dataset$create_valid(
+      data = data
+      , info = info
+      , label = label
+      , weight = weight
+      , init_score = init_score
+      , group = group
+    )
+  ))
 
 }
 
@@ -831,7 +875,7 @@ lgb.Dataset.construct <- function(dataset) {
 #' @title Dimensions of an \code{lgb.Dataset}
 #' @description Returns a vector of numbers of rows and of columns in an \code{lgb.Dataset}.
 #' @param x Object of class \code{lgb.Dataset}
-#' @param ... other parameters
+#' @param ... other parameters (ignored)
 #'
 #' @return a vector of numbers of rows and of columns
 #'
@@ -856,6 +900,16 @@ dim.lgb.Dataset <- function(x, ...) {
   # Check if dataset is not a dataset
   if (!lgb.is.Dataset(x = x)) {
     stop("dim.lgb.Dataset: input data should be an lgb.Dataset object")
+  }
+
+  additional_args <- list(...)
+  if (length(additional_args) > 0L) {
+    warning(paste0(
+      "dim.lgb.Dataset: Found the following passed through '...': "
+      , paste(names(additional_args), collapse = ", ")
+      , ". These are ignored. In future releases of lightgbm, this warning will become an error. "
+      , "See ?dim.lgb.Dataset for documentation on how to call this function."
+    ))
   }
 
   return(x$dim())
@@ -978,7 +1032,7 @@ slice.lgb.Dataset <- function(dataset, idxset, ...) {
 #' @description Get one attribute of a \code{lgb.Dataset}
 #' @param dataset Object of class \code{lgb.Dataset}
 #' @param name the name of the information field to get (see details)
-#' @param ... other parameters
+#' @param ... other parameters (ignored)
 #' @return info data
 #'
 #' @details
@@ -1020,6 +1074,16 @@ getinfo.lgb.Dataset <- function(dataset, name, ...) {
   # Check if dataset is not a dataset
   if (!lgb.is.Dataset(x = dataset)) {
     stop("getinfo.lgb.Dataset: input dataset should be an lgb.Dataset object")
+  }
+
+  additional_params <- list(...)
+  if (length(additional_args) > 0L) {
+    warning(paste0(
+      "getinfo.lgb.Dataset: Found the following passed through '...': "
+      , paste(names(additional_args), collapse = ", ")
+      , ". These are ignored. In future releases of lightgbm, this warning will become an error. "
+      , "See ?getinfo.lgb.Dataset for documentation on how to call this function."
+    ))
   }
 
   return(dataset$getinfo(name = name))
@@ -1073,6 +1137,16 @@ setinfo.lgb.Dataset <- function(dataset, name, info, ...) {
 
   if (!lgb.is.Dataset(x = dataset)) {
     stop("setinfo.lgb.Dataset: input dataset should be an lgb.Dataset object")
+  }
+
+  additional_params <- list(...)
+  if (length(additional_args) > 0L) {
+    warning(paste0(
+      "setinfo.lgb.Dataset: Found the following passed through '...': "
+      , paste(names(additional_args), collapse = ", ")
+      , ". These are ignored. In future releases of lightgbm, this warning will become an error. "
+      , "See ?setinfo.lgb.Dataset for documentation on how to call this function."
+    ))
   }
 
   return(invisible(dataset$setinfo(name = name, info = info)))
