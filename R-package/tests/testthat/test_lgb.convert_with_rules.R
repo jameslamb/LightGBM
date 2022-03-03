@@ -1,3 +1,4 @@
+#--- no logs ---#
 test_that("lgb.convert_with_rules() rejects inputs that are not a data.table or data.frame", {
     bad_inputs <- list(
         matrix(1.0:10.0, 2L, 5L)

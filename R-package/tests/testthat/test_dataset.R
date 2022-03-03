@@ -1,3 +1,5 @@
+#--- no logs ---#
+# almost no logs: don't need to print Fatal log messages to stderr AND raise them as R errors
 VERBOSITY <- as.integer(
   Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
 )
@@ -12,16 +14,27 @@ test_label <- agaricus.test$label[1L:100L]
 
 test_that("lgb.Dataset: basic construction, saving, loading", {
   # from sparse matrix
-  dtest1 <- lgb.Dataset(test_data, label = test_label)
+  dtest1 <- lgb.Dataset(
+    test_data
+    , label = test_label
+    , params = list(verbosity = VERBOSITY)
+  )
   # from dense matrix
-  dtest2 <- lgb.Dataset(as.matrix(test_data), label = test_label)
+  dtest2 <- lgb.Dataset(
+    as.matrix(test_data)
+    , label = test_label
+    , params = list(verbosity = VERBOSITY)
+  )
   expect_equal(get_field(dtest1, "label"), get_field(dtest2, "label"))
 
   # save to a local file
   tmp_file <- tempfile("lgb.Dataset_")
   lgb.Dataset.save(dtest1, tmp_file)
   # read from a local file
-  dtest3 <- lgb.Dataset(tmp_file)
+  dtest3 <- lgb.Dataset(
+    data = tmp_file
+    , params = list(verbosity = VERBOSITY)
+  )
   lgb.Dataset.construct(dtest3)
   unlink(tmp_file)
   expect_equal(get_field(dtest1, "label"), get_field(dtest3, "label"))
@@ -358,6 +371,7 @@ test_that("lgb.Dataset: should be able to run lgb.train() immediately after usin
   dtest <- lgb.Dataset(
     data = test_data
     , label = test_label
+    , params = list(verbose = VERBOSITY)
   )
   tmp_file <- tempfile(pattern = "lgb.Dataset_")
   lgb.Dataset.save(
@@ -389,6 +403,7 @@ test_that("lgb.Dataset: should be able to run lgb.cv() immediately after using l
   dtest <- lgb.Dataset(
     data = test_data
     , label = test_label
+    , params = list(verbosity = VERBOSITY)
   )
   tmp_file <- tempfile(pattern = "lgb.Dataset_")
   lgb.Dataset.save(
@@ -404,15 +419,27 @@ test_that("lgb.Dataset: should be able to run lgb.cv() immediately after using l
     , metric = "binary_logloss"
     , num_leaves = 5L
     , learning_rate = 1.0
+    , verbosity = VERBOSITY
   )
 
   # should be able to train right away
-  bst <- lgb.cv(
-    params = param
-    , data = dtest_read_in
-  )
+  logs <- capture.output({
+    bst <- lgb.cv(
+      params = param
+      , data = dtest_read_in
+      , nrounds = 10L
+      , nfold = 2L
+    )
+  })
 
   expect_true(methods::is(bst, "lgb.CVBooster"))
+
+  # the only printed logs should be from eval (and maybe LightGBM's dependencies)
+  expect_true(any(grepl(
+    pattern = ".* valid's binary_logloss\\:[0-9]+"
+    , x = logs
+  )))
+  expect_false(any(grepl("\\[LightGBM\\]", logs)))
 })
 
 test_that("lgb.Dataset: should be able to use and retrieve long feature names", {
@@ -446,7 +473,10 @@ test_that("lgb.Dataset: should be able to create a Dataset from a text file with
 
   dtrain <- lgb.Dataset(
     data = train_file
-    , params = list(header = TRUE)
+    , params = list(
+      header = TRUE
+      , verbosity = VERBOSITY
+    )
   )
   dtrain$construct()
   expect_identical(dtrain$get_colnames(), c("x1", "x2"))
@@ -467,7 +497,10 @@ test_that("lgb.Dataset: should be able to create a Dataset from a text file with
 
   dtrain <- lgb.Dataset(
     data = train_file
-    , params = list(header = FALSE)
+    , params = list(
+      header = FALSE
+      , verbosity = VERBOSITY
+    )
   )
   dtrain$construct()
   expect_identical(dtrain$get_colnames(), c("Column_0", "Column_1"))

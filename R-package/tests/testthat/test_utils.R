@@ -1,3 +1,4 @@
+#--- no logs ---#
 test_that("lgb.params2str() works as expected for empty lists", {
     out_str <- lgb.params2str(
         params = list()

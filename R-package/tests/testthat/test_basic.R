@@ -71,16 +71,27 @@ DVALID_RANDOM_CLASSIFICATION <- lgb.Dataset(
 
 test_that("train and predict binary classification", {
   nrounds <- 10L
-  bst <- lightgbm(
-    data = train$data
-    , label = train$label
-    , params = list(
-        num_leaves = 5L
-        , objective = "binary"
-        , metric = "binary_error"
+  logs <- capture.output({
+    bst <- lightgbm(
+      data = train$data
+      , label = train$label
+      , params = list(
+          num_leaves = 5L
+          , objective = "binary"
+          , metric = "binary_error"
+          , verbose = VERBOSITY
+      )
+      , nrounds = nrounds
     )
-    , nrounds = nrounds
-  )
+  })
+
+  # the only printed logs should be from eval (and maybe LightGBM's dependencies)
+  expect_true(any(grepl(
+    pattern = ".* train's binary_error\\:[0-9]+"
+    , x = logs
+  )))
+  expect_false(any(grepl("\\[LightGBM\\]", logs)))
+
   expect_false(is.null(bst$record_evals))
   record_results <- lgb.get.eval.result(bst, "train", "binary_error")
   expect_lt(min(record_results), 0.02)
@@ -100,20 +111,30 @@ test_that("train and predict softmax", {
   set.seed(708L)
   lb <- as.numeric(iris$Species) - 1L
 
-  bst <- lightgbm(
-    data = as.matrix(iris[, -5L])
-    , label = lb
-    , params = list(
-        num_leaves = 4L
-        , learning_rate = 0.05
-        , min_data = 20L
-        , min_hessian = 10.0
-        , objective = "multiclass"
-        , metric = "multi_error"
-        , num_class = 3L
+  logs <- capture.output({
+    bst <- lightgbm(
+      data = as.matrix(iris[, -5L])
+      , label = lb
+      , params = list(
+          num_leaves = 4L
+          , learning_rate = 0.05
+          , min_data = 20L
+          , min_hessian = 10.0
+          , objective = "multiclass"
+          , metric = "multi_error"
+          , num_class = 3L
+          , verbosity = VERBOSITY
+      )
+      , nrounds = 20L
     )
-    , nrounds = 20L
-  )
+  })
+
+  # the only printed logs should be from eval (and maybe LightGBM's dependencies)
+  expect_true(any(grepl(
+    pattern = ".* train's multi_error\\:[0-9]+"
+    , x = logs
+  )))
+  expect_false(any(grepl("\\[LightGBM\\]", logs)))
 
   expect_false(is.null(bst$record_evals))
   record_results <- lgb.get.eval.result(bst, "train", "multi_error")
@@ -126,17 +147,20 @@ test_that("train and predict softmax", {
 
 test_that("use of multiple eval metrics works", {
   metrics <- list("binary_error", "auc", "binary_logloss")
-  bst <- lightgbm(
-    data = train$data
-    , label = train$label
-    , params = list(
-        num_leaves = 4L
-        , learning_rate = 1.0
-        , objective = "binary"
-        , metric = metrics
+  logs <- capture.output({
+    bst <- lightgbm(
+      data = train$data
+      , label = train$label
+      , params = list(
+          num_leaves = 4L
+          , learning_rate = 1.0
+          , objective = "binary"
+          , metric = metrics
+          , verbosity = VERBOSITY
+      )
+      , nrounds = 10L
     )
-    , nrounds = 10L
-  )
+  })
   expect_false(is.null(bst$record_evals))
   expect_named(
     bst$record_evals[["train"]]
@@ -144,40 +168,70 @@ test_that("use of multiple eval metrics works", {
     , ignore.order = FALSE
     , ignore.case = FALSE
   )
+
+  # the only printed logs should be from eval (and maybe LightGBM's dependencies)
+  expect_true(any(grepl(
+    pattern = ".* train's binary_error\\:[0-9]+.* train's auc\\:[0-9]+.* train's binary_logloss\\:[0-9]+"
+    , x = logs
+  )))
+  expect_false(any(grepl("\\[LightGBM\\]", logs)))
+
 })
 
 test_that("lgb.Booster.upper_bound() and lgb.Booster.lower_bound() work as expected for binary classification", {
   set.seed(708L)
   nrounds <- 10L
-  bst <- lightgbm(
-    data = train$data
-    , label = train$label
-    , params = list(
-        num_leaves = 5L
-        , objective = "binary"
-        , metric = "binary_error"
+  logs <- capture.output({
+    bst <- lightgbm(
+      data = train$data
+      , label = train$label
+      , params = list(
+          num_leaves = 5L
+          , objective = "binary"
+          , metric = "binary_error"
+          , verbosity = VERBOSITY
+      )
+      , nrounds = nrounds
     )
-    , nrounds = nrounds
-  )
+  })
   expect_true(abs(bst$lower_bound() - -1.590853) < TOLERANCE)
   expect_true(abs(bst$upper_bound() - 1.871015) <  TOLERANCE)
+
+  # the only printed logs should be from eval (and maybe LightGBM's dependencies)
+  expect_true(any(grepl(
+    pattern = ".* train's binary_error\\:[0-9]+"
+    , x = logs
+  )))
+  expect_false(any(grepl("\\[LightGBM\\]", logs)))
+
 })
 
 test_that("lgb.Booster.upper_bound() and lgb.Booster.lower_bound() work as expected for regression", {
   set.seed(708L)
   nrounds <- 10L
-  bst <- lightgbm(
-    data = train$data
-    , label = train$label
-    , params = list(
-        num_leaves = 5L
-        , objective = "regression"
-        , metric = "l2"
+  logs <- capture.output({
+    bst <- lightgbm(
+      data = train$data
+      , label = train$label
+      , params = list(
+          num_leaves = 5L
+          , objective = "regression"
+          , metric = "l2"
+          , verbosity = VERBOSITY
+      )
+      , nrounds = nrounds
     )
-    , nrounds = nrounds
-  )
+  })
   expect_true(abs(bst$lower_bound() - 0.1513859) < TOLERANCE)
   expect_true(abs(bst$upper_bound() - 0.9080349) < TOLERANCE)
+
+  # the only printed logs should be from eval (and maybe LightGBM's dependencies)
+  expect_true(any(grepl(
+    pattern = ".* train's l2\\:[0-9]+"
+    , x = logs
+  )))
+  expect_false(any(grepl("\\[LightGBM\\]", logs)))
+
 })
 
 test_that("lightgbm() rejects negative or 0 value passed to nrounds", {

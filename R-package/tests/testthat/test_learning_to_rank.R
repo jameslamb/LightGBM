@@ -1,3 +1,4 @@
+#--- no logs ---#
 VERBOSITY <- as.integer(
   Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
 )
@@ -83,17 +84,27 @@ test_that("learning-to-rank with lgb.cv() works as expected", {
         , label_gain = "0,1,3"
         , min_data = 1L
         , learning_rate = 0.01
+        , verbosity = VERBOSITY
     )
     nfold <- 4L
     nrounds <- 10L
-    cv_bst <- lgb.cv(
-        params = params
-        , data = dtrain
-        , nrounds = nrounds
-        , nfold = nfold
-    )
+    logs <- capture.output({
+      cv_bst <- lgb.cv(
+          params = params
+          , data = dtrain
+          , nrounds = nrounds
+          , nfold = nfold
+      )
+    })
     expect_true(methods::is(cv_bst, "lgb.CVBooster"))
     expect_equal(length(cv_bst$boosters), nfold)
+
+    # the only printed logs should be from eval (and maybe LightGBM's dependencies)
+    expect_true(any(grepl(
+      pattern = ".* valid's ndcg\\@1\\:[0-9]+.* valid's ndcg\\@2\\:[0-9]+.* valid's ndcg\\@3\\:[0-9]+"
+      , x = logs
+    )))
+    expect_false(any(grepl("\\[LightGBM\\]", logs)))
 
     # "valid" should contain results for each metric
     eval_results <- cv_bst$record_evals[["valid"]]

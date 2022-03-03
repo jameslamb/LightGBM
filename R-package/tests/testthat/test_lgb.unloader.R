@@ -1,3 +1,5 @@
+#--- no logs ---#
+
 VERBOSITY <- as.integer(
     Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
 )

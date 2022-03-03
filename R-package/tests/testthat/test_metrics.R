@@ -1,3 +1,5 @@
+#--- no logs ---#
+
 test_that(".METRICS_HIGHER_BETTER() should be well formed", {
     metrics <- .METRICS_HIGHER_BETTER()
     metric_names <- names(.METRICS_HIGHER_BETTER())

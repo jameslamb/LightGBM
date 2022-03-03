@@ -1,3 +1,5 @@
+#--- no logs ---#
+# almost no logs: don't need to print Fatal log messages to stderr AND raise them as R errors
 VERBOSITY <- as.integer(
   Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
 )
@@ -59,24 +61,34 @@ test_that("lgb.get.eval.result() should throw an informative error for incorrect
         agaricus.train$data
         , label = agaricus.train$label
     )
-    model <- lgb.train(
-        params = list(
-            objective = "regression"
-            , metric = "l2"
-            , min_data = 1L
-            , learning_rate = 1.0
-            , verbose = VERBOSITY
-        )
-        , data = dtrain
-        , nrounds = 5L
-        , valids = list(
-            "test" = lgb.Dataset.create.valid(
-                dtrain
-                , agaricus.test$data
-                , label = agaricus.test$label
-            )
-        )
-    )
+    logs <- capture.output({
+      model <- lgb.train(
+          params = list(
+              objective = "regression"
+              , metric = "l2"
+              , min_data = 1L
+              , learning_rate = 1.0
+              , verbose = VERBOSITY
+          )
+          , data = dtrain
+          , nrounds = 5L
+          , valids = list(
+              "test" = lgb.Dataset.create.valid(
+                  dtrain
+                  , agaricus.test$data
+                  , label = agaricus.test$label
+              )
+          )
+      )
+    })
+
+    # the only printed logs should be from eval (and maybe LightGBM's dependencies)
+    expect_true(any(grepl(
+      pattern = ".* test's l2\\:[0-9]+"
+      , x = logs
+    )))
+    expect_false(any(grepl("\\[LightGBM\\]", logs)))
+
     expect_error({
         eval_results <- lgb.get.eval.result(
             booster = model
@@ -93,24 +105,34 @@ test_that("lgb.get.eval.result() should throw an informative error for incorrect
         agaricus.train$data
         , label = agaricus.train$label
     )
-    model <- lgb.train(
-        params = list(
-            objective = "regression"
-            , metric = "l2"
-            , min_data = 1L
-            , learning_rate = 1.0
-            , verbose = VERBOSITY
-        )
-        , data = dtrain
-        , nrounds = 5L
-        , valids = list(
-            "test" = lgb.Dataset.create.valid(
-                dtrain
-                , agaricus.test$data
-                , label = agaricus.test$label
-            )
-        )
-    )
+    logs <- capture.output({
+      model <- lgb.train(
+          params = list(
+              objective = "regression"
+              , metric = "l2"
+              , min_data = 1L
+              , learning_rate = 1.0
+              , verbose = VERBOSITY
+          )
+          , data = dtrain
+          , nrounds = 5L
+          , valids = list(
+              "test" = lgb.Dataset.create.valid(
+                  dtrain
+                  , agaricus.test$data
+                  , label = agaricus.test$label
+              )
+          )
+      )
+    })
+
+    # the only printed logs should be from eval (and maybe LightGBM's dependencies)
+    expect_true(any(grepl(
+      pattern = ".* test's l2\\:[0-9]+"
+      , x = logs
+    )))
+    expect_false(any(grepl("\\[LightGBM\\]", logs)))
+
     expect_error({
         eval_results <- lgb.get.eval.result(
             booster = model
@@ -126,17 +148,26 @@ test_that("lgb.load() gives the expected error messages given different incorrec
     data(agaricus.test, package = "lightgbm")
     train <- agaricus.train
     test <- agaricus.test
-    bst <- lightgbm(
-        data = as.matrix(train$data)
-        , label = train$label
-        , params = list(
-            objective = "binary"
-            , num_leaves = 4L
-            , learning_rate = 1.0
-            , verbose = VERBOSITY
-        )
-        , nrounds = 2L
-    )
+    logs <- capture.output({
+      bst <- lightgbm(
+          data = as.matrix(train$data)
+          , label = train$label
+          , params = list(
+              objective = "binary"
+              , num_leaves = 4L
+              , learning_rate = 1.0
+              , verbose = VERBOSITY
+          )
+          , nrounds = 2L
+      )
+    })
+
+    # the only printed logs should be from eval (and maybe LightGBM's dependencies)
+    expect_true(any(grepl(
+      pattern = ".* train's binary_logloss\\:[0-9]+"
+      , x = logs
+    )))
+    expect_false(any(grepl("\\[LightGBM\\]", logs)))
 
     # you have to give model_str or filename
     expect_error({
@@ -172,18 +203,27 @@ test_that("Loading a Booster from a text file works", {
     data(agaricus.test, package = "lightgbm")
     train <- agaricus.train
     test <- agaricus.test
-    bst <- lightgbm(
-        data = as.matrix(train$data)
-        , label = train$label
-        , params = list(
-            num_leaves = 4L
-            , learning_rate = 1.0
-            , objective = "binary"
-            , verbose = VERBOSITY
-        )
-        , nrounds = 2L
-    )
-    expect_true(lgb.is.Booster(bst))
+    logs <- capture.output({
+      bst <- lightgbm(
+          data = as.matrix(train$data)
+          , label = train$label
+          , params = list(
+              num_leaves = 4L
+              , learning_rate = 1.0
+              , objective = "binary"
+              , verbose = VERBOSITY
+          )
+          , nrounds = 2L
+      )
+      expect_true(lgb.is.Booster(bst))
+    })
+
+    # the only printed logs should be from eval (and maybe LightGBM's dependencies)
+    expect_true(any(grepl(
+      pattern = ".* train's binary_logloss\\:[0-9]+"
+      , x = logs
+    )))
+    expect_false(any(grepl("\\[LightGBM\\]", logs)))
 
     pred <- predict(bst, test$data)
     model_file <- tempfile(fileext = ".model")
@@ -248,18 +288,27 @@ test_that("Loading a Booster from a string works", {
     data(agaricus.test, package = "lightgbm")
     train <- agaricus.train
     test <- agaricus.test
-    bst <- lightgbm(
-        data = as.matrix(train$data)
-        , label = train$label
-        , params = list(
-            num_leaves = 4L
-            , learning_rate = 1.0
-            , objective = "binary"
-            , verbose = VERBOSITY
-        )
-        , nrounds = 2L
-    )
+    logs <- capture.output({
+      bst <- lightgbm(
+          data = as.matrix(train$data)
+          , label = train$label
+          , params = list(
+              num_leaves = 4L
+              , learning_rate = 1.0
+              , objective = "binary"
+              , verbose = VERBOSITY
+          )
+          , nrounds = 2L
+      )
+    })
     expect_true(lgb.is.Booster(bst))
+
+    # the only printed logs should be from eval (and maybe LightGBM's dependencies)
+    expect_true(any(grepl(
+      pattern = ".* train's binary_logloss\\:[0-9]+"
+      , x = logs
+    )))
+    expect_false(any(grepl("\\[LightGBM\\]", logs)))
 
     pred <- predict(bst, test$data)
     model_string <- bst$save_model_to_string()
@@ -352,18 +401,27 @@ test_that("If a string and a file are both passed to lgb.load() the file is used
     data(agaricus.test, package = "lightgbm")
     train <- agaricus.train
     test <- agaricus.test
-    bst <- lightgbm(
-        data = as.matrix(train$data)
-        , label = train$label
-        , params = list(
-            num_leaves = 4L
-            , learning_rate = 1.0
-            , objective = "binary"
-            , verbose = VERBOSITY
-        )
-        , nrounds = 2L
-    )
+    logs <- capture.output({
+      bst <- lightgbm(
+          data = as.matrix(train$data)
+          , label = train$label
+          , params = list(
+              num_leaves = 4L
+              , learning_rate = 1.0
+              , objective = "binary"
+              , verbose = VERBOSITY
+          )
+          , nrounds = 2L
+      )
+    })
     expect_true(lgb.is.Booster(bst))
+
+    # the only printed logs should be from eval (and maybe LightGBM's dependencies)
+    expect_true(any(grepl(
+      pattern = ".* train's binary_logloss\\:[0-9]+"
+      , x = logs
+    )))
+    expect_false(any(grepl("\\[LightGBM\\]", logs)))
 
     pred <- predict(bst, test$data)
     model_file <- tempfile(fileext = ".model")
@@ -407,17 +465,27 @@ test_that("Creating a Booster from a Dataset with an existing predictor should w
     set.seed(708L)
     data(agaricus.train, package = "lightgbm")
     nrounds <- 2L
-    bst <- lightgbm(
-        data = as.matrix(agaricus.train$data)
-        , label = agaricus.train$label
-        , params = list(
-            num_leaves = 4L
-            , learning_rate = 1.0
-            , objective = "binary"
-            , verbose = VERBOSITY
-        )
-        , nrounds = nrounds
-    )
+    logs <- capture.output({
+      bst <- lightgbm(
+          data = as.matrix(agaricus.train$data)
+          , label = agaricus.train$label
+          , params = list(
+              num_leaves = 4L
+              , learning_rate = 1.0
+              , objective = "binary"
+              , verbose = VERBOSITY
+          )
+          , nrounds = nrounds
+      )
+    })
+
+    # the only printed logs should be from eval (and maybe LightGBM's dependencies)
+    expect_true(any(grepl(
+      pattern = ".* train's binary_logloss\\:[0-9]+"
+      , x = logs
+    )))
+    expect_false(any(grepl("\\[LightGBM\\]", logs)))
+
     data(agaricus.test, package = "lightgbm")
     dtest <- Dataset$new(
         data = agaricus.test$data
@@ -480,6 +548,7 @@ test_that("Booster$eval() should work on a Dataset stored in a binary file", {
     eval_from_file <- bst$eval(
         data = lgb.Dataset(
             data = test_file
+            , params = list(verbosity = VERBOSITY)
         )$construct()
         , name = "test"
     )
@@ -500,17 +569,27 @@ test_that("Booster$rollback_one_iter() should work as expected", {
     train <- agaricus.train
     test <- agaricus.test
     nrounds <- 5L
-    bst <- lightgbm(
-        data = as.matrix(train$data)
-        , label = train$label
-        , params = list(
-            num_leaves = 4L
-            , learning_rate = 1.0
-            , objective = "binary"
-            , verbose = VERBOSITY
-        )
-        , nrounds = nrounds
-    )
+    logs <- capture.output({
+      bst <- lightgbm(
+          data = as.matrix(train$data)
+          , label = train$label
+          , params = list(
+              num_leaves = 4L
+              , learning_rate = 1.0
+              , objective = "binary"
+              , verbose = VERBOSITY
+          )
+          , nrounds = nrounds
+      )
+    })
+
+    # the only printed logs should be from eval (and maybe LightGBM's dependencies)
+    expect_true(any(grepl(
+      pattern = ".* train's binary_logloss\\:[0-9]+"
+      , x = logs
+    )))
+    expect_false(any(grepl("\\[LightGBM\\]", logs)))
+
     expect_equal(bst$current_iter(), nrounds)
     expect_true(lgb.is.Booster(bst))
     logloss <- bst$eval_train()[[1L]][["value"]]
@@ -534,42 +613,62 @@ test_that("Booster$update() passing a train_set works as expected", {
     nrounds <- 2L
 
     # train with 2 rounds and then update
-    bst <- lightgbm(
-        data = as.matrix(agaricus.train$data)
-        , label = agaricus.train$label
-        , params = list(
-            num_leaves = 4L
-            , learning_rate = 1.0
-            , objective = "binary"
-            , verbose = VERBOSITY
-        )
-        , nrounds = nrounds
-    )
+    logs <- capture.output({
+      bst <- lightgbm(
+          data = as.matrix(agaricus.train$data)
+          , label = agaricus.train$label
+          , params = list(
+              num_leaves = 4L
+              , learning_rate = 1.0
+              , objective = "binary"
+              , verbose = VERBOSITY
+          )
+          , nrounds = nrounds
+      )
+    })
+
+    # the only printed logs should be from eval (and maybe LightGBM's dependencies)
+    expect_true(any(grepl(
+      pattern = ".* train's binary_logloss\\:[0-9]+"
+      , x = logs
+    )))
+    expect_false(any(grepl("\\[LightGBM\\]", logs)))
+
     expect_true(lgb.is.Booster(bst))
     expect_equal(bst$current_iter(), nrounds)
     bst$update(
         train_set = Dataset$new(
             data = agaricus.train$data
             , label = agaricus.train$label
+            , params = list(verbosity = VERBOSITY)
         )
     )
     expect_true(lgb.is.Booster(bst))
     expect_equal(bst$current_iter(), nrounds + 1L)
 
     # train with 3 rounds directly
-    bst2 <- lightgbm(
-        data = as.matrix(agaricus.train$data)
-        , label = agaricus.train$label
-        , params = list(
-            num_leaves = 4L
-            , learning_rate = 1.0
-            , objective = "binary"
-            , verbose = VERBOSITY
-        )
-        , nrounds = nrounds +  1L
-    )
+    logs <- capture.output({
+      bst2 <- lightgbm(
+          data = as.matrix(agaricus.train$data)
+          , label = agaricus.train$label
+          , params = list(
+              num_leaves = 4L
+              , learning_rate = 1.0
+              , objective = "binary"
+              , verbose = VERBOSITY
+          )
+          , nrounds = nrounds +  1L
+      )
+    })
     expect_true(lgb.is.Booster(bst2))
     expect_equal(bst2$current_iter(), nrounds +  1L)
+
+    # the only printed logs should be from eval (and maybe LightGBM's dependencies)
+    expect_true(any(grepl(
+      pattern = ".* train's binary_logloss\\:[0-9]+"
+      , x = logs
+    )))
+    expect_false(any(grepl("\\[LightGBM\\]", logs)))
 
     # model with 2 rounds + 1 update should be identical to 3 rounds
     expect_equal(bst2$eval_train()[[1L]][["value"]], 0.04806585)
@@ -582,22 +681,31 @@ test_that("Booster$update() throws an informative error if you provide a non-Dat
     nrounds <- 2L
 
     # train with 2 rounds and then update
-    bst <- lightgbm(
-        data = as.matrix(agaricus.train$data)
-        , label = agaricus.train$label
-        , params = list(
-            num_leaves = 4L
-            , learning_rate = 1.0
-            , objective = "binary"
-            , verbose = VERBOSITY
-        )
-        , nrounds = nrounds
-    )
+    logs <- capture.output({
+      bst <- lightgbm(
+          data = as.matrix(agaricus.train$data)
+          , label = agaricus.train$label
+          , params = list(
+              num_leaves = 4L
+              , learning_rate = 1.0
+              , objective = "binary"
+              , verbose = VERBOSITY
+          )
+          , nrounds = nrounds
+      )
+    })
     expect_error({
         bst$update(
             train_set = data.frame(x = rnorm(10L))
         )
     }, regexp = "lgb.Booster.update: Only can use lgb.Dataset", fixed = TRUE)
+
+    # the only printed logs should be from eval (and maybe LightGBM's dependencies)
+    expect_true(any(grepl(
+      pattern = ".* train's binary_logloss\\:[0-9]+"
+      , x = logs
+    )))
+    expect_false(any(grepl("\\[LightGBM\\]", logs)))
 })
 
 test_that("Booster should store parameters and Booster$reset_parameter() should update them", {
@@ -677,18 +785,27 @@ test_that("Saving a model with different feature importance types works", {
     set.seed(708L)
     data(agaricus.train, package = "lightgbm")
     train <- agaricus.train
-    bst <- lightgbm(
-        data = as.matrix(train$data)
-        , label = train$label
-        , params = list(
-            num_leaves = 4L
-            , learning_rate = 1.0
-            , objective = "binary"
-            , verbose = VERBOSITY
-        )
-        , nrounds = 2L
-    )
+    logs <- capture.output({
+      bst <- lightgbm(
+          data = as.matrix(train$data)
+          , label = train$label
+          , params = list(
+              num_leaves = 4L
+              , learning_rate = 1.0
+              , objective = "binary"
+              , verbose = VERBOSITY
+          )
+          , nrounds = 2L
+      )
+    })
     expect_true(lgb.is.Booster(bst))
+
+    # the only printed logs should be from eval (and maybe LightGBM's dependencies)
+    expect_true(any(grepl(
+      pattern = ".* train's binary_logloss\\:[0-9]+"
+      , x = logs
+    )))
+    expect_false(any(grepl("\\[LightGBM\\]", logs)))
 
     .feat_importance_from_string <- function(model_string) {
         file_lines <- strsplit(model_string, "\n")[[1L]]
@@ -732,18 +849,27 @@ test_that("Saving a model with unknown importance type fails", {
     set.seed(708L)
     data(agaricus.train, package = "lightgbm")
     train <- agaricus.train
-    bst <- lightgbm(
-        data = as.matrix(train$data)
-        , label = train$label
-        , params = list(
-            num_leaves = 4L
-            , learning_rate = 1.0
-            , objective = "binary"
-            , verbose = VERBOSITY
-        )
-        , nrounds = 2L
-    )
+    logs <- capture.output({
+      bst <- lightgbm(
+          data = as.matrix(train$data)
+          , label = train$label
+          , params = list(
+              num_leaves = 4L
+              , learning_rate = 1.0
+              , objective = "binary"
+              , verbose = VERBOSITY
+          )
+          , nrounds = 2L
+      )
+    })
     expect_true(lgb.is.Booster(bst))
+
+    # the only printed logs should be from eval (and maybe LightGBM's dependencies)
+    expect_true(any(grepl(
+      pattern = ".* train's binary_logloss\\:[0-9]+"
+      , x = logs
+    )))
+    expect_false(any(grepl("\\[LightGBM\\]", logs)))
 
     UNSUPPORTED_IMPORTANCE <- 2L
     expect_error({
@@ -1150,15 +1276,25 @@ test_that("params (including dataset params) should be stored in .rds file for B
 
 test_that("Handle is automatically restored when calling predict", {
     data(agaricus.train, package = "lightgbm")
-    bst <- lightgbm(
-        agaricus.train$data
-        , agaricus.train$label
-        , nrounds = 5L
-        , obj = "binary"
-        , params = list(
-            verbose = VERBOSITY
-        )
-    )
+    logs <- capture.output({
+      bst <- lightgbm(
+          agaricus.train$data
+          , agaricus.train$label
+          , nrounds = 5L
+          , obj = "binary"
+          , params = list(
+              verbose = VERBOSITY
+          )
+      )
+    })
+
+    # the only printed logs should be from eval (and maybe LightGBM's dependencies)
+    expect_true(any(grepl(
+      pattern = ".* train's binary_logloss\\:[0-9]+"
+      , x = logs
+    )))
+    expect_false(any(grepl("\\[LightGBM\\]", logs)))
+
     bst_file <- tempfile(fileext = ".rds")
     saveRDS(bst, file = bst_file)
 
@@ -1253,21 +1389,60 @@ test_that("Booster's print, show, and summary work correctly", {
 
     .check_methods_work <- function(model) {
 
-        # should work for fitted models
-        ret <- print(model)
-        .have_same_handle(ret, model)
-        ret <- show(model)
-        expect_null(ret)
-        ret <- summary(model)
+        # print() (fitted model)
+        output_txt <- capture.output({
+          ret <- print(model)
+        })
+        expect_true(all(grepl("^LightGBM Model", output_txt[1L])))
+        expect_true(all(grepl("^Objective\\:", output_txt[2L])))
+        expect_true(all(grepl("^Fitted to dataset with [0-9]+ columns", output_txt[3L])))
+        expect_true(lgb.is.Booster(ret))
         .have_same_handle(ret, model)
 
-        # should not fail for finalized models
-        model$finalize()
-        ret <- print(model)
-        .have_same_handle(ret, model)
-        ret <- show(model)
+        # show() (fitted model)
+        output_txt <- capture.output({
+          ret <- show(model)
+        })
+        expect_true(all(grepl("^LightGBM Model", output_txt[1L])))
+        expect_true(all(grepl("^Objective\\:", output_txt[2L])))
+        expect_true(all(grepl("^Fitted to dataset with [0-9]+ columns", output_txt[3L])))
         expect_null(ret)
-        ret <- summary(model)
+
+        # summary() (fitted model)
+        output_txt <- capture.output({
+          ret <- summary(model)
+        })
+        expect_true(all(grepl("^LightGBM Model", output_txt[1L])))
+        expect_true(all(grepl("^Objective\\:", output_txt[2L])))
+        expect_true(all(grepl("^Fitted to dataset with [0-9]+ columns", output_txt[3L])))
+        .have_same_handle(ret, model)
+
+        # finalize model
+        model$finalize()
+        expected_text_for_finalized_model <- c(
+          "LightGBM Model"
+          , "(Booster handle is invalid)"
+        )
+
+        # print() (finalized model)
+        output_txt <- capture.output({
+          ret <- print(model)
+        })
+        expect_true(all(output_txt == expected_text_for_finalized_model))
+        .have_same_handle(ret, model)
+
+        # show() (finalized model)
+        output_txt <- capture.output({
+          ret <- show(model)
+        })
+        expect_true(all(output_txt == expected_text_for_finalized_model))
+        expect_null(ret)
+
+        # summary() (finalized model)
+        output_txt <- capture.output({
+          ret <- summary(model)
+        })
+        expect_true(all(output_txt == expected_text_for_finalized_model))
         .have_same_handle(ret, model)
     }
 

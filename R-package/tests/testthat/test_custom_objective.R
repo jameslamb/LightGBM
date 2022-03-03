@@ -1,3 +1,4 @@
+#--- no logs ---#
 VERBOSITY <- as.integer(
   Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
 )
@@ -43,27 +44,44 @@ param <- list(
 num_round <- 10L
 
 test_that("custom objective works", {
-  bst <- lgb.train(param, dtrain, num_round, watchlist, eval = evalerror)
+  logs <- capture.output({
+    bst <- lgb.train(param, dtrain, num_round, watchlist, eval = evalerror)
+  })
   expect_false(is.null(bst$record_evals))
+  # the only printed logs should be from eval (and maybe LightGBM's dependencies)
+  expect_true(any(grepl(
+    pattern = ".* train's auc\\:[0-9]+.* train's error\\:[0-9]+.* eval's auc\\:[0-9]+.* eval's error\\:[0-9]+"
+    , x = logs
+  )))
+  expect_false(any(grepl("\\[LightGBM\\]", logs)))
 })
 
 test_that("using a custom objective, custom eval, and no other metrics works", {
   set.seed(708L)
-  bst <- lgb.train(
-    params = list(
-      num_leaves = 8L
-      , learning_rate = 1.0
-      , verbose = VERBOSITY
+  logs <- capture.output({
+    bst <- lgb.train(
+      params = list(
+        num_leaves = 8L
+        , learning_rate = 1.0
+        , verbose = VERBOSITY
+      )
+      , data = dtrain
+      , nrounds = 4L
+      , valids = watchlist
+      , obj = logregobj
+      , eval = evalerror
     )
-    , data = dtrain
-    , nrounds = 4L
-    , valids = watchlist
-    , obj = logregobj
-    , eval = evalerror
-  )
+  })
   expect_false(is.null(bst$record_evals))
   expect_equal(bst$best_iter, 4L)
   expect_true(abs(bst$best_score - 0.000621) < TOLERANCE)
+
+  # the only printed logs should be from eval (and maybe LightGBM's dependencies)
+  expect_true(any(grepl(
+    pattern = ".* train's error\\:[0-8]+.* eval's error\\:[0-9]+"
+    , x = logs
+  )))
+  expect_false(any(grepl("\\[LightGBM\\]", logs)))
 
   eval_results <- bst$eval_valid(feval = evalerror)[[1L]]
   expect_true(eval_results[["data_name"]] == "eval")

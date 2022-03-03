@@ -1,3 +1,4 @@
+#--- no logs ---#
 VERBOSITY <- as.integer(
   Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
 )
@@ -65,19 +66,29 @@ test_that("start_iteration works correctly", {
         , agaricus.test$data
         , label = agaricus.test$label
     )
-    bst <- lightgbm(
-        data = as.matrix(train$data)
-        , label = train$label
-        , params = list(
-            num_leaves = 4L
-            , learning_rate = 0.6
-            , objective = "binary"
-            , verbosity = VERBOSITY
-        )
-        , nrounds = 50L
-        , valids = list("test" = dtest)
-        , early_stopping_rounds = 2L
-    )
+    logs <- capture.output({
+      bst <- lightgbm(
+          data = as.matrix(train$data)
+          , label = train$label
+          , params = list(
+              num_leaves = 4L
+              , learning_rate = 0.6
+              , objective = "binary"
+              , verbosity = VERBOSITY
+          )
+          , nrounds = 50L
+          , valids = list("test" = dtest)
+          , early_stopping_rounds = 2L
+      )
+    })
+
+    # the only printed logs should be from eval (and maybe LightGBM's dependencies)
+    expect_true(any(grepl(
+      pattern = ".* train's binary_logloss\\:[0-9]+.* test's binary_logloss\\:[0-9]+"
+      , x = logs
+    )))
+    expect_false(any(grepl("\\[LightGBM\\]", logs)))
+
     expect_true(lgb.is.Booster(bst))
     pred1 <- predict(bst, data = test$data, rawscore = TRUE)
     pred_contrib1 <- predict(bst, test$data, predcontrib = TRUE)

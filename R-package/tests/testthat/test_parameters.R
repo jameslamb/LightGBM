@@ -1,3 +1,4 @@
+#--- no logs ---
 data(agaricus.train, package = "lightgbm")
 data(agaricus.test, package = "lightgbm")
 train <- agaricus.train
