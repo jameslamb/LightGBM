@@ -199,7 +199,7 @@ Core Parameters
 
    -  **Note**: please **don't** change this during training, especially when running multiple jobs simultaneously by external packages, otherwise it may cause undesirable errors
 
--  ``device_type`` :raw-html:`<a id="device_type" title="Permalink to this parameter" href="#device_type">&#x1F517;&#xFE0E;</a>`, default = ``cpu``, type = enum, options: ``cpu``, ``gpu``, ``cuda``, aliases: ``device``
+-  ``device_type`` :raw-html:`<a id="device_type" title="Permalink to this parameter" href="#device_type">&#x1F517;&#xFE0E;</a>`, default = ``cpu``, type = enum, options: ``cpu``, ``gpu``, ``cuda``, ``cuda_exp``, aliases: ``device``
 
    -  device for the tree learning, you can use GPU to achieve the faster learning
 
@@ -208,6 +208,10 @@ Core Parameters
    -  **Note**: for the faster speed, GPU uses 32-bit float point to sum up by default, so this may affect the accuracy for some tasks. You can set ``gpu_use_dp=true`` to enable 64-bit float point, but it will slow down the training
 
    -  **Note**: refer to `Installation Guide <./Installation-Guide.rst#build-gpu-version>`__ to build LightGBM with GPU support
+
+   -  **Note**: ``cuda_exp`` is an experimental CUDA version, the installation guide for ``cuda_exp`` is identical with ``cuda``
+
+   -  **Note**: ``cuda_exp`` is faster than ``cuda`` and will replace ``cuda`` in the future
 
 -  ``seed`` :raw-html:`<a id="seed" title="Permalink to this parameter" href="#seed">&#x1F517;&#xFE0E;</a>`, default = ``None``, type = int, aliases: ``random_seed``, ``random_state``
 
@@ -1264,6 +1268,8 @@ The initial score file corresponds with data file line by line, and has per scor
 
 And if the name of data file is ``train.txt``, the initial score file should be named as ``train.txt.init`` and placed in the same folder as the data file.
 In this case, LightGBM will auto load initial score file if it exists.
+
+If binary data files exist for raw data file ``train.txt``, for example in the name ``train.txt.bin``, then the initial score file should be named as ``train.txt.bin.init``.
 
 Weight Data
 ~~~~~~~~~~~

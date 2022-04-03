@@ -84,19 +84,12 @@ jobs:
             toolchain: MSYS
             r_version: 4.1
             build_type: cmake
-          # Visual Studio 2017
-          - os: windows-2016
-            task: r-package
-            compiler: MSVC
-            toolchain: MSVC
-            r_version: 3.6
-            build_type: cmake
           # Visual Studio 2019
           - os: windows-2019
             task: r-package
             compiler: MSVC
             toolchain: MSVC
-            r_version: 4.1
+            r_version: 3.6
             build_type: cmake
           # Visual Studio 2022
           - os: windows-2022
@@ -108,12 +101,6 @@ jobs:
           ###############
           # CRAN builds #
           ###############
-          - os: windows-latest
-            task: r-package
-            compiler: MINGW
-            toolchain: MINGW
-            r_version: 3.6
-            build_type: cran
           - os: windows-latest
             task: r-package
             compiler: MINGW
@@ -201,7 +188,7 @@ jobs:
       - name: Install packages
         shell: bash
         run: |
-          RDscript${{ matrix.r_customization }} -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'rmarkdown', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
+          RDscript${{ matrix.r_customization }} -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'RhpcBLASctl', 'rmarkdown', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
           sh build-cran-package.sh --r-executable=RD${{ matrix.r_customization }}
           RD${{ matrix.r_customization }} CMD INSTALL lightgbm_*.tar.gz || exit -1
       - name: Run tests with sanitizers
@@ -232,7 +219,7 @@ jobs:
         shell: bash
         run: |
           export PATH=/opt/R-devel/bin/:${PATH}
-          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'rmarkdown', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
+          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'RhpcBLASctl', 'rmarkdown', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
           sh build-cran-package.sh
           R CMD check --as-cran --run-donttest lightgbm_*.tar.gz || exit -1
           if grep -q -E "NOTE|WARNING|ERROR" lightgbm.Rcheck/00check.log; then
