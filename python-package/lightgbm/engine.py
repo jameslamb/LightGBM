@@ -247,11 +247,11 @@ def train(
                                     iteration=i,
                                     begin_iteration=init_iteration,
                                     end_iteration=init_iteration + num_boost_round,
-                                    evaluation_result_list=None))
+                                    evaluation_result_list=[]))
 
         booster.update(fobj=fobj)
 
-        evaluation_result_list = []
+        evaluation_result_list: callback._ListOfEvalResultTuples = []
         # check evaluation result.
         if valid_sets is not None:
             if is_valid_contain_train:
@@ -270,7 +270,7 @@ def train(
             evaluation_result_list = earlyStopException.best_score
             break
     booster.best_score = collections.defaultdict(collections.OrderedDict)
-    for dataset_name, eval_name, score, _ in evaluation_result_list:
+    for dataset_name, eval_name, score, *_ in evaluation_result_list:
         booster.best_score[dataset_name][eval_name] = score
     if not keep_training_booster:
         booster.model_from_string(booster.model_to_string()).free_dataset()
@@ -724,7 +724,7 @@ def cv(
                                     iteration=i,
                                     begin_iteration=0,
                                     end_iteration=num_boost_round,
-                                    evaluation_result_list=None))
+                                    evaluation_result_list=[]))
         cvfolds.update(fobj=fobj)
         res = _agg_cv_result(cvfolds.eval_valid(feval))
         for _, key, mean, _, std in res:

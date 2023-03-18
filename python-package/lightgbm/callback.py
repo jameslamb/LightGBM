@@ -2,9 +2,14 @@
 """Callbacks library."""
 import collections
 from functools import partial
-from typing import Any, Callable, Dict, List, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Tuple, Union
 
 from .basic import _ConfigAliases, _LGBM_BoosterEvalMethodResultType, _log_info, _log_warning
+
+if TYPE_CHECKING:
+    from .basic import Booster
+    from .engine import CVBooster
+
 
 __all__ = [
     'early_stopping',
@@ -15,6 +20,10 @@ __all__ = [
 
 _EvalResultDict = Dict[str, Dict[str, List[Any]]]
 _EvalResultTuple = Union[
+    _LGBM_BoosterEvalMethodResultType,
+    Tuple[str, str, float, bool, float]
+]
+_ListOfEvalResultTuples = Union[
     List[_LGBM_BoosterEvalMethodResultType],
     List[Tuple[str, str, float, bool, float]]
 ]
@@ -23,7 +32,7 @@ _EvalResultTuple = Union[
 class EarlyStopException(Exception):
     """Exception of early stopping."""
 
-    def __init__(self, best_iteration: int, best_score: _EvalResultTuple) -> None:
+    def __init__(self, best_iteration: int, best_score: _ListOfEvalResultTuples) -> None:
         """Create early stopping exception.
 
         Parameters
@@ -39,14 +48,23 @@ class EarlyStopException(Exception):
 
 
 # Callback environment used by callbacks
-CallbackEnv = collections.namedtuple(
-    "CallbackEnv",
-    ["model",
-     "params",
-     "iteration",
-     "begin_iteration",
-     "end_iteration",
-     "evaluation_result_list"])
+class CallbackEnv:
+
+    def __init__(
+        self,
+        model: Union["Booster", "CVBooster"],
+        params: Dict[str,Any],
+        iteration: int,
+        begin_iteration: int,
+        end_iteration: int,
+        evaluation_result_list: _ListOfEvalResultTuples
+    ):
+        self.model = model
+        self.params = params
+        self.iteration = iteration
+        self.begin_iteration = begin_iteration
+        self.end_iteration = end_iteration
+        self.evaluation_result_list = evaluation_result_list
 
 
 def _format_eval_result(value: _EvalResultTuple, show_stdv: bool) -> str:
@@ -139,7 +157,7 @@ class _RecordEvaluationCallback:
             else:
                 data_name, eval_name = item[1].split()
                 res_mean = item[2]
-                res_stdv = item[4]
+                res_stdv = item[4]  # type: ignore[misc]
                 self.eval_result[data_name][f'{eval_name}-mean'].append(res_mean)
                 self.eval_result[data_name][f'{eval_name}-stdv'].append(res_stdv)
 
@@ -256,7 +274,7 @@ class _EarlyStoppingCallback:
     def _reset_storages(self) -> None:
         self.best_score: List[float] = []
         self.best_iter: List[int] = []
-        self.best_score_list: List[Union[_EvalResultTuple, None]] = []
+        self.best_score_list: List[_ListOfEvalResultTuples] = []
         self.cmp_op: List[Callable[[float, float], bool]] = []
         self.first_metric = ''
 
@@ -327,7 +345,9 @@ class _EarlyStoppingCallback:
         self.first_metric = env.evaluation_result_list[0][1].split(" ")[-1]
         for eval_ret, delta in zip(env.evaluation_result_list, deltas):
             self.best_iter.append(0)
-            self.best_score_list.append(None)
+            # evaluation_result_list = [('valid_set', 'binary_logloss', 0.5493617257019231, False)]
+            # self.cmp_op = []
+            # self.best_score = []
             if eval_ret[3]:  # greater is better
                 self.best_score.append(float('-inf'))
                 self.cmp_op.append(partial(self._gt_delta, delta=delta))
@@ -350,12 +370,18 @@ class _EarlyStoppingCallback:
             self._init(env)
         if not self.enabled:
             return
+        # self.best_score_list is initialized to an empty list
+        first_time_updating_best_score_list = (self.best_score_list == [])
         for i in range(len(env.evaluation_result_list)):
             score = env.evaluation_result_list[i][2]
-            if self.best_score_list[i] is None or self.cmp_op[i](score, self.best_score[i]):
+            # self.best_score_list is padded with None only for the 
+            if first_time_updating_best_score_list or self.cmp_op[i](score, self.best_score[i]):
                 self.best_score[i] = score
                 self.best_iter[i] = env.iteration
-                self.best_score_list[i] = env.evaluation_result_list
+                if first_time_updating_best_score_list:
+                    self.best_score_list.append(env.evaluation_result_list)
+                else:
+                    self.best_score_list[i] = env.evaluation_result_list
             # split is needed for "<dataset type> <metric>" case (e.g. "train l1")
             eval_name_splitted = env.evaluation_result_list[i][1].split(" ")
             if self.first_metric_only and self.first_metric != eval_name_splitted[-1]:
@@ -368,11 +394,22 @@ class _EarlyStoppingCallback:
                     _log_info(f"Early stopping, best iteration is:\n[{self.best_iter[i] + 1}]\t{eval_result_str}")
                     if self.first_metric_only:
                         _log_info(f"Evaluated only: {eval_name_splitted[-1]}")
+                raise RuntimeError
+                # best_score_list:
+                # [
+                #   [('train', 'l2', 0.05409259620138731, False), ('valid', 'l2', 0.21612814147381382, False)],
+                #   [('train', 'l2', 0.06273325223770398, False), ('valid', 'l2', 0.2094387142683015, False)]
+                # ]
                 raise EarlyStopException(self.best_iter[i], self.best_score_list[i])
             self._final_iteration_check(env, eval_name_splitted, i)
 
 
-def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbose: bool = True, min_delta: Union[float, List[float]] = 0.0) -> _EarlyStoppingCallback:
+def early_stopping(
+    stopping_rounds: int,
+    first_metric_only: bool = False,
+    verbose: bool = True,
+    min_delta: Union[float, List[float]] = 0.0
+) -> _EarlyStoppingCallback:
     """Create a callback that activates early stopping.
 
     Activates early stopping.
