@@ -53,6 +53,50 @@ class EarlyStopException(Exception):
         self.best_score = best_score
 
 
+@dataclass
+class _EvalResult:
+    dataset_name: str
+    metric_name: str
+    value: float
+    is_higher_better: bool
+    stdev: float
+
+    def to_string(self, show_stdv: bool) -> str:
+        out = f"{self.dataset_name}'s {self.metric_name}: {self.value:g}"
+        if show_stdv:
+            out += f" {self.stdev}"
+        return out
+
+    @classmethod
+    def from_tuple(cls, tup) -> "_EvalResult":
+        # only evaluation result tuples produced by cv() will have standard deviation
+        stdev = 0.0
+        if len(eval_result_tuple) == 5:
+            stdev = eval_result_tuple[4]
+        return cls(
+            dataset_name=eval_result_tuple[0],
+            metric_name=eval_result_tuple[1],
+            value=eval_result_tuple[2],
+            is_higher_better=eval_result_tuple[3],
+            stdev=stdev
+        )
+
+
+@dataclass
+class _EvalResultList:
+    results: List[_EvalResult]
+
+    @classmethod
+    def from_list(cls, tup_list) -> "_EvalResultList":
+        return cls(
+            results=[_EvalResult.from_tuple(t) for t in tup_list]
+        )
+
+    def to_string(self, show_stdv: bool) -> str:
+        return "\t".join(r.to_string(show_stdv=show_stdv) for r in self.results)
+
+
+
 # Callback environment used by callbacks
 @dataclass
 class CallbackEnv:
@@ -61,7 +105,11 @@ class CallbackEnv:
     iteration: int
     begin_iteration: int
     end_iteration: int
+<<<<<<< HEAD
     evaluation_result_list: Optional[_ListOfEvalResultTuples]
+=======
+    evaluation_result_list: _ListOfEvalResultTuples
+>>>>>>> 08e731d6 ([python-package] use dataclasses for eval results in callbacks)
 
 
 def _format_eval_result(value: _EvalResultTuple, show_stdv: bool) -> str:
@@ -257,6 +305,7 @@ def reset_parameter(**kwargs: Union[list, Callable]) -> Callable:
     return _ResetParameterCallback(**kwargs)
 
 
+
 class _EarlyStoppingCallback:
     """Internal early stopping callable class."""
 
@@ -281,7 +330,7 @@ class _EarlyStoppingCallback:
     def _reset_storages(self) -> None:
         self.best_score: List[float] = []
         self.best_iter: List[int] = []
-        self.best_score_list: List[_ListOfEvalResultTuples] = []
+        self.best_score_list: List[List[_EvalResult]] = []
         self.cmp_op: List[Callable[[float, float], bool]] = []
         self.first_metric = ''
 
@@ -388,9 +437,13 @@ class _EarlyStoppingCallback:
                 self.best_score[i] = score
                 self.best_iter[i] = env.iteration
                 if first_time_updating_best_score_list:
-                    self.best_score_list.append(env.evaluation_result_list)
+                    self.best_score_list.append(
+                        [_EvalResult.from_tuple(t) for t in env.evaluation_result_list]
+                    )
                 else:
-                    self.best_score_list[i] = env.evaluation_result_list
+                    self.best_score_list[i] = [
+                        _EvalResult.from_tuple(t) for t in env.evaluation_result_list
+                    ]
             # split is needed for "<dataset type> <metric>" case (e.g. "train l1")
             eval_name_splitted = env.evaluation_result_list[i][1].split(" ")
             if self.first_metric_only and self.first_metric != eval_name_splitted[-1]:
@@ -407,7 +460,12 @@ class _EarlyStoppingCallback:
             self._final_iteration_check(env, eval_name_splitted, i)
 
 
-def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbose: bool = True, min_delta: Union[float, List[float]] = 0.0) -> _EarlyStoppingCallback:
+def early_stopping(
+    stopping_rounds: int,
+    first_metric_only: bool = False,
+    verbose: bool = True,
+    min_delta: Union[float, List[float]] = 0.0
+) -> _EarlyStoppingCallback:
     """Create a callback that activates early stopping.
 
     Activates early stopping.
@@ -441,4 +499,9 @@ def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbos
     callback : _EarlyStoppingCallback
         The callback that activates early stopping.
     """
-    return _EarlyStoppingCallback(stopping_rounds=stopping_rounds, first_metric_only=first_metric_only, verbose=verbose, min_delta=min_delta)
+    return _EarlyStoppingCallback(
+        stopping_rounds=stopping_rounds,
+        first_metric_only=first_metric_only,
+        verbose=verbose,
+        min_delta=min_delta
+    )
