@@ -105,11 +105,7 @@ class CallbackEnv:
     iteration: int
     begin_iteration: int
     end_iteration: int
-<<<<<<< HEAD
-    evaluation_result_list: Optional[_ListOfEvalResultTuples]
-=======
     evaluation_result_list: _ListOfEvalResultTuples
->>>>>>> 08e731d6 ([python-package] use dataclasses for eval results in callbacks)
 
 
 def _format_eval_result(value: _EvalResultTuple, show_stdv: bool) -> str:
