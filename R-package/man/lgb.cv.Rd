@@ -152,6 +152,7 @@ Cross validation logic used by LightGBM
 
 \examples{
 \donttest{
+\dontshow{setLGBMthreads(2L)}
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
