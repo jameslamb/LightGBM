@@ -17,7 +17,14 @@
 #include <stdexcept>
 #include <vector>
 
+static int LGBM_MAX_NUM_THREADS = -1;
+
 inline int OMP_NUM_THREADS() {
+  // only fall back to omp_get_num_threads() if LightGBM-specific
+  // maximum number of threads hasn't been configured
+  if (LGBM_MAX_NUM_THREADS > 0) {
+    return LGBM_MAX_NUM_THREADS;
+  }
   int ret = 1;
 #pragma omp parallel
 #pragma omp master
@@ -26,10 +33,18 @@ inline int OMP_NUM_THREADS() {
 }
 
 inline void OMP_SET_NUM_THREADS(int num_threads) {
+    // if (num_threads <= 0) {
+    //     LGBM_MAX_NUM_THREADS = -1;
+    //     return;
+    // }
+    // LGBM_MAX_NUM_THREADS = num_threads;
+
   static const int default_omp_num_threads = OMP_NUM_THREADS();
   if (num_threads > 0) {
+    LGBM_MAX_NUM_THREADS = num_threads;
     omp_set_num_threads(num_threads);
   } else {
+    LGBM_MAX_NUM_THREADS = -1;
     omp_set_num_threads(default_omp_num_threads);
   }
 }
@@ -108,6 +123,7 @@ class ThreadExceptionHelper {
   inline int omp_get_max_threads() __GOMP_NOTHROW {return 1;}
   inline int omp_get_thread_num() __GOMP_NOTHROW {return 0;}
   inline int OMP_NUM_THREADS() __GOMP_NOTHROW { return 1; }
+  static int LGBM_MAX_NUM_THREADS = 1;
 #ifdef __cplusplus
 }  // extern "C"
 #endif

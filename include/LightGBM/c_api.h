@@ -1570,4 +1570,18 @@ INLINE_FUNCTION void LGBM_SetLastError(const char* msg) {
 #endif
 }
 
+/*!
+ * \brief Set maximum number of threads used by LightGBM routines in this process.
+ * \param num_threads maximum number of threads used by LightGBM. -1 means defaulting to omp_get_num_threads().
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_SetMaxThreads(int num_threads);
+
+/*!
+ * \brief Get current maximum number of threads used by LightGBM routines in this process.
+ * \param[out] out current maximum number of threads used by LightGBM. -1 means defaulting to omp_get_num_threads().
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_GetMaxThreads(int* out);
+
 #endif  /* LIGHTGBM_C_API_H_ */
