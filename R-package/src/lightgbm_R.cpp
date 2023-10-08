@@ -1278,7 +1278,7 @@ static const R_CallMethodDef CallEntries[] = {
   {"LGBM_NullBoosterHandleError_R"               , (DL_FUNC) &LGBM_NullBoosterHandleError_R               , 0},
   {"LGBM_DumpParamAliases_R"                     , (DL_FUNC) &LGBM_DumpParamAliases_R                     , 0},
   {"LGBM_GetMaxThreads_R"                        , (DL_FUNC) &LGBM_GetMaxThreads_R                        , 1},
-  {"LGBM_SetMaxThreads_R"                        , (DL_FUNC) &LGBM_SettMaxThreads_R                       , 1},
+  {"LGBM_SetMaxThreads_R"                        , (DL_FUNC) &LGBM_SetMaxThreads_R                        , 1},
   {NULL, NULL, 0}
 };
 
