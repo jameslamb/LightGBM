@@ -1524,6 +1524,20 @@ LIGHTGBM_C_EXPORT int LGBM_NetworkInitWithFunctions(int num_machines,
                                                     void* reduce_scatter_ext_fun,
                                                     void* allgather_ext_fun);
 
+/*!
+ * \brief Set maximum number of threads used by LightGBM routines in this process.
+ * \param num_threads maximum number of threads used by LightGBM. -1 means defaulting to omp_get_num_threads().
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_SetMaxThreads(int num_threads);
+
+/*!
+ * \brief Get current maximum number of threads used by LightGBM routines in this process.
+ * \param[out] out current maximum number of threads used by LightGBM. -1 means defaulting to omp_get_num_threads().
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_GetMaxThreads(int* out);
+
 #if !defined(__cplusplus) && (!defined(__STDC__) || (__STDC_VERSION__ < 199901L))
 /*! \brief Inline specifier no-op in C using standards before C99. */
 #define INLINE_FUNCTION
@@ -1569,19 +1583,5 @@ INLINE_FUNCTION void LGBM_SetLastError(const char* msg) {
   snprintf(LastErrorMsg(), err_buf_len, "%s", msg);
 #endif
 }
-
-/*!
- * \brief Set maximum number of threads used by LightGBM routines in this process.
- * \param num_threads maximum number of threads used by LightGBM. -1 means defaulting to omp_get_num_threads().
- * \return 0 when succeed, -1 when failure happens
- */
-LIGHTGBM_C_EXPORT int LGBM_SetMaxThreads(int num_threads);
-
-/*!
- * \brief Get current maximum number of threads used by LightGBM routines in this process.
- * \param[out] out current maximum number of threads used by LightGBM. -1 means defaulting to omp_get_num_threads().
- * \return 0 when succeed, -1 when failure happens
- */
-LIGHTGBM_C_EXPORT int LGBM_GetMaxThreads(int* out);
 
 #endif  /* LIGHTGBM_C_API_H_ */
