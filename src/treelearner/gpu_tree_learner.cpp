@@ -191,7 +191,7 @@ void GPUTreeLearner::WaitAndGetHistograms(hist_t* histograms) {
   HistType* hist_outputs = reinterpret_cast<HistType*>(host_histogram_outputs_);
   // when the output is ready, the computation is done
   histograms_wait_obj_.wait();
-  #pragma omp parallel for schedule(static)
+  #pragma omp parallel for schedule(static) num_threads(OMP_NUM_THREADS())
   for (int i = 0; i < num_dense_feature_groups_; ++i) {
     if (!feature_masks_[i]) {
       continue;
@@ -359,7 +359,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
                     0, num_data_ * sizeof(Feature4)));
   }
   // building Feature4 bundles; each thread handles dword_features_ features
-  #pragma omp parallel for schedule(static)
+  #pragma omp parallel for schedule(static) num_threads(OMP_NUM_THREADS())
   for (int i = 0; i < static_cast<int>(dense_feature_group_map_.size() / dword_features_); ++i) {
     int tid = omp_get_thread_num();
     Feature4* host4 = host4_ptrs[tid];
@@ -451,7 +451,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
         BinIterator* bin_iter = train_data_->FeatureGroupIterator(dense_dword_ind[i]);
         if (dynamic_cast<DenseBinIterator<uint8_t, true>*>(bin_iter) != 0) {
           DenseBinIterator<uint8_t, true> iter = *static_cast<DenseBinIterator<uint8_t, true>*>(bin_iter);
-          #pragma omp parallel for schedule(static)
+          #pragma omp parallel for schedule(static) num_threads(OMP_NUM_THREADS())
           for (int j = 0; j < num_data_; ++j) {
             host4[j].s[i >> 1] |= (uint8_t)((iter.RawGet(j) * device_bin_mults_[copied_feature4 * dword_features_ + i]
                                 + ((j+i) & (device_bin_mults_[copied_feature4 * dword_features_ + i] - 1)))
@@ -464,14 +464,14 @@ void GPUTreeLearner::AllocateGPUMemory() {
         BinIterator* bin_iter = train_data_->FeatureGroupIterator(dense_dword_ind[i]);
         if (dynamic_cast<DenseBinIterator<uint8_t, false>*>(bin_iter) != 0) {
           DenseBinIterator<uint8_t, false> iter = *static_cast<DenseBinIterator<uint8_t, false>*>(bin_iter);
-          #pragma omp parallel for schedule(static)
+          #pragma omp parallel for schedule(static) num_threads(OMP_NUM_THREADS())
           for (int j = 0; j < num_data_; ++j) {
             host4[j].s[i] = (uint8_t)(iter.RawGet(j) * device_bin_mults_[copied_feature4 * dword_features_ + i]
                           + ((j+i) & (device_bin_mults_[copied_feature4 * dword_features_ + i] - 1)));
           }
         } else if (dynamic_cast<DenseBinIterator<uint8_t, true>*>(bin_iter) != 0) {
           DenseBinIterator<uint8_t, true> iter = *static_cast<DenseBinIterator<uint8_t, true>*>(bin_iter);
-          #pragma omp parallel for schedule(static)
+          #pragma omp parallel for schedule(static) num_threads(OMP_NUM_THREADS())
           for (int j = 0; j < num_data_; ++j) {
             host4[j].s[i] = (uint8_t)(iter.RawGet(j) * device_bin_mults_[copied_feature4 * dword_features_ + i]
                           + ((j+i) & (device_bin_mults_[copied_feature4 * dword_features_ + i] - 1)));
@@ -485,7 +485,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
     }
     // fill the leftover features
     if (dword_features_ == 8) {
-      #pragma omp parallel for schedule(static)
+      #pragma omp parallel for schedule(static) num_threads(OMP_NUM_THREADS())
       for (int j = 0; j < num_data_; ++j) {
         for (int i = k; i < dword_features_; ++i) {
           // fill this empty feature with some "random" value
@@ -493,7 +493,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
         }
       }
     } else if (dword_features_ == 4) {
-      #pragma omp parallel for schedule(static)
+      #pragma omp parallel for schedule(static) num_threads(OMP_NUM_THREADS())
       for (int j = 0; j < num_data_; ++j) {
         for (int i = k; i < dword_features_; ++i) {
           // fill this empty feature with some "random" value
@@ -572,7 +572,7 @@ void GPUTreeLearner::BuildGPUKernels() {
   // currently we don't use constant memory
   int use_constants = 0;
   OMP_INIT_EX();
-  #pragma omp parallel for schedule(guided)
+  #pragma omp parallel for schedule(guided) num_threads(OMP_NUM_THREADS())
   for (int i = 0; i <= kMaxLogWorkgroupsPerFeature; ++i) {
     OMP_LOOP_EX_BEGIN();
     boost::compute::program program;
