@@ -157,7 +157,7 @@ class LambdarankNDCG : public RankingObjective {
     DCGCalculator::CheckMetadata(metadata, num_queries_);
     DCGCalculator::CheckLabel(label_, num_data_);
     inverse_max_dcgs_.resize(num_queries_);
-#pragma omp parallel for schedule(static) num_threads(OMP_NUM_THREADS())
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
     for (data_size_t i = 0; i < num_queries_; ++i) {
       inverse_max_dcgs_[i] = DCGCalculator::CalMaxDCGAtK(
           truncation_level_, label_ + query_boundaries_[i],

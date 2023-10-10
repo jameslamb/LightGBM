@@ -242,7 +242,7 @@ Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const score_t* 
   auto tree = std::unique_ptr<Tree>(new Tree(*old_tree));
   CHECK_GE(data_partition_->num_leaves(), tree->num_leaves());
   OMP_INIT_EX();
-  #pragma omp parallel for schedule(static) num_threads(OMP_NUM_THREADS())
+  #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
   for (int i = 0; i < tree->num_leaves(); ++i) {
     OMP_LOOP_EX_BEGIN();
     data_size_t cnt_leaf_data = 0;
@@ -922,7 +922,7 @@ void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj
     }
     std::vector<int> n_nozeroworker_perleaf(tree->num_leaves(), 1);
     int num_machines = Network::num_machines();
-    #pragma omp parallel for schedule(static) num_threads(OMP_NUM_THREADS())
+    #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
     for (int i = 0; i < tree->num_leaves(); ++i) {
       const double output = static_cast<double>(tree->LeafOutput(i));
       data_size_t cnt_leaf_data = 0;

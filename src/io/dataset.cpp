@@ -823,7 +823,7 @@ void Dataset::ReSize(data_size_t num_data) {
   if (num_data_ != num_data) {
     num_data_ = num_data;
     OMP_INIT_EX();
-#pragma omp parallel for schedule(static) num_threads(OMP_NUM_THREADS())
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
     for (int group = 0; group < num_groups_; ++group) {
       OMP_LOOP_EX_BEGIN();
       feature_groups_[group]->ReSize(num_data_);
@@ -875,7 +875,7 @@ void Dataset::CopySubrow(const Dataset* fullset,
   num_numeric_features_ = fullset->num_numeric_features_;
   if (has_raw_) {
     ResizeRaw(num_used_indices);
-#pragma omp parallel for schedule(static) num_threads(OMP_NUM_THREADS())
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
     for (int i = 0; i < num_used_indices; ++i) {
       for (int j = 0; j < num_numeric_features_; ++j) {
         raw_data_[j][i] = fullset->raw_data_[j][used_indices[i]];
@@ -1309,7 +1309,7 @@ void Dataset::ConstructHistogramsInner(
       }
     }
     OMP_INIT_EX();
-#pragma omp parallel for schedule(static) num_threads(OMP_NUM_THREADS())
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
     for (int gi = 0; gi < num_used_dense_group; ++gi) {
       OMP_LOOP_EX_BEGIN();
       int group = used_dense_group[gi];
