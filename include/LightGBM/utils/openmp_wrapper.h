@@ -59,7 +59,7 @@ inline int OMP_NUM_THREADS() {
 }
 
 inline void OMP_SET_NUM_THREADS(int num_threads) {
-  if (num_threaads <= 0) {
+  if (num_threads <= 0) {
     LGBM_DEFAULT_NUM_THREADS = -1;
   } else {
     LGBM_DEFAULT_NUM_THREADS = num_threads;
