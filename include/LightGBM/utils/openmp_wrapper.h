@@ -18,8 +18,8 @@
 #include <stdexcept>
 #include <vector>
 
-// // this can only be changed by LGBM_SetMaxThreads()
-// static int LGBM_MAX_NUM_THREADS = -1;
+// this can only be changed by LGBM_SetMaxThreads()
+static int LGBM_MAX_NUM_THREADS = -1;
 
 // // this is controlled by OMP_SET_NUM_THREADS()
 // static int LGBM_DEFAULT_NUM_THREADS = ;
