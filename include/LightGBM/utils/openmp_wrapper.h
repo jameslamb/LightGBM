@@ -55,7 +55,7 @@ inline int OMP_NUM_THREADS() {
     return LGBM_MAX_NUM_THREADS;
   }
 
-  return ret;
+  return default_num_threads;
 }
 
 inline void OMP_SET_NUM_THREADS(int num_threads) {
