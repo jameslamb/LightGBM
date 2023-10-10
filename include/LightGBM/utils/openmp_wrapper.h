@@ -9,6 +9,7 @@
 
 #include <LightGBM/utils/log.h>
 
+#include <limits.h>
 #include <omp.h>
 
 #include <exception>
@@ -17,35 +18,69 @@
 #include <stdexcept>
 #include <vector>
 
-static int LGBM_MAX_NUM_THREADS = -1;
+// // this can only be changed by LGBM_SetMaxThreads()
+// static int LGBM_MAX_NUM_THREADS = -1;
+
+// // this is controlled by OMP_SET_NUM_THREADS()
+// static int LGBM_DEFAULT_NUM_THREADS = ;
+
+// inline int OMP_NUM_THREADS() {
+
+//   // if this is the first time this value has been accessed,
+//   // set to OpenMP maximum 
+//   if (LGBM_MAX_NUM_THREADS <= 0) {
+//     LGBM_MAX_NUM_THREADS = omp_get_max_threads();
+//   }
+
+//   // use default number of OpenMP threads
+//   int omp_default_num_threads
+
+//   // only fall back to omp_get_num_threads() if LightGBM-specific
+//   // maximum number of threads hasn't been configured
+//   if (LGBM_MAX_NUM_THREADS > 0) {
+//     return LGBM_MAX_NUM_THREADS;
+//   }
+//   int omp_default_num_threads = 1;
+// #pragma omp parallel
+// #pragma omp master
+//   { omp_default_num_threads = omp_get_num_threads(); }
+//   return ret;
+// }
+
+// inline void OMP_SET_NUM_THREADS(int num_threads) {
+//     // if (num_threads <= 0) {
+//     //     LGBM_MAX_NUM_THREADS = -1;
+//     //     return;
+//     // }
+//     // LGBM_MAX_NUM_THREADS = num_threads;
+
+//   static const int default_omp_num_threads = OMP_NUM_THREADS();
+//   if (num_threads > 0) {
+//     LGBM_MAX_NUM_THREADS = num_threads;
+//     omp_set_num_threads(num_threads);
+//   } else {
+//     LGBM_MAX_NUM_THREADS = -1;
+//     omp_set_num_threads(default_omp_num_threads);
+//   }
+// }
 
 inline int OMP_NUM_THREADS() {
-  return 1;
-  // only fall back to omp_get_num_threads() if LightGBM-specific
-  // maximum number of threads hasn't been configured
-  if (LGBM_MAX_NUM_THREADS > 0) {
-    return LGBM_MAX_NUM_THREADS;
-  }
   int ret = 1;
 #pragma omp parallel
 #pragma omp master
   { ret = omp_get_num_threads(); }
+  // try enforcing a maximum
+  if (ret > 2) {
+    return 2;
+  }
   return ret;
 }
 
 inline void OMP_SET_NUM_THREADS(int num_threads) {
-    // if (num_threads <= 0) {
-    //     LGBM_MAX_NUM_THREADS = -1;
-    //     return;
-    // }
-    // LGBM_MAX_NUM_THREADS = num_threads;
-
   static const int default_omp_num_threads = OMP_NUM_THREADS();
   if (num_threads > 0) {
-    LGBM_MAX_NUM_THREADS = num_threads;
     omp_set_num_threads(num_threads);
   } else {
-    LGBM_MAX_NUM_THREADS = -1;
     omp_set_num_threads(default_omp_num_threads);
   }
 }
