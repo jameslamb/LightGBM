@@ -38,7 +38,7 @@ setLGBMthreads <- function(num_threads){
 #' @seealso \link{setLGBMthreads}
 #' @export
 getLGBMthreads <- function(){
-    out <- integer(0L)
+    out <- 0L
     .Call(
         LGBM_GetMaxThreads_R,
         out
