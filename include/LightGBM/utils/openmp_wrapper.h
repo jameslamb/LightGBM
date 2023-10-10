@@ -20,6 +20,7 @@
 static int LGBM_MAX_NUM_THREADS = -1;
 
 inline int OMP_NUM_THREADS() {
+  return 1;
   // only fall back to omp_get_num_threads() if LightGBM-specific
   // maximum number of threads hasn't been configured
   if (LGBM_MAX_NUM_THREADS > 0) {
