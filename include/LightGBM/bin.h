@@ -73,7 +73,7 @@ inline static void Int16HistogramSumReducer(const char* src, char* dst, int type
   const int32_t* src_ptr = reinterpret_cast<const int32_t*>(src);
   int32_t* dst_ptr = reinterpret_cast<int32_t*>(dst);
   const comm_size_t steps = (len + (type_size * 2) - 1) / (type_size * 2);
-  #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
+  #pragma omp parallel for schedule(static) num_threads(OMP_NUM_THREADS())
   for (comm_size_t i = 0; i < steps; ++i) {
     dst_ptr[i] += src_ptr[i];
   }
