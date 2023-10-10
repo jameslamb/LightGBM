@@ -52,7 +52,7 @@ void LinearTreeLearner::InitLinear(const Dataset* train_data, const int max_leav
   }
   XTHX_by_thread_.clear();
   XTg_by_thread_.clear();
-  int max_threads = omp_get_max_threads();
+  int max_threads = OMP_NUM_THREADS();
   for (int i = 0; i < max_threads; ++i) {
     XTHX_by_thread_.push_back(XTHX_);
     XTg_by_thread_.push_back(XTg_);
@@ -159,7 +159,7 @@ void LinearTreeLearner::GetLeafMap(Tree* tree) const {
   std::fill(leaf_map_.begin(), leaf_map_.end(), -1);
   // map data to leaf number
   const data_size_t* ind = data_partition_->indices();
-#pragma omp parallel for schedule(dynamic) num_threads(OMP_NUM_THREADS())
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(dynamic)
   for (int i = 0; i < tree->num_leaves(); ++i) {
     data_size_t idx = data_partition_->leaf_begin(i);
     for (int j = 0; j < data_partition_->leaf_count(i); ++j) {

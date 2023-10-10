@@ -1692,7 +1692,7 @@ class HistogramPool {
     auto& ref_feature_meta = *feature_meta;
     const int num_feature = train_data->num_features();
     ref_feature_meta.resize(num_feature);
-#pragma omp parallel for schedule(static, 512) num_threads(OMP_NUM_THREADS()) if (num_feature >= 1024)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) if (num_feature >= 1024)
     for (int i = 0; i < num_feature; ++i) {
       if (USE_DATA) {
         ref_feature_meta[i].num_bin = train_data->FeatureNumBin(i);
