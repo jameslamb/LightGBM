@@ -13,6 +13,7 @@ int LGBM_MAX_NUM_THREADS = -1;
 int LGBM_DEFAULT_NUM_THREADS = -1;
 
 int OMP_NUM_THREADS() {
+  return 1;
   int default_num_threads;
 
   if (LGBM_DEFAULT_NUM_THREADS > 0) {
