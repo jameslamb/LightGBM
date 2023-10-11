@@ -684,6 +684,7 @@ static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred, _VTRanIt*) {
   size_t len = _Last - _First;
   const size_t kMinInnerLen = 1024;
   int num_threads = OMP_NUM_THREADS();
+  num_threads = 1;
   if (len <= kMinInnerLen || num_threads <= 1) {
     std::sort(_First, _Last, _Pred);
     return;
