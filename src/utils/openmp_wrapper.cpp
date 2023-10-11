@@ -6,13 +6,13 @@
 #include <omp.h>
 
 // this can only be changed by LGBM_SetMaxThreads()
-static int LGBM_MAX_NUM_THREADS = -1;
+int LGBM_MAX_NUM_THREADS = -1;
 
 // this is modified by OMP_SET_NUM_THREADS(), for example
 // by passing num_thread through params
-static int LGBM_DEFAULT_NUM_THREADS = -1;
+int LGBM_DEFAULT_NUM_THREADS = -1;
 
-static int OMP_NUM_THREADS() {
+int OMP_NUM_THREADS() {
   int default_num_threads;
 
   if (LGBM_DEFAULT_NUM_THREADS > 0) {
@@ -34,7 +34,7 @@ static int OMP_NUM_THREADS() {
   return default_num_threads;
 }
 
-static void OMP_SET_NUM_THREADS(int num_threads) {
+void OMP_SET_NUM_THREADS(int num_threads) {
   if (num_threads <= 0) {
     LGBM_DEFAULT_NUM_THREADS = -1;
   } else {

@@ -7,6 +7,7 @@
 
 #ifdef _OPENMP
 
+#include <LightGBM/export.h>
 #include <LightGBM/utils/log.h>
 
 #include <limits.h>
@@ -19,11 +20,11 @@
 #include <vector>
 
 // this can only be changed by LGBM_SetMaxThreads()
-static int LGBM_MAX_NUM_THREADS;
+LIGHTGBM_EXTERN_C int LGBM_MAX_NUM_THREADS;
 
 // this is modified by OMP_SET_NUM_THREADS(), for example
 // by passing num_thread through params
-static int LGBM_DEFAULT_NUM_THREADS;
+LIGHTGBM_EXTERN_C int LGBM_DEFAULT_NUM_THREADS;
 
 /*
     Get number of threads to use in OpenMP parallel regions.
@@ -36,9 +37,9 @@ static int LGBM_DEFAULT_NUM_THREADS;
       - https://www.openmp.org/spec-html/5.0/openmpsu112.html
       - https://gcc.gnu.org/onlinedocs/libgomp/omp_005fget_005fmax_005fthreads.html
 */
-static int OMP_NUM_THREADS();
+int OMP_NUM_THREADS();
 
-static void OMP_SET_NUM_THREADS(int num_threads);
+void OMP_SET_NUM_THREADS(int num_threads);
 
 
 class ThreadExceptionHelper {
