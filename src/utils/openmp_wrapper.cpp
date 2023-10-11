@@ -43,15 +43,15 @@ int OMP_NUM_THREADS() {
 
 void OMP_SET_NUM_THREADS(int num_threads) {
   if (num_threads <= 0) {
-    LightGBM::Log::Info("line 46: LGBM_MAX_NUM_THREADS=%i, default_num_threads=%i, LGBM_DEFAULT_NUM_THREADS=%i", LGBM_MAX_NUM_THREADS, default_num_threads, LGBM_DEFAULT_NUM_THREADS);
+    LightGBM::Log::Info("line 46: LGBM_MAX_NUM_THREADS=%i, num_threads=%i, LGBM_DEFAULT_NUM_THREADS=%i", LGBM_MAX_NUM_THREADS, num_threads, LGBM_DEFAULT_NUM_THREADS);
     LGBM_DEFAULT_NUM_THREADS = -1;
-    LightGBM::Log::Info("line 48: LGBM_MAX_NUM_THREADS=%i, default_num_threads=%i, LGBM_DEFAULT_NUM_THREADS=%i", LGBM_MAX_NUM_THREADS, default_num_threads, LGBM_DEFAULT_NUM_THREADS);
+    LightGBM::Log::Info("line 48: LGBM_MAX_NUM_THREADS=%i, num_threads=%i, LGBM_DEFAULT_NUM_THREADS=%i", LGBM_MAX_NUM_THREADS, num_threads, LGBM_DEFAULT_NUM_THREADS);
   } else {
-    LightGBM::Log::Info("line 50: LGBM_MAX_NUM_THREADS=%i, default_num_threads=%i, LGBM_DEFAULT_NUM_THREADS=%i", LGBM_MAX_NUM_THREADS, default_num_threads, LGBM_DEFAULT_NUM_THREADS);
+    LightGBM::Log::Info("line 50: LGBM_MAX_NUM_THREADS=%i, num_threads=%i, LGBM_DEFAULT_NUM_THREADS=%i", LGBM_MAX_NUM_THREADS, num_threads, LGBM_DEFAULT_NUM_THREADS);
     LGBM_DEFAULT_NUM_THREADS = num_threads;
-    LightGBM::Log::Info("line 52: LGBM_MAX_NUM_THREADS=%i, default_num_threads=%i, LGBM_DEFAULT_NUM_THREADS=%i", LGBM_MAX_NUM_THREADS, default_num_threads, LGBM_DEFAULT_NUM_THREADS);
+    LightGBM::Log::Info("line 52: LGBM_MAX_NUM_THREADS=%i, num_threads=%i, LGBM_DEFAULT_NUM_THREADS=%i", LGBM_MAX_NUM_THREADS, num_threads, LGBM_DEFAULT_NUM_THREADS);
   }
-  LightGBM::Log::Info("line 54: LGBM_MAX_NUM_THREADS=%i, default_num_threads=%i, LGBM_DEFAULT_NUM_THREADS=%i", LGBM_MAX_NUM_THREADS, default_num_threads, LGBM_DEFAULT_NUM_THREADS);
+  LightGBM::Log::Info("line 54: LGBM_MAX_NUM_THREADS=%i, num_threads=%i, LGBM_DEFAULT_NUM_THREADS=%i", LGBM_MAX_NUM_THREADS, num_threads, LGBM_DEFAULT_NUM_THREADS);
 }
 
 #endif  // _OPENMP
