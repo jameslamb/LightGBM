@@ -27,7 +27,7 @@ int OMP_NUM_THREADS() {
     #pragma omp parallel
     #pragma omp master
     { default_num_threads = omp_get_max_threads(); }
-   LightGBM::Log::Info("line 30: LGBM_MAX_NUM_THREADS=%i, default_num_threads=%i, LGBM_DEFAULT_NUM_THREADS=%i", LGBM_MAX_NUM_THREADS, default_num_threads, LGBM_DEFAULT_NUM_THREADS);
+    LightGBM::Log::Info("line 30: LGBM_MAX_NUM_THREADS=%i, default_num_threads=%i, LGBM_DEFAULT_NUM_THREADS=%i", LGBM_MAX_NUM_THREADS, default_num_threads, LGBM_DEFAULT_NUM_THREADS);
   }
 
   // ensure that if LGBM_SetMaxThreads() was ever called, LightGBM doesn't
