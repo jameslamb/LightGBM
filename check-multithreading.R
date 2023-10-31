@@ -13,11 +13,13 @@ dtrain <- lightgbm::lgb.Dataset(
     , params = list(
         min_data_in_bin = 5L
         , max_bins = 128L
-        , num_threads = 5L
+        , num_threads = -1L
     )
 )
 dtrain$construct()
-print(proc.time() - tic)
+toc <- proc.time() - tic
+print(toc)
 
+print(sprintf("ratio: %f", toc[[1]] / toc[[3]]))
 print("max threads: ")
 print(lightgbm::getLGBMthreads())
