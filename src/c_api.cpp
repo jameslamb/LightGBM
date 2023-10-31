@@ -1261,12 +1261,12 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
                                const DatasetHandle reference,
                                DatasetHandle* out) {
   API_BEGIN();
-  Log::Info("DatasetCreateFromMats (line 1264) OMP_NUM_THREADS(): %i", OMP_NUM_THREADS())
+  Log::Info("DatasetCreateFromMats (line 1264) OMP_NUM_THREADS(): %i", OMP_NUM_THREADS());
   auto param = Config::Str2Map(parameters);
   Config config;
   config.Set(param);
   OMP_SET_NUM_THREADS(config.num_threads);
-  Log::Info("DatasetCreateFromMats (line 1269) OMP_NUM_THREADS(): %i", OMP_NUM_THREADS())
+  Log::Info("DatasetCreateFromMats (line 1269) OMP_NUM_THREADS(): %i", OMP_NUM_THREADS());
   std::unique_ptr<Dataset> ret;
   int32_t total_nrow = 0;
   for (int j = 0; j < nmat; ++j) {
