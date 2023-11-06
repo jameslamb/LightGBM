@@ -684,15 +684,13 @@ static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred, _VTRanIt*) {
   size_t len = _Last - _First;
   const size_t kMinInnerLen = 1024;
   int num_threads = OMP_NUM_THREADS();
-  Log::Info("ParallelSort (lline 687) num_threads: %i", num_threads);
-  // if (len <= kMinInnerLen || num_threads <= 1) {
+  if (len <= kMinInnerLen || num_threads <= 1) {
     std::sort(_First, _Last, _Pred);
     return;
-  // }
+  }
   size_t inner_size = (len + num_threads - 1) / num_threads;
   inner_size = std::max(inner_size, kMinInnerLen);
   num_threads = static_cast<int>((len + inner_size - 1) / inner_size);
-  Log::Info("ParallelSort (lline 695) num_threads: %i", num_threads);
 #pragma omp parallel for num_threads(num_threads) schedule(static, 1)
   for (int i = 0; i < num_threads; ++i) {
     size_t left = inner_size*i;
