@@ -15,7 +15,7 @@ int LGBM_DEFAULT_NUM_THREADS = -1;
 int OMP_NUM_THREADS() {
   // uncommenting this fixes all the parallelism problems
   // (i.e., only 2 threads ever created)
-  return 2;
+  //return 2;
 
   int default_num_threads;
 
@@ -27,7 +27,10 @@ int OMP_NUM_THREADS() {
   } else {
     // otherwise, default to OpenMP-global config
     #pragma omp parallel
-    #pragma omp master
+    // ref: https://curc.readthedocs.io/en/latest/programming/OpenMP-C.html
+    // map running this back on the master thread leads to a wrong conclusion
+    // about how many threads to use?
+    // #pragma omp master
     { default_num_threads = omp_get_max_threads(); }
     LightGBM::Log::Info("line 30: LGBM_MAX_NUM_THREADS=%i, default_num_threads=%i, LGBM_DEFAULT_NUM_THREADS=%i", LGBM_MAX_NUM_THREADS, default_num_threads, LGBM_DEFAULT_NUM_THREADS);
   }
