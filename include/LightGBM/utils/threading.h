@@ -93,7 +93,7 @@ class ParallelPartitionRunner {
  public:
   ParallelPartitionRunner(INDEX_T num_data, INDEX_T min_block_size)
       : min_block_size_(min_block_size) {
-    num_threads_ = OMP_NUM_THREADS();
+    num_threads_ = 1;;
     left_.resize(num_data);
     if (TWO_BUFFER) {
       right_.resize(num_data);

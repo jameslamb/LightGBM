@@ -15,7 +15,7 @@ CUDARowData::CUDARowData(const Dataset* train_data,
                          const bool gpu_use_dp):
 gpu_device_id_(gpu_device_id),
 gpu_use_dp_(gpu_use_dp) {
-  num_threads_ = OMP_NUM_THREADS();
+  num_threads_ = 1;;
   num_data_ = train_data->num_data();
   const auto& feature_hist_offsets = train_share_state->feature_hist_offsets();
   if (gpu_use_dp_) {

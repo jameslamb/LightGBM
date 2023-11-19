@@ -10,7 +10,7 @@
 namespace LightGBM {
 
 CUDAColumnData::CUDAColumnData(const data_size_t num_data, const int gpu_device_id) {
-  num_threads_ = OMP_NUM_THREADS();
+  num_threads_ = 1;;
   num_data_ = num_data;
   gpu_device_id_ = gpu_device_id >= 0 ? gpu_device_id : 0;
   SetCUDADevice(gpu_device_id_, __FILE__, __LINE__);

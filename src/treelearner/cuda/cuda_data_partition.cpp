@@ -334,7 +334,7 @@ void CUDADataPartition::ResetTrainingData(const Dataset* train_data, const int n
 }
 
 void CUDADataPartition::ResetConfig(const Config* config, hist_t* cuda_hist) {
-  num_threads_ = OMP_NUM_THREADS();
+  num_threads_ = 1;;
   num_leaves_ = config->num_leaves;
   cuda_hist_ = cuda_hist;
   DeallocateCUDAMemory<data_size_t>(&cuda_leaf_data_start_, __FILE__, __LINE__);

@@ -175,7 +175,7 @@ void CUDAHistogramConstructor::ResetTrainingData(const Dataset* train_data, Trai
 }
 
 void CUDAHistogramConstructor::ResetConfig(const Config* config) {
-  num_threads_ = OMP_NUM_THREADS();
+  num_threads_ = 1;;
   num_leaves_ = config->num_leaves;
   min_data_in_leaf_ = config->min_data_in_leaf;
   min_sum_hessian_in_leaf_ = config->min_sum_hessian_in_leaf;

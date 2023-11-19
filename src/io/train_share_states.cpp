@@ -11,7 +11,7 @@ namespace LightGBM {
 MultiValBinWrapper::MultiValBinWrapper(MultiValBin* bin, data_size_t num_data,
   const std::vector<int>& feature_groups_contained, const int num_grad_quant_bins):
     feature_groups_contained_(feature_groups_contained) {
-  num_threads_ = OMP_NUM_THREADS();
+  num_threads_ = 1;;
   num_data_ = num_data;
   multi_val_bin_.reset(bin);
   if (bin == nullptr) {
