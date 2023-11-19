@@ -7,6 +7,16 @@ y <- rnorm(nrow(X))
 
 tic <- proc.time()
 print(tic)
+
+
+# LGBM_DatasetCreateFromMat_R()
+# LGBM_DatasetCreateFromMat()
+# LGBM_DatasetCreateFromMats()
+# RowFunctionFromDenseMatric()
+# |____ RowFunctionFromDenseMatric_helper()
+# CreateSampleIndices()
+# ConstructFromSampleData()
+# FinishLoad()
 dtrain <- lightgbm::lgb.Dataset(
     data = X
     , label = y

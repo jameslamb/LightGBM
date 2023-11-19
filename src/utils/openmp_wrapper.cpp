@@ -13,8 +13,10 @@ int LGBM_MAX_NUM_THREADS = 1;
 int LGBM_DEFAULT_NUM_THREADS = -1;
 
 int OMP_NUM_THREADS() {
-  // this works for everything, so it's gott be the MAX_ mechanism that isn't working
-  //return 1;
+  // uncommenting this fixes all the parallelism problems
+  // (i.e., only 2 threads ever created)
+  return 2;
+
   int default_num_threads;
 
   if (LGBM_DEFAULT_NUM_THREADS > 0) {

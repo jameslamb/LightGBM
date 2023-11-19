@@ -4,7 +4,7 @@ Got a `c5a.4xlarge` instance.
 ```shell
 ssh \
     -i ${HOME}/.aws/gpu-testing-2.cer \
-    ubuntu@ec2-34-217-19-135.us-west-2.compute.amazonaws.com
+    ubuntu@ec2-34-208-207-243.us-west-2.compute.amazonaws.com
 ```
 
 ```shell
@@ -215,6 +215,10 @@ print(lightgbm::getLGBMthreads())
 ```
 
 ```shell
+R CMD INSTALL \
+  --with-keep.source \
+  lightgbm_4.1.0.99.tar.gz
+
 OMP_NUM_THREADS=16 \
 Rscript --vanilla ./check-multithreading.R
 ```
