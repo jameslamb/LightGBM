@@ -625,7 +625,7 @@ Dataset* DatasetLoader::ConstructFromSampleData(double** sample_values,
   if (Network::num_machines() == 1) {
     // if only one machine, find bin locally
     OMP_INIT_EX();
-    #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(guided)
+    #pragma omp parallel for num_threads(1) schedule(guided)
     for (int i = 0; i < num_col; ++i) {
       OMP_LOOP_EX_BEGIN();
       if (ignore_features_.count(i) > 0) {
@@ -674,7 +674,7 @@ Dataset* DatasetLoader::ConstructFromSampleData(double** sample_values,
     }
     len[num_machines - 1] = num_total_features - start[num_machines - 1];
     OMP_INIT_EX();
-    #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(guided)
+    #pragma omp parallel for num_threads(1) schedule(guided)
     for (int i = 0; i < len[rank]; ++i) {
       OMP_LOOP_EX_BEGIN();
       if (ignore_features_.count(start[rank] + i) > 0) {

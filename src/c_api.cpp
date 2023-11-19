@@ -1325,7 +1325,7 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
   for (int j = 0; j < nmat; ++j) {
     Log::Info("DatasetCreateFromMats (line 1323) OMP_NUM_THREADS(): %i", OMP_NUM_THREADS());
     OMP_INIT_EX();
-    #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
+    #pragma omp parallel for num_threads(1) schedule(static)
     for (int i = 0; i < nrow[j]; ++i) {
       OMP_LOOP_EX_BEGIN();
       const int tid = omp_get_thread_num();

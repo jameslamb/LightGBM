@@ -227,5 +227,6 @@ Rscript --vanilla ./check-multithreading.R
 ## References
 
 * https://docs.oracle.com/cd/E19205-01/819-5270/aewbc/index.html#:~:text=Nested%20parallelism%20can%20be%20enabled,levels%20of%20nested%20parallel%20constructs.
-
+* https://stackoverflow.com/a/6934050/3986677
+* 
 
