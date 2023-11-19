@@ -2266,7 +2266,7 @@ int LGBM_BoosterPredictSparseOutput(BoosterHandle handle,
     ref_booster->PredictSparseCSR(start_iteration, num_iteration, predict_type, nrow, static_cast<int>(num_col_or_row), get_row_fun,
                                   config, out_len, out_indptr, indptr_type, out_indices, out_data, data_type);
   } else if (matrix_type == C_API_MATRIX_TYPE_CSC) {
-    int num_threads = OMP_NUM_THREADS();
+    int num_threads = 1;
     int ncol = static_cast<int>(nindptr - 1);
     std::vector<std::vector<CSC_RowIterator>> iterators(num_threads, std::vector<CSC_RowIterator>());
     for (int i = 0; i < num_threads; ++i) {
@@ -2416,7 +2416,7 @@ int LGBM_BoosterPredictForCSC(BoosterHandle handle,
   Config config;
   config.Set(param);
   OMP_SET_NUM_THREADS(config.num_threads);
-  int num_threads = OMP_NUM_THREADS();
+  int num_threads = 1;
   int ncol = static_cast<int>(ncol_ptr - 1);
   std::vector<std::vector<CSC_RowIterator>> iterators(num_threads, std::vector<CSC_RowIterator>());
   for (int i = 0; i < num_threads; ++i) {

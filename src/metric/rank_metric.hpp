@@ -84,7 +84,7 @@ class NDCGMetric:public Metric {
   }
 
   std::vector<double> Eval(const double* score, const ObjectiveFunction*) const override {
-    int num_threads = OMP_NUM_THREADS();
+    int num_threads = 1;
     // some buffers for multi-threading sum up
     std::vector<std::vector<double>> result_buffer_;
     for (int i = 0; i < num_threads; ++i) {

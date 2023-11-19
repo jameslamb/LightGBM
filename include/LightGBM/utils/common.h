@@ -683,7 +683,7 @@ template<typename _RanIt, typename _Pr, typename _VTRanIt> inline
 static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred, _VTRanIt*) {
   size_t len = _Last - _First;
   const size_t kMinInnerLen = 1024;
-  int num_threads = OMP_NUM_THREADS();
+  int num_threads = 1;
   if (len <= kMinInnerLen || num_threads <= 1) {
     std::sort(_First, _Last, _Pred);
     return;
@@ -974,7 +974,7 @@ class Timer {
  public:
   Timer() {
 #ifdef TIMETAG
-    int num_threads = OMP_NUM_THREADS();
+    int num_threads = 1;
     start_time_.resize(num_threads);
     stats_.resize(num_threads);
 #endif  // TIMETAG

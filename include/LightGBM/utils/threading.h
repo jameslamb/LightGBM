@@ -21,7 +21,7 @@ class Threading {
   template <typename INDEX_T>
   static inline void BlockInfo(INDEX_T cnt, INDEX_T min_cnt_per_block,
                                int* out_nblock, INDEX_T* block_size) {
-    int num_threads = OMP_NUM_THREADS();
+    int num_threads = 1;
     BlockInfo<INDEX_T>(num_threads, cnt, min_cnt_per_block, out_nblock,
                        block_size);
   }
@@ -60,7 +60,7 @@ class Threading {
   template <typename INDEX_T>
   static inline void BlockInfoForceSize(INDEX_T cnt, INDEX_T min_cnt_per_block,
                                         int* out_nblock, INDEX_T* block_size) {
-    int num_threads = OMP_NUM_THREADS();
+    int num_threads = 1;
     BlockInfoForceSize<INDEX_T>(num_threads, cnt, min_cnt_per_block, out_nblock,
                                 block_size);
   }

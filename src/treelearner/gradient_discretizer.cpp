@@ -22,7 +22,7 @@ void GradientDiscretizer::Init(
   random_values_use_start_eng_ = std::mt19937(random_seed_);
   random_values_use_start_dist_ = std::uniform_int_distribution<data_size_t>(0, num_data);
 
-  const int num_threads = OMP_NUM_THREADS();
+  const int num_threads = 1;
   int num_blocks = 0;
   data_size_t block_size = 0;
   Threading::BlockInfo<data_size_t>(num_data, 512, &num_blocks, &block_size);
@@ -71,7 +71,7 @@ void GradientDiscretizer::DiscretizeGradients(
   const score_t* input_hessians) {
   double max_gradient = std::fabs(input_gradients[0]);
   double max_hessian = std::fabs(input_hessians[0]);
-  const int num_threads = OMP_NUM_THREADS();
+  const int num_threads = 1;
   std::vector<double> thread_max_gradient(num_threads, max_gradient);
   std::vector<double> thread_max_hessian(num_threads, max_hessian);
   Threading::For<data_size_t>(0, num_data, 1024,

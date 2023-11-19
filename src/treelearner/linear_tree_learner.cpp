@@ -63,7 +63,7 @@ Tree* LinearTreeLearner::Train(const score_t* gradients, const score_t *hessians
   Common::FunctionTimer fun_timer("SerialTreeLearner::Train", global_timer);
   gradients_ = gradients;
   hessians_ = hessians;
-  int num_threads = OMP_NUM_THREADS();
+  int num_threads = 1;
   if (share_state_->num_threads != num_threads && share_state_->num_threads > 0) {
     Log::Warning(
         "Detected that num_threads changed during training (from %d to %d), "
@@ -173,7 +173,7 @@ template<bool HAS_NAN>
 void LinearTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t* gradients, const score_t* hessians, bool is_first_tree) const {
   tree->SetIsLinear(true);
   int num_leaves = tree->num_leaves();
-  int num_threads = OMP_NUM_THREADS();
+  int num_threads = 1;
   if (is_first_tree) {
     for (int leaf_num = 0; leaf_num < num_leaves; ++leaf_num) {
       tree->SetLeafConst(leaf_num, tree->LeafOutput(leaf_num));

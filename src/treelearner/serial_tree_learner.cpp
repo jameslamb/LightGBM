@@ -180,7 +180,7 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
   Common::FunctionTimer fun_timer("SerialTreeLearner::Train", global_timer);
   gradients_ = gradients;
   hessians_ = hessians;
-  int num_threads = OMP_NUM_THREADS();
+  int num_threads = 1;
   if (share_state_->num_threads != num_threads && share_state_->num_threads > 0) {
     Log::Warning(
         "Detected that num_threads changed during training (from %d to %d), "

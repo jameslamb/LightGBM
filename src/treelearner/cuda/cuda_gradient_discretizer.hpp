@@ -69,7 +69,7 @@ class CUDAGradientDiscretizer: public GradientDiscretizer {
     std::vector<score_t> hessian_random_values(num_data, 0.0f);
     std::vector<int> random_values_use_start(num_trees_, 0);
 
-    const int num_threads = OMP_NUM_THREADS();
+    const int num_threads = 1;
 
     std::mt19937 random_values_use_start_eng = std::mt19937(random_seed_);
     std::uniform_int_distribution<data_size_t> random_values_use_start_dist = std::uniform_int_distribution<data_size_t>(0, num_data);

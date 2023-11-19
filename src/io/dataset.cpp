@@ -530,7 +530,7 @@ MultiValBin* Dataset::GetMultiBinFromSparseFeatures(const std::vector<uint32_t>&
     return nullptr;
   }
   const int num_feature = feature_groups_[multi_group_id]->num_feature_;
-  int num_threads = OMP_NUM_THREADS();
+  int num_threads = 1;
 
   std::vector<std::vector<std::unique_ptr<BinIterator>>> iters(num_threads);
   std::vector<uint32_t> most_freq_bins;
@@ -560,7 +560,7 @@ MultiValBin* Dataset::GetMultiBinFromSparseFeatures(const std::vector<uint32_t>&
 MultiValBin* Dataset::GetMultiBinFromAllFeatures(const std::vector<uint32_t>& offsets) const {
   Common::FunctionTimer fun_time("Dataset::GetMultiBinFromAllFeatures",
                                  global_timer);
-  int num_threads = OMP_NUM_THREADS();
+  int num_threads = 1;
   double sum_dense_ratio = 0;
 
   std::unique_ptr<MultiValBin> ret;

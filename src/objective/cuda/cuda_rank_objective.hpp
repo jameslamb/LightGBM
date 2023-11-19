@@ -34,7 +34,7 @@ class CUDALambdaRankObjectiveInterface : public CUDAObjectiveInterface<HOST_OBJE
   void Init(const Metadata& metadata, data_size_t num_data) override {
     CUDAObjectiveInterface<HOST_OBJECTIVE>::Init(metadata, num_data);
 
-    const int num_threads = OMP_NUM_THREADS();
+    const int num_threads = 1;
     std::vector<uint16_t> thread_max_num_items_in_query(num_threads);
     Threading::For<data_size_t>(0, this->num_queries_, 1,
       [this, &thread_max_num_items_in_query] (int thread_index, data_size_t start, data_size_t end) {

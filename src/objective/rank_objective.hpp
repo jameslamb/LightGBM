@@ -289,7 +289,7 @@ class LambdarankNDCG : public RankingObjective {
 
   void UpdatePositionBiasFactors(const score_t* lambdas, const score_t* hessians) const override {
     /// get number of threads
-    int num_threads = OMP_NUM_THREADS();
+    int num_threads = 1;
     // create per-thread buffers for first and second derivatives of utility w.r.t. position bias factors
     std::vector<double> bias_first_derivatives(num_position_ids_ * num_threads, 0.0);
     std::vector<double> bias_second_derivatives(num_position_ids_ * num_threads, 0.0);

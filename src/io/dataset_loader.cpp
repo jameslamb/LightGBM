@@ -1539,7 +1539,7 @@ void DatasetLoader::CheckCategoricalFeatureNumBin(
       }
     }
   } else {
-    const int num_threads = OMP_NUM_THREADS();
+    const int num_threads = 1;
     std::vector<bool> thread_need_warning(num_threads, false);
     Threading::For<size_t>(0, bin_mappers.size(), 1,
       [&bin_mappers, &thread_need_warning, &max_bin_by_feature, max_bin] (int thread_index, size_t start, size_t end) {
