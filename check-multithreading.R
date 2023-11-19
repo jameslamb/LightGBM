@@ -14,8 +14,27 @@ print(tic)
 # LGBM_DatasetCreateFromMats()
 # RowFunctionFromDenseMatric()
 # |____ RowFunctionFromDenseMatric_helper()
-# CreateSampleIndices()
+# CreateSampleIndices() [no parallelism]
 # ConstructFromSampleData()
+# |____ DatasetLoader::CheckSampleSize() [no parallelism]
+#       DatasetLoader::GetForcedBins()
+#       |____ Json::parse()
+#       BinMapper::FindBin
+#       |____ std::stable_sort()
+#             Common::CheckDoubleEqualOrdered()
+#             FindBinWithZeroAsOneBin()
+#             Common::SortForPair()
+#             NeedFilter()
+#       CheckCategoricalFeatureNumBin()
+#       Construct()
+#       |____ BinMapper::is_trivial()
+#             OneFeaturePerGroup()
+#             FastFeatureBundling()
+#       Dataset->has_raw()
+#       ResizeRaw()
+#       set_feature_names()
+#       release()
+
 # FinishLoad()
 dtrain <- lightgbm::lgb.Dataset(
     data = X

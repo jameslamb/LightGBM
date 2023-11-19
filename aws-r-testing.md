@@ -219,7 +219,13 @@ R CMD INSTALL \
   --with-keep.source \
   lightgbm_4.1.0.99.tar.gz
 
+OMP_NESTED=FALSE \
 OMP_NUM_THREADS=16 \
 Rscript --vanilla ./check-multithreading.R
 ```
+
+## References
+
+* https://docs.oracle.com/cd/E19205-01/819-5270/aewbc/index.html#:~:text=Nested%20parallelism%20can%20be%20enabled,levels%20of%20nested%20parallel%20constructs.
+
 
