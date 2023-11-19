@@ -372,19 +372,19 @@ SEXP LGBM_DatasetGetField_R(SEXP handle,
   if (!strcmp("group", name) || !strcmp("query", name)) {
     auto p_data = reinterpret_cast<const int32_t*>(res);
     // convert from boundaries to size
-#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) if (out_len >= 1024)
+#pragma omp parallel for num_threads(1) schedule(static, 512) if (out_len >= 1024)
     for (int i = 0; i < out_len - 1; ++i) {
       INTEGER(field_data)[i] = p_data[i + 1] - p_data[i];
     }
   } else if (!strcmp("init_score", name)) {
     auto p_data = reinterpret_cast<const double*>(res);
-#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) if (out_len >= 1024)
+#pragma omp parallel for num_threads(1) schedule(static, 512) if (out_len >= 1024)
     for (int i = 0; i < out_len; ++i) {
       REAL(field_data)[i] = p_data[i];
     }
   } else {
     auto p_data = reinterpret_cast<const float*>(res);
-#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) if (out_len >= 1024)
+#pragma omp parallel for num_threads(1) schedule(static, 512) if (out_len >= 1024)
     for (int i = 0; i < out_len; ++i) {
       REAL(field_data)[i] = p_data[i];
     }

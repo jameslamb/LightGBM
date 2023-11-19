@@ -149,7 +149,8 @@ Installed `clang` and tried again
 
 ```shell
 sudo apt-get install -y --no-install-recommends \
-    clang
+    clang \
+    lldb
 
 mkdir -p ${HOME}/.R
 
