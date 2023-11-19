@@ -130,7 +130,7 @@ class ParallelPartitionRunner {
     }
 
     OMP_INIT_EX();
-#pragma omp parallel for schedule(static, 1) num_threads(num_threads_)
+#pragma omp parallel for schedule(static, 1) num_threads(1)
     for (int i = 0; i < nblock; ++i) {
       OMP_LOOP_EX_BEGIN();
       INDEX_T cur_start = i * inner_size;
@@ -168,7 +168,7 @@ class ParallelPartitionRunner {
     data_size_t left_cnt = left_write_pos_[nblock - 1] + left_cnts_[nblock - 1];
 
     auto right_start = out + left_cnt;
-#pragma omp parallel for schedule(static, 1) num_threads(num_threads_)
+#pragma omp parallel for schedule(static, 1) num_threads(1)
     for (int i = 0; i < nblock; ++i) {
       std::copy_n(left_.data() + offsets_[i], left_cnts_[i],
                   out + left_write_pos_[i]);
