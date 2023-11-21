@@ -1269,9 +1269,6 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
   Config config;
   config.Set(param);
   OMP_SET_NUM_THREADS(config.num_threads);
-  // maybe clang doesn't like defining this in a pragma!
-  // int num_threads = OMP_NUM_THREADS();
-  Log::Info("DatasetCreateFromMats (line 1273) OMP_NUM_THREADS()=%i", OMP_NUM_THREADS());
   std::unique_ptr<Dataset> ret;
   int32_t total_nrow = 0;
   for (int j = 0; j < nmat; ++j) {
@@ -1323,11 +1320,14 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
       ret->ResizeRaw(total_nrow);
     }
   }
+// maybe clang doesn't like defining this in a pragma!
+  int num_threads = OMP_NUM_THREADS();
+  Log::Info("DatasetCreateFromMats (line 1325) OMP_NUM_THREADS()=%i, num_threads=%i", OMP_NUM_THREADS(), num_threads);
   int32_t start_row = 0;
   for (int j = 0; j < nmat; ++j) {
-    Log::Info("DatasetCreateFromMats (line 1327) OMP_NUM_THREADS()=%i", OMP_NUM_THREADS());
+    Log::Info("DatasetCreateFromMats (line 1328) OMP_NUM_THREADS()=%i, num_threads=%i", OMP_NUM_THREADS(), num_threads);
     OMP_INIT_EX();
-    #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
+    #pragma omp parallel for num_threads(num_threads) schedule(static)
     for (int i = 0; i < nrow[j]; ++i) {
       OMP_LOOP_EX_BEGIN();
       const int tid = omp_get_thread_num();
