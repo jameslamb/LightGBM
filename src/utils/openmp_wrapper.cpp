@@ -12,7 +12,7 @@ int LGBM_MAX_NUM_THREADS = 1;
 // by passing num_thread through params
 int LGBM_DEFAULT_NUM_THREADS = -1;
 
-int OMP_NUM_THREADS() {
+inline int OMP_NUM_THREADS() {
   // uncommenting this fixes all the parallelism problems
   // (i.e., only 2 threads ever created)
   //
