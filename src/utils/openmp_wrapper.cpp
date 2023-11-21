@@ -12,13 +12,15 @@ int LGBM_MAX_NUM_THREADS = 1;
 // by passing num_thread through params
 int LGBM_DEFAULT_NUM_THREADS = -1;
 
+// NOTE: it's important that OMP_NUM_THREADS() be inlined, as it's used in OpenMP pragmas
+//       and some compilers will not generate lazy-evaluation of this function in those contexts
 inline int OMP_NUM_THREADS() {
   // uncommenting this fixes all the parallelism problems
   // (i.e., only 2 threads ever created)
   //
   // hardcoding this to any positive number seems to totally disable multiprocessing
   //
-  return 16;
+  //return 16;
 
   int default_num_threads;
 
