@@ -26,7 +26,7 @@ int OMP_NUM_THREADS() {
     LightGBM::Log::Info("line 24: LGBM_MAX_NUM_THREADS=%i, default_num_threads=%i, LGBM_DEFAULT_NUM_THREADS=%i", LGBM_MAX_NUM_THREADS, default_num_threads, LGBM_DEFAULT_NUM_THREADS);
   } else {
     // otherwise, default to OpenMP-global config
-    #pragma omp parallel
+    #pragma omp parallel num_threads(1)
     // ref: https://curc.readthedocs.io/en/latest/programming/OpenMP-C.html
     // map running this back on the master thread leads to a wrong conclusion
     // about how many threads to use?
