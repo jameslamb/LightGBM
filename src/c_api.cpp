@@ -1331,6 +1331,7 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
     for (int i = 0; i < nrow[j]; ++i) {
       OMP_LOOP_EX_BEGIN();
       const int tid = omp_get_thread_num();
+      Log::Info("DatasetCreateFromMats (line 1334) on thread %i", tid);
       auto one_row = get_row_fun[j](i);
       ret->PushOneRow(tid, start_row + i, one_row);
       OMP_LOOP_EX_END();

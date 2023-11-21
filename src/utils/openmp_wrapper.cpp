@@ -27,7 +27,7 @@ int OMP_NUM_THREADS() {
   if (LGBM_DEFAULT_NUM_THREADS > 0) {
     LightGBM::Log::Info("OMP_NUM_THREADS() line 21: LGBM_MAX_NUM_THREADS=%i, default_num_threads=%i, LGBM_DEFAULT_NUM_THREADS=%i", LGBM_MAX_NUM_THREADS, default_num_threads, LGBM_DEFAULT_NUM_THREADS);
     // if LightGBM-specific default has been set, ignore OpenMP-global config
-    *default_num_threads = LGBM_DEFAULT_NUM_THREADS;
+    default_num_threads = LGBM_DEFAULT_NUM_THREADS;
     LightGBM::Log::Info("OMP_NUM_THREADS() line 24: LGBM_MAX_NUM_THREADS=%i, default_num_threads=%i, LGBM_DEFAULT_NUM_THREADS=%i", LGBM_MAX_NUM_THREADS, default_num_threads, LGBM_DEFAULT_NUM_THREADS);
   } else {
     // otherwise, default to OpenMP-global config
@@ -36,7 +36,7 @@ int OMP_NUM_THREADS() {
     // map running this back on the master thread leads to a wrong conclusion
     // about how many threads to use?
     #pragma omp master
-    { *default_num_threads = omp_get_max_threads(); }
+    { default_num_threads = omp_get_max_threads(); }
     LightGBM::Log::Info("OMP_NUM_THREADS() line 30: LGBM_MAX_NUM_THREADS=%i, default_num_threads=%i, LGBM_DEFAULT_NUM_THREADS=%i", LGBM_MAX_NUM_THREADS, default_num_threads, LGBM_DEFAULT_NUM_THREADS);
   }
 
