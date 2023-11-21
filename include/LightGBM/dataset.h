@@ -515,9 +515,9 @@ class Dataset {
                                      int32_t omp_max_threads) {
     // Initialize optional max thread count with either parameter or OMP setting
     if (omp_max_threads > 0) {
-      omp_max_threads_ = omp_max_threads;
+      omp_max_threads_ = 1; // omp_max_threads;
     } else if (omp_max_threads_ <= 0) {
-      omp_max_threads_ = OMP_NUM_THREADS();
+      omp_max_threads_ = 1; // OMP_NUM_THREADS();
     }
 
     metadata_.Init(num_data, has_weights, has_init_scores, has_queries, nclasses);
