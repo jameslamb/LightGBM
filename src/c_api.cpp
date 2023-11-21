@@ -2704,11 +2704,13 @@ int LGBM_NetworkInitWithFunctions(int num_machines, int rank,
 
 int LGBM_SetMaxThreads(int num_threads) {
   API_BEGIN();
+  LightGBM::Log::Info("SetMaxThreads() line 2707: OMP_NUM_THREADS()=%i, LGBM_MAX_NUM_THREADS=%i, num_threads=%i, LGBM_DEFAULT_NUM_THREADS=%i", OMP_NUM_THREADS(), LGBM_MAX_NUM_THREADS, num_threads, LGBM_DEFAULT_NUM_THREADS);
   if (num_threads <= 0) {
     LGBM_MAX_NUM_THREADS = -1;
   } else {
     LGBM_MAX_NUM_THREADS = num_threads;
   }
+  LightGBM::Log::Info("SetMaxThreads() line 2713: OMP_NUM_THREADS()=%i, LGBM_MAX_NUM_THREADS=%i, num_threads=%i, LGBM_DEFAULT_NUM_THREADS=%i", OMP_NUM_THREADS(), LGBM_MAX_NUM_THREADS, num_threads, LGBM_DEFAULT_NUM_THREADS);
   API_END();
 }
 
