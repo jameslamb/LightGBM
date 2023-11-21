@@ -15,7 +15,7 @@ int LGBM_DEFAULT_NUM_THREADS = -1;
 int OMP_NUM_THREADS() {
   // uncommenting this fixes all the parallelism problems
   // (i.e., only 2 threads ever created)
-  return 2;
+  return 4;
 
   int default_num_threads;
 
