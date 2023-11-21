@@ -15,7 +15,10 @@ int LGBM_DEFAULT_NUM_THREADS = -1;
 int OMP_NUM_THREADS() {
   // uncommenting this fixes all the parallelism problems
   // (i.e., only 2 threads ever created)
-  return 16;
+  //
+  // hardcoding this to any positive number seems to totally disable multiprocessing
+  //
+  //return 16;
 
   int default_num_threads;
 
