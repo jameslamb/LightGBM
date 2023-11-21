@@ -509,7 +509,7 @@ void TrainingShareStates::CalcBinOffsets(const std::vector<std::unique_ptr<Featu
 void TrainingShareStates::SetMultiValBin(MultiValBin* bin, data_size_t num_data,
   const std::vector<std::unique_ptr<FeatureGroup>>& feature_groups,
   bool dense_only, bool sparse_only, const int num_grad_quant_bins) {
-  num_threads = OMP_NUM_THREADS();
+  num_threads = 1;
   if (bin == nullptr) {
     return;
   }
