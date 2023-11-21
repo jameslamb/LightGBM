@@ -30,7 +30,7 @@ int OMP_NUM_THREADS() {
     // ref: https://curc.readthedocs.io/en/latest/programming/OpenMP-C.html
     // map running this back on the master thread leads to a wrong conclusion
     // about how many threads to use?
-    // #pragma omp master
+    #pragma omp master
     { default_num_threads = omp_get_max_threads(); }
     LightGBM::Log::Info("line 30: LGBM_MAX_NUM_THREADS=%i, default_num_threads=%i, LGBM_DEFAULT_NUM_THREADS=%i", LGBM_MAX_NUM_THREADS, default_num_threads, LGBM_DEFAULT_NUM_THREADS);
   }
