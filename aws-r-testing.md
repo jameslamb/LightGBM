@@ -4,7 +4,7 @@ Got a `c5a.4xlarge` instance.
 ```shell
 ssh \
     -i ${HOME}/.aws/gpu-testing-2.cer \
-    ubuntu@ec2-34-208-207-243.us-west-2.compute.amazonaws.com
+    ubuntu@ec2-35-93-98-88.us-west-2.compute.amazonaws.com
 ```
 
 ```shell
@@ -216,6 +216,8 @@ print(lightgbm::getLGBMthreads())
 ```
 
 ```shell
+git pull jlamb fix/thread-control && \
+sh build-cran-package.sh --no-build-vignettes && \
 R CMD INSTALL \
   --with-keep.source \
   lightgbm_4.1.0.99.tar.gz
