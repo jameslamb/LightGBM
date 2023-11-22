@@ -6,7 +6,7 @@
 #include <omp.h>
 
 // this can only be changed by LGBM_SetMaxThreads()
-int LGBM_MAX_NUM_THREADS = 1;
+int LGBM_MAX_NUM_THREADS = -1;
 
 // this is modified by OMP_SET_NUM_THREADS(), for example
 // by passing num_thread through params
@@ -14,7 +14,7 @@ int LGBM_MAX_NUM_THREADS = 1;
 // NOTE: initializing this to 1 cuts the ratio by about 2x... so maybe
 //       some things are getting a number of threads based on this?
 //       or maybe this is being copied around to multiple places?
-int LGBM_DEFAULT_NUM_THREADS = 1;
+int LGBM_DEFAULT_NUM_THREADS = -1;
 
 // NOTE: it's important that OMP_NUM_THREADS() be inlined, as it's used in OpenMP pragmas
 //       and some compilers will not generate lazy-evaluation of this function in those contexts
