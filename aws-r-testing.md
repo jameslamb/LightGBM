@@ -236,3 +236,4 @@ Rscript --vanilla ./check-multithreading.R
     - how the `if` and `num_threads()` clauses are evaluated
     - if `if()` is false, only 1 thread is used
 * https://www.openmp.org/spec-html/5.0/openmpse23.html#x117-4350002.15
+* https://stackoverflow.com/a/11884188/3986677
