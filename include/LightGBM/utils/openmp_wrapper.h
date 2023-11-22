@@ -20,11 +20,11 @@
 #include <vector>
 
 // this can only be changed by LGBM_SetMaxThreads()
-LIGHTGBM_EXTERN_C int LGBM_MAX_NUM_THREADS;
+LIGHTGBM_EXTERN_C int LGBM_MAX_NUM_THREADS = -1;
 
 // this is modified by OMP_SET_NUM_THREADS(), for example
 // by passing num_thread through params
-LIGHTGBM_EXTERN_C int LGBM_DEFAULT_NUM_THREADS;
+LIGHTGBM_EXTERN_C int LGBM_DEFAULT_NUM_THREADS = -1;
 
 /*
     Get number of threads to use in OpenMP parallel regions.
