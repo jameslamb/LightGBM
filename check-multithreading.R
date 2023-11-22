@@ -1,6 +1,6 @@
 library(lightgbm)
 
-lightgbm::setLGBMthreads(3L)
+lightgbm::setLGBMthreads(7L)
 
 X <- matrix(rnorm(1e6), ncol=1e2)
 y <- rnorm(nrow(X))
