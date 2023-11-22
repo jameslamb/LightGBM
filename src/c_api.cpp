@@ -1268,7 +1268,7 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
   auto param = Config::Str2Map(parameters);
   Config config;
   config.Set(param);
-  OMP_SET_NUM_THREADS(config.num_threads);
+  //OMP_SET_NUM_THREADS(config.num_threads);
   std::unique_ptr<Dataset> ret;
   int32_t total_nrow = 0;
   for (int j = 0; j < nmat; ++j) {

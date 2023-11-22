@@ -10,6 +10,10 @@ int LGBM_MAX_NUM_THREADS = 1;
 
 // this is modified by OMP_SET_NUM_THREADS(), for example
 // by passing num_thread through params
+//
+// NOTE: initializing this to 1 cuts the ratio by about 2x... so maybe
+//       some things are getting a number of threads based on this?
+//       or maybe this is being copied around to multiple places?
 int LGBM_DEFAULT_NUM_THREADS = 1;
 
 // NOTE: it's important that OMP_NUM_THREADS() be inlined, as it's used in OpenMP pragmas

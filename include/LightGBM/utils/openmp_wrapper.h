@@ -41,7 +41,6 @@ int OMP_NUM_THREADS();
 
 void OMP_SET_NUM_THREADS(int num_threads);
 
-
 class ThreadExceptionHelper {
  public:
   ThreadExceptionHelper() {
