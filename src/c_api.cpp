@@ -1268,6 +1268,8 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
   auto param = Config::Str2Map(parameters);
   Config config;
   config.Set(param);
+  // the combination of commenting this out + initializing LGBM_DEFAULT = -1
+  // still results in the overall process creating 16 threads
   //OMP_SET_NUM_THREADS(config.num_threads);
   std::unique_ptr<Dataset> ret;
   int32_t total_nrow = 0;
