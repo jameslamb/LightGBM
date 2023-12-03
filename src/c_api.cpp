@@ -1323,13 +1323,12 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
     }
   }
 // maybe clang doesn't like defining this in a pragma!
-  int num_threads = OMP_NUM_THREADS();
+  int num_threads = 1;
   Log::Info("DatasetCreateFromMats (line 1325) OMP_NUM_THREADS()=%i, num_threads=%i", OMP_NUM_THREADS(), num_threads);
   int32_t start_row = 0;
   for (int j = 0; j < nmat; ++j) {
     Log::Info("DatasetCreateFromMats (line 1328) OMP_NUM_THREADS()=%i, num_threads=%i", OMP_NUM_THREADS(), num_threads);
     OMP_INIT_EX();
-    #pragma omp parallel for num_threads(1) schedule(static)
     for (int i = 0; i < nrow[j]; ++i) {
       OMP_LOOP_EX_BEGIN();
       const int tid = omp_get_thread_num();
