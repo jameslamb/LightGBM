@@ -25,6 +25,7 @@ int OMP_NUM_THREADS() {
   // hardcoding this to any positive number seems to totally disable multiprocessing
   //
   //return 16;
+  return 2;
 
   int default_num_threads;
 
