@@ -231,7 +231,8 @@ Rscript --vanilla ./check-multithreading.R
 ## Things that didn't work:
 
 * removing all the `#pragma omp` calls in `LightGBM_R.cpp`
-*
+* removing the one `#pragma omp` call from `DatasetCreateFromMats()` in `c_api.cpp`
+* 
 
 ## References
 
