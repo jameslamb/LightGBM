@@ -33,7 +33,7 @@ CUDASingleGPUTreeLearner::~CUDASingleGPUTreeLearner() {
 
 void CUDASingleGPUTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian) {
   SerialTreeLearner::Init(train_data, is_constant_hessian);
-  num_threads_ = 1;;
+  num_threads_ = OMP_NUM_THREADS();
   // use the first gpu by default
   gpu_device_id_ = config_->gpu_device_id >= 0 ? config_->gpu_device_id : 0;
   SetCUDADevice(gpu_device_id_, __FILE__, __LINE__);
@@ -367,7 +367,7 @@ void CUDASingleGPUTreeLearner::ResetConfig(const Config* config) {
   if (config_->gpu_device_id >= 0 && config_->gpu_device_id != gpu_device_id_) {
     Log::Fatal("Changing gpu device ID by resetting configuration parameter is not allowed for CUDA tree learner.");
   }
-  num_threads_ = 1;;
+  num_threads_ = OMP_NUM_THREADS();
   if (config_->num_leaves != old_num_leaves) {
     leaf_best_split_feature_.resize(config_->num_leaves, -1);
     leaf_best_split_threshold_.resize(config_->num_leaves, 0);
@@ -405,6 +405,7 @@ void CUDASingleGPUTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFuncti
       }
       std::vector<int> n_nozeroworker_perleaf(cuda_tree->num_leaves(), 1);
       int num_machines = Network::num_machines();
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (int i = 0; i < cuda_tree->num_leaves(); ++i) {
         const double output = static_cast<double>(cuda_tree->LeafOutput(i));
         data_size_t cnt_leaf_data = leaf_num_data_[i];

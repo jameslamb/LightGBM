@@ -22,10 +22,11 @@ void GradientDiscretizer::Init(
   random_values_use_start_eng_ = std::mt19937(random_seed_);
   random_values_use_start_dist_ = std::uniform_int_distribution<data_size_t>(0, num_data);
 
-  const int num_threads = 1;
+  const int num_threads = OMP_NUM_THREADS();
   int num_blocks = 0;
   data_size_t block_size = 0;
   Threading::BlockInfo<data_size_t>(num_data, 512, &num_blocks, &block_size);
+  #pragma omp parallel for schedule(static, 1) num_threads(num_threads)
   for (int thread_id = 0; thread_id < num_blocks; ++thread_id) {
     const data_size_t start = thread_id * block_size;
     const data_size_t end = std::min(start + block_size, num_data);
@@ -55,6 +56,7 @@ void GradientDiscretizer::Init(
 
   leaf_grad_hess_stats_.resize(num_leaves_ * 2, 0.0);
   change_hist_bits_buffer_.resize(num_features);
+  #pragma omp parallel for schedule(static) num_threads(num_threads)
   for (int feature_index = 0; feature_index < num_features; ++feature_index) {
     const BinMapper* bin_mapper = train_data->FeatureBinMapper(feature_index);
     change_hist_bits_buffer_[feature_index].resize((bin_mapper->num_bin() - static_cast<int>(bin_mapper->GetMostFreqBin() == 0)) * 2);
@@ -69,7 +71,7 @@ void GradientDiscretizer::DiscretizeGradients(
   const score_t* input_hessians) {
   double max_gradient = std::fabs(input_gradients[0]);
   double max_hessian = std::fabs(input_hessians[0]);
-  const int num_threads = 1;
+  const int num_threads = OMP_NUM_THREADS();
   std::vector<double> thread_max_gradient(num_threads, max_gradient);
   std::vector<double> thread_max_hessian(num_threads, max_hessian);
   Threading::For<data_size_t>(0, num_data, 1024,
@@ -115,6 +117,7 @@ void GradientDiscretizer::DiscretizeGradients(
   int8_t* discretized_int8 = discretized_gradients_and_hessians_vector_.data();
   if (stochastic_rounding_) {
     if (is_constant_hessian_) {
+      #pragma omp parallel for schedule(static) num_threads(num_threads)
       for (data_size_t i = 0; i < num_data; ++i) {
         const double gradient = input_gradients[i];
         const data_size_t random_value_pos = (i + random_values_use_start) % num_data;
@@ -124,6 +127,7 @@ void GradientDiscretizer::DiscretizeGradients(
         discretized_int8[2 * i] = static_cast<int8_t>(1);
       }
     } else {
+      #pragma omp parallel for schedule(static) num_threads(num_threads)
       for (data_size_t i = 0; i < num_data; ++i) {
         const double gradient = input_gradients[i];
         const data_size_t random_value_pos = (i + random_values_use_start) % num_data;
@@ -135,6 +139,7 @@ void GradientDiscretizer::DiscretizeGradients(
     }
   } else {
     if (is_constant_hessian_) {
+      #pragma omp parallel for schedule(static) num_threads(num_threads)
       for (data_size_t i = 0; i < num_data; ++i) {
         const double gradient = input_gradients[i];
         discretized_int8[2 * i + 1] = gradient >= 0.0f ?
@@ -143,6 +148,7 @@ void GradientDiscretizer::DiscretizeGradients(
         discretized_int8[2 * i] = static_cast<int8_t>(1);
       }
     } else {
+      #pragma omp parallel for schedule(static) num_threads(num_threads)
       for (data_size_t i = 0; i < num_data; ++i) {
         const double gradient = input_gradients[i];
         discretized_int8[2 * i + 1] = gradient >= 0.0f ?
@@ -210,6 +216,7 @@ void GradientDiscretizer::RenewIntGradTreeOutput(
       data_size_t leaf_cnt = 0;
       const data_size_t* data_indices = data_partition->GetIndexOnLeaf(leaf_id, &leaf_cnt);
       double sum_gradient = 0.0f, sum_hessian = 0.0f;
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum_gradient, sum_hessian)
       for (data_size_t i = 0; i < leaf_cnt; ++i) {
         const data_size_t index = data_indices[i];
         const score_t grad = gradients[index];
@@ -235,6 +242,7 @@ void GradientDiscretizer::RenewIntGradTreeOutput(
       data_size_t leaf_cnt = 0;
       const data_size_t* data_indices = data_partition->GetIndexOnLeaf(leaf_id, &leaf_cnt);
       double sum_gradient = 0.0f, sum_hessian = 0.0f;
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum_gradient, sum_hessian)
       for (data_size_t i = 0; i < leaf_cnt; ++i) {
         const data_size_t index = data_indices[i];
         const score_t grad = gradients[index];

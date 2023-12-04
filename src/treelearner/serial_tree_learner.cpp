@@ -180,7 +180,7 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
   Common::FunctionTimer fun_timer("SerialTreeLearner::Train", global_timer);
   gradients_ = gradients;
   hessians_ = hessians;
-  int num_threads = 1;
+  int num_threads = OMP_NUM_THREADS();
   if (share_state_->num_threads != num_threads && share_state_->num_threads > 0) {
     Log::Warning(
         "Detected that num_threads changed during training (from %d to %d), "
@@ -242,6 +242,7 @@ Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const score_t* 
   auto tree = std::unique_ptr<Tree>(new Tree(*old_tree));
   CHECK_GE(data_partition_->num_leaves(), tree->num_leaves());
   OMP_INIT_EX();
+  #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
   for (int i = 0; i < tree->num_leaves(); ++i) {
     OMP_LOOP_EX_BEGIN();
     data_size_t cnt_leaf_data = 0;
@@ -378,6 +379,7 @@ void SerialTreeLearner::FindBestSplits(const Tree* tree) {
 
 void SerialTreeLearner::FindBestSplits(const Tree* tree, const std::set<int>* force_features) {
   std::vector<int8_t> is_feature_used(num_features_, 0);
+  #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 256) if (num_features_ >= 512)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     if (!col_sampler_.is_feature_used_bytree()[feature_index] && (force_features == nullptr || force_features->find(feature_index) == force_features->end())) continue;
     if (parent_leaf_histogram_array_ != nullptr
@@ -485,6 +487,7 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(
     const uint8_t larger_hist_bits = gradient_discretizer_->GetHistBitsInLeaf<false>(larger_leaf_splits_->leaf_index());
     if (parent_hist_bits > 16 && larger_hist_bits <= 16) {
       OMP_INIT_EX();
+      #pragma omp parallel for schedule(static) num_threads(share_state_->num_threads)
       for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
         OMP_LOOP_EX_BEGIN();
         if (!is_feature_used[feature_index]) {
@@ -499,6 +502,7 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(
 
   OMP_INIT_EX();
 // find splits
+#pragma omp parallel for schedule(static) num_threads(share_state_->num_threads)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     OMP_LOOP_EX_BEGIN();
     if (!is_feature_used[feature_index]) {
@@ -918,6 +922,7 @@ void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj
     }
     std::vector<int> n_nozeroworker_perleaf(tree->num_leaves(), 1);
     int num_machines = Network::num_machines();
+    #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
     for (int i = 0; i < tree->num_leaves(); ++i) {
       const double output = static_cast<double>(tree->LeafOutput(i));
       data_size_t cnt_leaf_data = 0;
@@ -1033,6 +1038,7 @@ void SerialTreeLearner::RecomputeBestSplitForLeaf(Tree* tree, int leaf, SplitInf
   OMP_INIT_EX();
 // find splits
 std::vector<int8_t> node_used_features = col_sampler_.GetByNode(tree, leaf);
+#pragma omp parallel for schedule(static) num_threads(share_state_->num_threads)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     OMP_LOOP_EX_BEGIN();
     if (!col_sampler_.is_feature_used_bytree()[feature_index] ||

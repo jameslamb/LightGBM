@@ -77,6 +77,7 @@ class CrossEntropy: public ObjectiveFunction {
   void GetGradients(const double* score, score_t* gradients, score_t* hessians) const override {
     if (weights_ == nullptr) {
       // compute pointwise gradients and Hessians with implied unit weights
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         const double z = 1.0f / (1.0f + std::exp(-score[i]));
         gradients[i] = static_cast<score_t>(z - label_[i]);
@@ -84,6 +85,7 @@ class CrossEntropy: public ObjectiveFunction {
       }
     } else {
       // compute pointwise gradients and Hessians with given weights
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         const double z = 1.0f / (1.0f + std::exp(-score[i]));
         gradients[i] = static_cast<score_t>((z - label_[i]) * weights_[i]);
@@ -112,6 +114,7 @@ class CrossEntropy: public ObjectiveFunction {
     double suml = 0.0f;
     double sumw = 0.0f;
     if (weights_ != nullptr) {
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:suml, sumw) if (!deterministic_)
 
       for (data_size_t i = 0; i < num_data_; ++i) {
         suml += static_cast<double>(label_[i]) * weights_[i];
@@ -119,6 +122,7 @@ class CrossEntropy: public ObjectiveFunction {
       }
     } else {
       sumw = static_cast<double>(num_data_);
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:suml) if (!deterministic_)
 
       for (data_size_t i = 0; i < num_data_; ++i) {
         suml += label_[i];
@@ -186,6 +190,7 @@ class CrossEntropyLambda: public ObjectiveFunction {
   void GetGradients(const double* score, score_t* gradients, score_t* hessians) const override {
     if (weights_ == nullptr) {
       // compute pointwise gradients and Hessians with implied unit weights; exactly equivalent to CrossEntropy with unit weights
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         const double z = 1.0f / (1.0f + std::exp(-score[i]));
         gradients[i] = static_cast<score_t>(z - label_[i]);
@@ -193,6 +198,7 @@ class CrossEntropyLambda: public ObjectiveFunction {
       }
     } else {
       // compute pointwise gradients and Hessians with given weights
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         const double w = weights_[i];
         const double y = label_[i];
@@ -238,6 +244,7 @@ class CrossEntropyLambda: public ObjectiveFunction {
     double suml = 0.0f;
     double sumw = 0.0f;
     if (weights_ != nullptr) {
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:suml, sumw) if (!deterministic_)
 
       for (data_size_t i = 0; i < num_data_; ++i) {
         suml += static_cast<double>(label_[i]) * weights_[i];
@@ -245,6 +252,7 @@ class CrossEntropyLambda: public ObjectiveFunction {
       }
     } else {
       sumw = static_cast<double>(num_data_);
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:suml) if (!deterministic_)
 
       for (data_size_t i = 0; i < num_data_; ++i) {
         suml += label_[i];

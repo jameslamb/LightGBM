@@ -104,13 +104,14 @@ class MapMetric:public Metric {
   }
   std::vector<double> Eval(const double* score, const ObjectiveFunction*) const override {
     // some buffers for multi-threading sum up
-    int num_threads = 1;
+    int num_threads = OMP_NUM_THREADS();
     std::vector<std::vector<double>> result_buffer_;
     for (int i = 0; i < num_threads; ++i) {
       result_buffer_.emplace_back(eval_at_.size(), 0.0f);
     }
     std::vector<double> tmp_map(eval_at_.size(), 0.0f);
     if (query_weights_ == nullptr) {
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(guided) firstprivate(tmp_map)
       for (data_size_t i = 0; i < num_queries_; ++i) {
         const int tid = omp_get_thread_num();
         CalMapAtK(eval_at_, npos_per_query_[i], label_ + query_boundaries_[i],
@@ -120,6 +121,7 @@ class MapMetric:public Metric {
         }
       }
     } else {
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(guided) firstprivate(tmp_map)
       for (data_size_t i = 0; i < num_queries_; ++i) {
         const int tid = omp_get_thread_num();
         CalMapAtK(eval_at_, npos_per_query_[i], label_ + query_boundaries_[i],

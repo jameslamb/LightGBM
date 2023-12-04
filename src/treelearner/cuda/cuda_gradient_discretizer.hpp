@@ -69,7 +69,7 @@ class CUDAGradientDiscretizer: public GradientDiscretizer {
     std::vector<score_t> hessian_random_values(num_data, 0.0f);
     std::vector<int> random_values_use_start(num_trees_, 0);
 
-    const int num_threads = 1;
+    const int num_threads = OMP_NUM_THREADS();
 
     std::mt19937 random_values_use_start_eng = std::mt19937(random_seed_);
     std::uniform_int_distribution<data_size_t> random_values_use_start_dist = std::uniform_int_distribution<data_size_t>(0, num_data);
@@ -80,6 +80,7 @@ class CUDAGradientDiscretizer: public GradientDiscretizer {
     int num_blocks = 0;
     data_size_t block_size = 0;
     Threading::BlockInfo<data_size_t>(num_data, 512, &num_blocks, &block_size);
+    #pragma omp parallel for schedule(static, 1) num_threads(num_threads)
     for (int thread_id = 0; thread_id < num_blocks; ++thread_id) {
       const data_size_t start = thread_id * block_size;
       const data_size_t end = std::min(start + block_size, num_data);

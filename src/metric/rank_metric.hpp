@@ -57,6 +57,7 @@ class NDCGMetric:public Metric {
     }
     inverse_max_dcgs_.resize(num_queries_);
     // cache the inverse max DCG for all queries, used to calculate NDCG
+    #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
     for (data_size_t i = 0; i < num_queries_; ++i) {
       inverse_max_dcgs_[i].resize(eval_at_.size(), 0.0f);
       DCGCalculator::CalMaxDCG(eval_at_, label_ + query_boundaries_[i],
@@ -83,7 +84,7 @@ class NDCGMetric:public Metric {
   }
 
   std::vector<double> Eval(const double* score, const ObjectiveFunction*) const override {
-    int num_threads = 1;
+    int num_threads = OMP_NUM_THREADS();
     // some buffers for multi-threading sum up
     std::vector<std::vector<double>> result_buffer_;
     for (int i = 0; i < num_threads; ++i) {
@@ -91,6 +92,7 @@ class NDCGMetric:public Metric {
     }
     std::vector<double> tmp_dcg(eval_at_.size(), 0.0f);
     if (query_weights_ == nullptr) {
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) firstprivate(tmp_dcg)
       for (data_size_t i = 0; i < num_queries_; ++i) {
         const int tid = omp_get_thread_num();
         // if all doc in this query are all negative, let its NDCG=1
@@ -110,6 +112,7 @@ class NDCGMetric:public Metric {
         }
       }
     } else {
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) firstprivate(tmp_dcg)
       for (data_size_t i = 0; i < num_queries_; ++i) {
         const int tid = omp_get_thread_num();
         // if all doc in this query are all negative, let its NDCG=1
