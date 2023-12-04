@@ -1033,7 +1033,6 @@ void SerialTreeLearner::RecomputeBestSplitForLeaf(Tree* tree, int leaf, SplitInf
   OMP_INIT_EX();
 // find splits
 std::vector<int8_t> node_used_features = col_sampler_.GetByNode(tree, leaf);
-#pragma omp parallel for schedule(static) num_threads(share_state_->num_threads)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     OMP_LOOP_EX_BEGIN();
     if (!col_sampler_.is_feature_used_bytree()[feature_index] ||
