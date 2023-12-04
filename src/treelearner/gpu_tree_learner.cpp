@@ -191,7 +191,6 @@ void GPUTreeLearner::WaitAndGetHistograms(hist_t* histograms) {
   HistType* hist_outputs = reinterpret_cast<HistType*>(host_histogram_outputs_);
   // when the output is ready, the computation is done
   histograms_wait_obj_.wait();
-  #pragma omp parallel for num_threads(1) schedule(static)
   for (int i = 0; i < num_dense_feature_groups_; ++i) {
     if (!feature_masks_[i]) {
       continue;
@@ -359,7 +358,6 @@ void GPUTreeLearner::AllocateGPUMemory() {
                     0, num_data_ * sizeof(Feature4)));
   }
   // building Feature4 bundles; each thread handles dword_features_ features
-  #pragma omp parallel for num_threads(1) schedule(static)
   for (int i = 0; i < static_cast<int>(dense_feature_group_map_.size() / dword_features_); ++i) {
     int tid = omp_get_thread_num();
     Feature4* host4 = host4_ptrs[tid];
@@ -425,7 +423,6 @@ void GPUTreeLearner::AllocateGPUMemory() {
     } else {
       Log::Fatal("Bug in GPU tree builder: dword_features_ can only be 4 or 8");
     }
-    #pragma omp critical
     queue_.enqueue_write_buffer(device_features_->get_buffer(),
                         (uint64_t)i * num_data_ * sizeof(Feature4), num_data_ * sizeof(Feature4), host4);
     #if GPU_DEBUG >= 1
@@ -451,7 +448,6 @@ void GPUTreeLearner::AllocateGPUMemory() {
         BinIterator* bin_iter = train_data_->FeatureGroupIterator(dense_dword_ind[i]);
         if (dynamic_cast<DenseBinIterator<uint8_t, true>*>(bin_iter) != 0) {
           DenseBinIterator<uint8_t, true> iter = *static_cast<DenseBinIterator<uint8_t, true>*>(bin_iter);
-          #pragma omp parallel for num_threads(1) schedule(static)
           for (int j = 0; j < num_data_; ++j) {
             host4[j].s[i >> 1] |= (uint8_t)((iter.RawGet(j) * device_bin_mults_[copied_feature4 * dword_features_ + i]
                                 + ((j+i) & (device_bin_mults_[copied_feature4 * dword_features_ + i] - 1)))
@@ -464,14 +460,12 @@ void GPUTreeLearner::AllocateGPUMemory() {
         BinIterator* bin_iter = train_data_->FeatureGroupIterator(dense_dword_ind[i]);
         if (dynamic_cast<DenseBinIterator<uint8_t, false>*>(bin_iter) != 0) {
           DenseBinIterator<uint8_t, false> iter = *static_cast<DenseBinIterator<uint8_t, false>*>(bin_iter);
-          #pragma omp parallel for num_threads(1) schedule(static)
           for (int j = 0; j < num_data_; ++j) {
             host4[j].s[i] = (uint8_t)(iter.RawGet(j) * device_bin_mults_[copied_feature4 * dword_features_ + i]
                           + ((j+i) & (device_bin_mults_[copied_feature4 * dword_features_ + i] - 1)));
           }
         } else if (dynamic_cast<DenseBinIterator<uint8_t, true>*>(bin_iter) != 0) {
           DenseBinIterator<uint8_t, true> iter = *static_cast<DenseBinIterator<uint8_t, true>*>(bin_iter);
-          #pragma omp parallel for num_threads(1) schedule(static)
           for (int j = 0; j < num_data_; ++j) {
             host4[j].s[i] = (uint8_t)(iter.RawGet(j) * device_bin_mults_[copied_feature4 * dword_features_ + i]
                           + ((j+i) & (device_bin_mults_[copied_feature4 * dword_features_ + i] - 1)));
@@ -485,7 +479,6 @@ void GPUTreeLearner::AllocateGPUMemory() {
     }
     // fill the leftover features
     if (dword_features_ == 8) {
-      #pragma omp parallel for num_threads(1) schedule(static)
       for (int j = 0; j < num_data_; ++j) {
         for (int i = k; i < dword_features_; ++i) {
           // fill this empty feature with some "random" value
@@ -493,7 +486,6 @@ void GPUTreeLearner::AllocateGPUMemory() {
         }
       }
     } else if (dword_features_ == 4) {
-      #pragma omp parallel for num_threads(1) schedule(static)
       for (int j = 0; j < num_data_; ++j) {
         for (int i = k; i < dword_features_; ++i) {
           // fill this empty feature with some "random" value
@@ -572,7 +564,6 @@ void GPUTreeLearner::BuildGPUKernels() {
   // currently we don't use constant memory
   int use_constants = 0;
   OMP_INIT_EX();
-  #pragma omp parallel for num_threads(1) schedule(guided)
   for (int i = 0; i <= kMaxLogWorkgroupsPerFeature; ++i) {
     OMP_LOOP_EX_BEGIN();
     boost::compute::program program;
@@ -590,7 +581,6 @@ void GPUTreeLearner::BuildGPUKernels() {
       program = boost::compute::program::build_with_source(kernel_source_, ctx_, opts.str());
     }
     catch (boost::compute::opencl_error &e) {
-      #pragma omp critical
       {
         std::cerr << "Build Options:" << opts.str() << std::endl;
         std::cerr << "Build Log:" << std::endl << GetBuildLog(opts.str()) << std::endl;
@@ -605,7 +595,6 @@ void GPUTreeLearner::BuildGPUKernels() {
       program = boost::compute::program::build_with_source(kernel_source_, ctx_, opts.str());
     }
     catch (boost::compute::opencl_error &e) {
-      #pragma omp critical
       {
         std::cerr << "Build Options:" << opts.str() << std::endl;
         std::cerr << "Build Log:" << std::endl << GetBuildLog(opts.str()) << std::endl;
@@ -620,7 +609,6 @@ void GPUTreeLearner::BuildGPUKernels() {
       program = boost::compute::program::build_with_source(kernel_source_, ctx_, opts.str());
     }
     catch (boost::compute::opencl_error &e) {
-      #pragma omp critical
       {
         std::cerr << "Build Options:" << opts.str() << std::endl;
         std::cerr << "Build Log:" << std::endl << GetBuildLog(opts.str()) << std::endl;
@@ -811,7 +799,6 @@ void GPUTreeLearner::BeforeTrain() {
     // transfer the indices to GPU
     indices_future_ = boost::compute::copy_async(indices, indices + cnt, device_data_indices_->begin(), queue_);
     if (!share_state_->is_constant_hessian) {
-      #pragma omp parallel for num_threads(1) schedule(static)
       for (data_size_t i = 0; i < cnt; ++i) {
         ordered_hessians_[i] = hessians_[indices[i]];
       }
@@ -827,7 +814,6 @@ void GPUTreeLearner::BeforeTrain() {
         histogram_fulldata_kernels_[i].set_arg(6, const_hessian);
       }
     }
-    #pragma omp parallel for num_threads(1) schedule(static)
     for (data_size_t i = 0; i < cnt; ++i) {
       ordered_gradients_[i] = gradients_[indices[i]];
     }
@@ -865,7 +851,6 @@ bool GPUTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int ri
     indices_future_ = boost::compute::copy_async(indices + begin, indices + end, device_data_indices_->begin(), queue_);
 
     if (!share_state_->is_constant_hessian) {
-      #pragma omp parallel for num_threads(1) schedule(static)
       for (data_size_t i = begin; i < end; ++i) {
         ordered_hessians_[i - begin] = hessians_[indices[i]];
       }
@@ -873,7 +858,6 @@ bool GPUTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int ri
       hessians_future_ = queue_.enqueue_write_buffer_async(device_hessians_, 0, (end - begin) * sizeof(score_t), ptr_pinned_hessians_);
     }
 
-    #pragma omp parallel for num_threads(1) schedule(static)
     for (data_size_t i = begin; i < end; ++i) {
       ordered_gradients_[i - begin] = gradients_[indices[i]];
     }
@@ -907,7 +891,6 @@ bool GPUTreeLearner::ConstructGPUHistogramsAsync(
   // generate and copy ordered_gradients if gradients is not null
   if (gradients != nullptr) {
     if (num_data != num_data_) {
-      #pragma omp parallel for num_threads(1) schedule(static)
       for (data_size_t i = 0; i < num_data; ++i) {
         ordered_gradients[i] = gradients[data_indices[i]];
       }
@@ -919,7 +902,6 @@ bool GPUTreeLearner::ConstructGPUHistogramsAsync(
   // generate and copy ordered_hessians if Hessians is not null
   if (hessians != nullptr && !share_state_->is_constant_hessian) {
     if (num_data != num_data_) {
-      #pragma omp parallel for num_threads(1) schedule(static)
       for (data_size_t i = 0; i < num_data; ++i) {
         ordered_hessians[i] = hessians[data_indices[i]];
       }
@@ -930,7 +912,6 @@ bool GPUTreeLearner::ConstructGPUHistogramsAsync(
   }
   // converted indices in is_feature_used to feature-group indices
   std::vector<int8_t> is_feature_group_used(num_feature_groups_, 0);
-  #pragma omp parallel for num_threads(1) schedule(static, 1024) if (num_features_ >= 2048)
   for (int i = 0; i < num_features_; ++i) {
     if (is_feature_used[i]) {
       is_feature_group_used[train_data_->Feature2Group(i)] = 1;
@@ -938,7 +919,6 @@ bool GPUTreeLearner::ConstructGPUHistogramsAsync(
   }
   // construct the feature masks for dense feature-groups
   int used_dense_feature_groups = 0;
-  #pragma omp parallel for num_threads(1) schedule(static, 1024) reduction(+:used_dense_feature_groups) if (num_dense_feature_groups_ >= 2048)
   for (int i = 0; i < num_dense_feature_groups_; ++i) {
     if (is_feature_group_used[dense_feature_group_map_[i]]) {
       feature_masks_[i] = 1;
@@ -973,7 +953,6 @@ bool GPUTreeLearner::ConstructGPUHistogramsAsync(
 void GPUTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract) {
   std::vector<int8_t> is_sparse_feature_used(num_features_, 0);
   std::vector<int8_t> is_dense_feature_used(num_features_, 0);
-  #pragma omp parallel for num_threads(1) schedule(static)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     if (!col_sampler_.is_feature_used_bytree()[feature_index]) continue;
     if (!is_feature_used[feature_index]) continue;

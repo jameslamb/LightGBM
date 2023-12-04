@@ -405,7 +405,6 @@ void CUDASingleGPUTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFuncti
       }
       std::vector<int> n_nozeroworker_perleaf(cuda_tree->num_leaves(), 1);
       int num_machines = Network::num_machines();
-      #pragma omp parallel for num_threads(1) schedule(static)
       for (int i = 0; i < cuda_tree->num_leaves(); ++i) {
         const double output = static_cast<double>(cuda_tree->LeafOutput(i));
         data_size_t cnt_leaf_data = leaf_num_data_[i];

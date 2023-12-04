@@ -103,7 +103,6 @@ class SerialTreeLearner: public TreeLearner {
     if (tree->num_leaves() <= 1) {
       return;
     }
-#pragma omp parallel for num_threads(1) schedule(static, 1)
     for (int i = 0; i < tree->num_leaves(); ++i) {
       double output = static_cast<double>(tree->LeafOutput(i));
       data_size_t cnt_leaf_data = 0;
