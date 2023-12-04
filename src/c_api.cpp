@@ -1199,10 +1199,10 @@ int LGBM_DatasetPushRowsByCSRWithMetadata(DatasetHandle dataset,
     p_dataset->ResizeRaw(p_dataset->num_numeric_features() + nrow);
   }
 
-  const int max_omp_threads = 1; // p_dataset->omp_max_threads() > 0 ? p_dataset->omp_max_threads() : OMP_NUM_THREADS();
+  const int max_omp_threads = p_dataset->omp_max_threads() > 0 ? p_dataset->omp_max_threads() : OMP_NUM_THREADS();
 
   OMP_INIT_EX();
-  const int max_omp_threads = p_dataset->omp_max_threads() > 0 ? p_dataset->omp_max_threads() : OMP_NUM_THREADS();
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
   for (int i = 0; i < nrow; ++i) {
     OMP_LOOP_EX_BEGIN();
     // convert internal thread id to be unique based on external thread id
@@ -1509,6 +1509,7 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
     std::vector<std::vector<double>> sample_values(ncol_ptr - 1);
     std::vector<std::vector<int>> sample_idx(ncol_ptr - 1);
     OMP_INIT_EX();
+    #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
     for (int i = 0; i < static_cast<int>(sample_values.size()); ++i) {
       OMP_LOOP_EX_BEGIN();
       CSC_RowIterator col_it(col_ptr, col_ptr_type, indices, data, data_type, ncol_ptr, nelem, i);
@@ -1536,6 +1537,7 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
       reinterpret_cast<const Dataset*>(reference));
   }
   OMP_INIT_EX();
+  #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
   for (int i = 0; i < ncol_ptr - 1; ++i) {
     OMP_LOOP_EX_BEGIN();
     const int tid = omp_get_thread_num();
