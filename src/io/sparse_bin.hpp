@@ -75,7 +75,7 @@ class SparseBin : public Bin {
   friend class SparseBinIterator<VAL_T>;
 
   explicit SparseBin(data_size_t num_data) : num_data_(num_data) {
-    int num_threads = 1;
+    int num_threads = OMP_NUM_THREADS();
     push_buffers_.resize(num_threads);
   }
 

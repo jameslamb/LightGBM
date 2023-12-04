@@ -21,7 +21,7 @@ class Threading {
   template <typename INDEX_T>
   static inline void BlockInfo(INDEX_T cnt, INDEX_T min_cnt_per_block,
                                int* out_nblock, INDEX_T* block_size) {
-    int num_threads = 1;
+    int num_threads = OMP_NUM_THREADS();
     BlockInfo<INDEX_T>(num_threads, cnt, min_cnt_per_block, out_nblock,
                        block_size);
   }
@@ -60,7 +60,7 @@ class Threading {
   template <typename INDEX_T>
   static inline void BlockInfoForceSize(INDEX_T cnt, INDEX_T min_cnt_per_block,
                                         int* out_nblock, INDEX_T* block_size) {
-    int num_threads = 1;
+    int num_threads = OMP_NUM_THREADS();
     BlockInfoForceSize<INDEX_T>(num_threads, cnt, min_cnt_per_block, out_nblock,
                                 block_size);
   }
@@ -73,6 +73,7 @@ class Threading {
     INDEX_T num_inner = end - start;
     BlockInfo<INDEX_T>(num_inner, min_block_size, &n_block, &num_inner);
     OMP_INIT_EX();
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 1)
     for (int i = 0; i < n_block; ++i) {
       OMP_LOOP_EX_BEGIN();
       INDEX_T inner_start = start + num_inner * i;
@@ -92,7 +93,7 @@ class ParallelPartitionRunner {
  public:
   ParallelPartitionRunner(INDEX_T num_data, INDEX_T min_block_size)
       : min_block_size_(min_block_size) {
-    num_threads_ = 1;;
+    num_threads_ = OMP_NUM_THREADS();
     left_.resize(num_data);
     if (TWO_BUFFER) {
       right_.resize(num_data);
@@ -129,6 +130,7 @@ class ParallelPartitionRunner {
     }
 
     OMP_INIT_EX();
+#pragma omp parallel for schedule(static, 1) num_threads(num_threads_)
     for (int i = 0; i < nblock; ++i) {
       OMP_LOOP_EX_BEGIN();
       INDEX_T cur_start = i * inner_size;
@@ -166,6 +168,7 @@ class ParallelPartitionRunner {
     data_size_t left_cnt = left_write_pos_[nblock - 1] + left_cnts_[nblock - 1];
 
     auto right_start = out + left_cnt;
+#pragma omp parallel for schedule(static, 1) num_threads(num_threads_)
     for (int i = 0; i < nblock; ++i) {
       std::copy_n(left_.data() + offsets_[i], left_cnts_[i],
                   out + left_write_pos_[i]);
