@@ -78,6 +78,7 @@ dtrain <- lightgbm::lgb.Dataset(
         , max_bins = 128L
         , min_data_in_bin = 5L
         , num_threads = -1L
+        , seed = 708L
         , verbosity = -1L
     )
 )
