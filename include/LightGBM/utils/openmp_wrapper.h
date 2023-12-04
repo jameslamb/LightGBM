@@ -10,7 +10,6 @@
 #include <LightGBM/export.h>
 #include <LightGBM/utils/log.h>
 
-#include <limits.h>
 #include <omp.h>
 
 #include <exception>
