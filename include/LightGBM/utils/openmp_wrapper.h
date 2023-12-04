@@ -69,8 +69,7 @@ inline int OMP_NUM_THREADS() {
   // use more than that many threads
   if (LGBM_MAX_NUM_THREADS > 0 and default_num_threads > LGBM_MAX_NUM_THREADS) {
     LightGBM::Log::Info("OMP_NUM_THREADS() line 36: LGBM_MAX_NUM_THREADS=%i, default_num_threads=%i, LGBM_DEFAULT_NUM_THREADS=%i", LGBM_MAX_NUM_THREADS, default_num_threads, LGBM_DEFAULT_NUM_THREADS);
-    return 2;
-    //return LGBM_MAX_NUM_THREADS;
+    return LGBM_MAX_NUM_THREADS;
   }
   LightGBM::Log::Info("OMP_NUM_THREADS() line 39: LGBM_MAX_NUM_THREADS=%i, default_num_threads=%i, LGBM_DEFAULT_NUM_THREADS=%i", LGBM_MAX_NUM_THREADS, default_num_threads, LGBM_DEFAULT_NUM_THREADS);
 
