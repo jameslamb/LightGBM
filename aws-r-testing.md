@@ -227,7 +227,7 @@ R CMD INSTALL \
 
 OMP_MAX_ACTIVE_LEVELS=1 \
 OMP_NUM_THREADS=16 \
-Rscript --vanilla ./check-multithreading.R
+Rscript --vanilla ./check-multithreading.R 1
 ```
 
 ## Things that didn't work:
@@ -257,6 +257,21 @@ Removing all OpenMP pragmas.... still seeing parallelism (12-16 threads).
 Then removing `OMP_NUM_THREADS()` calls in log messages... no more parallelism!
 
 HMMMMM.
+
+OH MY GOD I THINK I FIGURED IT OUT.
+
+Needs to be this:
+
+```text
+#pragma omp single
+{ default_num_threads = omp_get_max_threads(); }
+```
+
+Instead of this:
+
+```text
+
+```
 
 ## References
 
