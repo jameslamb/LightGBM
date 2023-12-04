@@ -1598,6 +1598,7 @@ int LGBM_DatasetCreateFromArrow(int64_t n_chunks,
 
     // Then, we obtain sample values by parallelizing across columns
     OMP_INIT_EX();
+    #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
     for (int64_t j = 0; j < table.get_num_columns(); ++j) {
       OMP_LOOP_EX_BEGIN();
 
@@ -1643,6 +1644,7 @@ int LGBM_DatasetCreateFromArrow(int64_t n_chunks,
   // After sampling and properly initializing all bins, we can add our data to the dataset. Here,
   // we parallelize across rows.
   OMP_INIT_EX();
+  #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
   for (int64_t j = 0; j < table.get_num_columns(); ++j) {
     OMP_LOOP_EX_BEGIN();
     const int tid = omp_get_thread_num();
@@ -1800,7 +1802,6 @@ int LGBM_DatasetGetField(DatasetHandle handle,
                          const void** out_ptr,
                          int* out_type) {
   API_BEGIN();
-  Log::Info("LGBM_DatasetGetField() - start");
   auto dataset = reinterpret_cast<Dataset*>(handle);
   bool is_success = false;
   if (dataset->GetFloatField(field_name, out_len, reinterpret_cast<const float**>(out_ptr))) {
@@ -1815,7 +1816,6 @@ int LGBM_DatasetGetField(DatasetHandle handle,
   }
   if (!is_success) { Log::Fatal("Field not found"); }
   if (*out_ptr == nullptr) { *out_len = 0; }
-  Log::Info("LGBM_DatasetGetField() - start");
   API_END();
 }
 
@@ -2085,10 +2085,8 @@ int LGBM_BoosterGetFeatureNames(BoosterHandle handle,
                                 size_t* out_buffer_len,
                                 char** out_strs) {
   API_BEGIN();
-  Log::Info("LGBM_DatasetGetFeatureNames() - start");
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   *out_len = ref_booster->GetFeatureNames(out_strs, len, buffer_len, out_buffer_len);
-  Log::Info("LGBM_DatasetGetFeatureNames() - end");
   API_END();
 }
 
@@ -2265,7 +2263,7 @@ int LGBM_BoosterPredictSparseOutput(BoosterHandle handle,
     ref_booster->PredictSparseCSR(start_iteration, num_iteration, predict_type, nrow, static_cast<int>(num_col_or_row), get_row_fun,
                                   config, out_len, out_indptr, indptr_type, out_indices, out_data, data_type);
   } else if (matrix_type == C_API_MATRIX_TYPE_CSC) {
-    int num_threads = 1;
+    int num_threads = OMP_NUM_THREADS();
     int ncol = static_cast<int>(nindptr - 1);
     std::vector<std::vector<CSC_RowIterator>> iterators(num_threads, std::vector<CSC_RowIterator>());
     for (int i = 0; i < num_threads; ++i) {
@@ -2415,7 +2413,7 @@ int LGBM_BoosterPredictForCSC(BoosterHandle handle,
   Config config;
   config.Set(param);
   OMP_SET_NUM_THREADS(config.num_threads);
-  int num_threads = 1;
+  int num_threads = OMP_NUM_THREADS();
   int ncol = static_cast<int>(ncol_ptr - 1);
   std::vector<std::vector<CSC_RowIterator>> iterators(num_threads, std::vector<CSC_RowIterator>());
   for (int i = 0; i < num_threads; ++i) {
