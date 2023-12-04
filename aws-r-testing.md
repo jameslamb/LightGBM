@@ -223,7 +223,6 @@ R CMD INSTALL \
   --with-keep.source \
   lightgbm_4.1.0.99.tar.gz
 
-
 OMP_MAX_ACTIVE_LEVELS=1 \
 OMP_NUM_THREADS=16 \
 Rscript --vanilla ./check-multithreading.R
@@ -251,8 +250,11 @@ Rscript --vanilla ./check-multithreading.R
 
 Calling `OMP_NUM_THREADS()`, as I've currently writtten it, seems to result in multithreading being enabled.
 
-HMMMMM.
+Removing all OpenMP pragmas.... still seeing parallelism (12-16 threads).
 
+Then removing `OMP_NUM_THREADS()` calls in log messages... no more parallelism!
+
+HMMMMM.
 
 ## References
 
@@ -264,3 +266,4 @@ HMMMMM.
     - if `if()` is false, only 1 thread is used
 * https://www.openmp.org/spec-html/5.0/openmpse23.html#x117-4350002.15
 * https://stackoverflow.com/a/11884188/3986677
+* all operations: https://www.openmp.org/wp-content/uploads/OpenMP-4.0-C.pdf
