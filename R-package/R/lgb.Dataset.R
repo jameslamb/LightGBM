@@ -140,6 +140,7 @@ Dataset <- R6::R6Class(
       }
 
       # Get feature names
+      print("[R] initialize cnames")
       cnames <- NULL
       if (is.matrix(private$raw_data) || methods::is(private$raw_data, "dgCMatrix")) {
         cnames <- colnames(private$raw_data)
@@ -191,6 +192,7 @@ Dataset <- R6::R6Class(
       }
 
       # Generate parameter str
+      print("[R] initialize params_str")
       params_str <- .params2str(params = private$params)
 
       # Get handle of reference dataset
@@ -224,6 +226,7 @@ Dataset <- R6::R6Class(
         } else if (is.matrix(private$raw_data)) {
 
           # Are we using a matrix?
+          print("[R] create from matrix - begin")
           handle <- .Call(
             LGBM_DatasetCreateFromMat_R
             , private$raw_data
@@ -232,6 +235,7 @@ Dataset <- R6::R6Class(
             , params_str
             , ref_handle
           )
+          print("[R] create from matrix - end")
 
         } else if (methods::is(private$raw_data, "dgCMatrix")) {
           if (length(private$raw_data@p) > 2147483647L) {
@@ -291,10 +295,12 @@ Dataset <- R6::R6Class(
 
       # Ensure that private$colnames matches the feature names on the C++ side. This line is necessary
       # in cases like constructing from a file or from a matrix with no column names.
+      print("[R] call LGBM_DatasetGetFeatureNames_R() - begin")
       private$colnames <- .Call(
           LGBM_DatasetGetFeatureNames_R
           , private$handle
       )
+      print("[R] call LGBM_DatasetGetFeatureNames_R() - end")
 
       # Load init score if requested
       if (!is.null(private$predictor) && is.null(private$used_indices)) {
@@ -323,20 +329,24 @@ Dataset <- R6::R6Class(
         for (i in seq_along(private$info)) {
 
           p <- private$info[i]
+          print(sprintf("[R] call set_field('%s') - start", p))
           self$set_field(
             field_name = names(p)
             , data = p[[1L]]
           )
+          print(sprintf("[R] call set_field('%s') - end", p))
 
         }
 
       }
 
       # Get label information existence
+      print("[R] checking label exists")
       if (is.null(self$get_field(field_name = "label"))) {
         stop("lgb.Dataset.construct: label should be set")
       }
 
+      print("[R] returning from construct()")
       return(invisible(self))
 
     },
