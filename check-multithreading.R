@@ -12,7 +12,7 @@ if (is.na(LGBM_MAX_THREADS)){
 data.table::setDTthreads(1L)
 lightgbm::setLGBMthreads(LGBM_MAX_THREADS)
 
-X <- matrix(rnorm(1e6), ncol=1e2)
+X <- matrix(rnorm(1e7), ncol=1e2)
 y <- rnorm(nrow(X))
 
 tic <- proc.time()
@@ -84,6 +84,15 @@ dtrain$construct()
 toc <- proc.time() - tic
 print(toc)
 
-print(sprintf("ratio: %f", toc[[1]] / toc[[3]]))
+ratio <- toc[[1]] / toc[[3]]
+print(sprintf("ratio: %f", ratio))
 print("max threads: ")
 print(lightgbm::getLGBMthreads())
+
+# append to file of traces
+cat(
+    paste0("  ", LGBM_MAX_THREADS, "  -  ", round(ratio, 4))
+    , file = "traces.out"
+    , append = TRUE
+    , sep = "\n"
+)
