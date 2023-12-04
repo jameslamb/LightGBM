@@ -63,7 +63,6 @@ class MulticlassMetric: public Metric {
     }
     if (objective != nullptr) {
       if (weights_ == nullptr) {
-        #pragma omp parallel for num_threads(1) schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           std::vector<double> raw_score(num_tree_per_iteration);
           for (int k = 0; k < num_tree_per_iteration; ++k) {
@@ -76,7 +75,6 @@ class MulticlassMetric: public Metric {
           sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], &rec, config_);
         }
       } else {
-        #pragma omp parallel for num_threads(1) schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           std::vector<double> raw_score(num_tree_per_iteration);
           for (int k = 0; k < num_tree_per_iteration; ++k) {
@@ -91,7 +89,6 @@ class MulticlassMetric: public Metric {
       }
     } else {
       if (weights_ == nullptr) {
-        #pragma omp parallel for num_threads(1) schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           std::vector<double> rec(num_tree_per_iteration);
           for (int k = 0; k < num_tree_per_iteration; ++k) {
@@ -102,7 +99,6 @@ class MulticlassMetric: public Metric {
           sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], &rec, config_);
         }
       } else {
-        #pragma omp parallel for num_threads(1) schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           std::vector<double> rec(num_tree_per_iteration);
           for (int k = 0; k < num_tree_per_iteration; ++k) {

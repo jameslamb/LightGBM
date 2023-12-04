@@ -49,7 +49,6 @@ void CUDARankXENDCG::Init(const Metadata& metadata, data_size_t num_data) {
 void CUDARankXENDCG::GenerateItemRands() const {
   const int num_threads = 1;
   OMP_INIT_EX();
-  #pragma omp parallel for schedule(static) num_threads(num_threads)
   for (data_size_t i = 0; i < num_queries_; ++i) {
     OMP_LOOP_EX_BEGIN();
     const data_size_t start = query_boundaries_[i];
