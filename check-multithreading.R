@@ -12,7 +12,7 @@ if (is.na(LGBM_MAX_THREADS)){
 data.table::setDTthreads(1L)
 lightgbm::setLGBMthreads(LGBM_MAX_THREADS)
 
-X <- matrix(rnorm(1e7), ncol=1e2)
+X <- matrix(rnorm(1e6), ncol=1e3)
 y <- rnorm(nrow(X))
 
 tic <- proc.time()
@@ -74,11 +74,9 @@ dtrain <- lightgbm::lgb.Dataset(
     data = X
     , label = y
     , params = list(
-        force_row_wise = TRUE
-        , max_bins = 128L
+        max_bins = 128L
         , min_data_in_bin = 5L
         , num_threads = -1L
-        , seed = 708L
         , verbosity = -1L
     )
 )
