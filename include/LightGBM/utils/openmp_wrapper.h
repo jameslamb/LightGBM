@@ -37,7 +37,45 @@ LIGHTGBM_EXTERN_C int LGBM_DEFAULT_NUM_THREADS;
       - https://www.openmp.org/spec-html/5.0/openmpsu112.html
       - https://gcc.gnu.org/onlinedocs/libgomp/omp_005fget_005fmax_005fthreads.html
 */
-int OMP_NUM_THREADS();
+// int OMP_NUM_THREADS();
+// NOTE: it's important that OMP_NUM_THREADS() be inlined, as it's used in OpenMP pragmas
+//       and some compilers will not generate lazy-evaluation of this function in those contexts
+inline int OMP_NUM_THREADS() {
+  // uncommenting this fixes all the parallelism problems
+  // (i.e., only 2 threads ever created)
+  //
+  // hardcoding this to any positive number seems to totally disable multiprocessing
+  //
+  //return 16;
+  int default_num_threads;
+
+  if (LGBM_DEFAULT_NUM_THREADS > 0) {
+    LightGBM::Log::Info("OMP_NUM_THREADS() line 21: LGBM_MAX_NUM_THREADS=%i, default_num_threads=%i, LGBM_DEFAULT_NUM_THREADS=%i", LGBM_MAX_NUM_THREADS, default_num_threads, LGBM_DEFAULT_NUM_THREADS);
+    // if LightGBM-specific default has been set, ignore OpenMP-global config
+    default_num_threads = LGBM_DEFAULT_NUM_THREADS;
+    LightGBM::Log::Info("OMP_NUM_THREADS() line 24: LGBM_MAX_NUM_THREADS=%i, default_num_threads=%i, LGBM_DEFAULT_NUM_THREADS=%i", LGBM_MAX_NUM_THREADS, default_num_threads, LGBM_DEFAULT_NUM_THREADS);
+  } else {
+    // otherwise, default to OpenMP-global config
+    #pragma omp parallel
+    // ref: https://curc.readthedocs.io/en/latest/programming/OpenMP-C.html
+    // map running this back on the master thread leads to a wrong conclusion
+    // about how many threads to use?
+    #pragma omp master
+    { default_num_threads = omp_get_max_threads(); }
+    LightGBM::Log::Info("OMP_NUM_THREADS() line 30: LGBM_MAX_NUM_THREADS=%i, default_num_threads=%i, LGBM_DEFAULT_NUM_THREADS=%i", LGBM_MAX_NUM_THREADS, default_num_threads, LGBM_DEFAULT_NUM_THREADS);
+  }
+
+  // ensure that if LGBM_SetMaxThreads() was ever called, LightGBM doesn't
+  // use more than that many threads
+  if (LGBM_MAX_NUM_THREADS > 0 and default_num_threads > LGBM_MAX_NUM_THREADS) {
+    LightGBM::Log::Info("OMP_NUM_THREADS() line 36: LGBM_MAX_NUM_THREADS=%i, default_num_threads=%i, LGBM_DEFAULT_NUM_THREADS=%i", LGBM_MAX_NUM_THREADS, default_num_threads, LGBM_DEFAULT_NUM_THREADS);
+    return 2;
+    //return LGBM_MAX_NUM_THREADS;
+  }
+  LightGBM::Log::Info("OMP_NUM_THREADS() line 39: LGBM_MAX_NUM_THREADS=%i, default_num_threads=%i, LGBM_DEFAULT_NUM_THREADS=%i", LGBM_MAX_NUM_THREADS, default_num_threads, LGBM_DEFAULT_NUM_THREADS);
+
+  return default_num_threads;
+}
 
 void OMP_SET_NUM_THREADS(int num_threads);
 
