@@ -329,12 +329,12 @@ Dataset <- R6::R6Class(
         for (i in seq_along(private$info)) {
 
           p <- private$info[i]
-          print(sprintf("[R] call set_field('%s') - start", p))
+          print(sprintf("[R] call set_field('%s') - start", names(p)))
           self$set_field(
             field_name = names(p)
             , data = p[[1L]]
           )
-          print(sprintf("[R] call set_field('%s') - end", p))
+          print(sprintf("[R] call set_field('%s') - end", names(p)))
 
         }
 
