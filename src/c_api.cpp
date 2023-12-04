@@ -438,6 +438,7 @@ class Booster {
     int64_t num_pred_in_one_row = boosting_->NumPredictOneRow(start_iteration, num_iteration, is_predict_leaf, predict_contrib);
     auto pred_fun = predictor.GetPredictFunction();
     OMP_INIT_EX();
+    #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
     for (int i = 0; i < nrow; ++i) {
       OMP_LOOP_EX_BEGIN();
       auto one_row = get_row_fun(i);
@@ -459,6 +460,7 @@ class Booster {
     auto pred_sparse_fun = predictor.GetPredictSparseFunction();
     std::vector<std::vector<std::unordered_map<int, double>>>& agg = *agg_ptr;
     OMP_INIT_EX();
+    #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
     for (int64_t i = 0; i < nrow; ++i) {
       OMP_LOOP_EX_BEGIN();
       auto one_row = get_row_fun(i);
@@ -550,6 +552,7 @@ class Booster {
       indptr_index++;
       int64_t matrix_start_index = m * static_cast<int64_t>(agg.size());
       OMP_INIT_EX();
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (int64_t i = 0; i < static_cast<int64_t>(agg.size()); ++i) {
         OMP_LOOP_EX_BEGIN();
         auto row_vector = agg[i];
@@ -661,6 +664,7 @@ class Booster {
     }
     // Note: we parallelize across matrices instead of rows because of the column_counts[m][col_idx] increment inside the loop
     OMP_INIT_EX();
+    #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
     for (int m = 0; m < num_matrices; ++m) {
       OMP_LOOP_EX_BEGIN();
       for (int64_t i = 0; i < static_cast<int64_t>(agg.size()); ++i) {
@@ -1073,6 +1077,7 @@ int LGBM_DatasetPushRows(DatasetHandle dataset,
     p_dataset->ResizeRaw(p_dataset->num_numeric_features() + nrow);
   }
   OMP_INIT_EX();
+  #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
   for (int i = 0; i < nrow; ++i) {
     OMP_LOOP_EX_BEGIN();
     const int tid = omp_get_thread_num();
@@ -1111,9 +1116,10 @@ int LGBM_DatasetPushRowsWithMetadata(DatasetHandle dataset,
     p_dataset->ResizeRaw(p_dataset->num_numeric_features() + nrow);
   }
 
-  const int max_omp_threads = 1; // p_dataset->omp_max_threads() > 0 ? p_dataset->omp_max_threads() : OMP_NUM_THREADS();
+  const int max_omp_threads = p_dataset->omp_max_threads() > 0 ? p_dataset->omp_max_threads() : OMP_NUM_THREADS();
 
   OMP_INIT_EX();
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
   for (int i = 0; i < nrow; ++i) {
     OMP_LOOP_EX_BEGIN();
     // convert internal thread id to be unique based on external thread id
@@ -1150,6 +1156,7 @@ int LGBM_DatasetPushRowsByCSR(DatasetHandle dataset,
     p_dataset->ResizeRaw(p_dataset->num_numeric_features() + nrow);
   }
   OMP_INIT_EX();
+  #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
   for (int i = 0; i < nrow; ++i) {
     OMP_LOOP_EX_BEGIN();
     const int tid = omp_get_thread_num();
@@ -1195,6 +1202,7 @@ int LGBM_DatasetPushRowsByCSRWithMetadata(DatasetHandle dataset,
   const int max_omp_threads = 1; // p_dataset->omp_max_threads() > 0 ? p_dataset->omp_max_threads() : OMP_NUM_THREADS();
 
   OMP_INIT_EX();
+  const int max_omp_threads = p_dataset->omp_max_threads() > 0 ? p_dataset->omp_max_threads() : OMP_NUM_THREADS();
   for (int i = 0; i < nrow; ++i) {
     OMP_LOOP_EX_BEGIN();
     // convert internal thread id to be unique based on external thread id
@@ -1256,13 +1264,10 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
                                const DatasetHandle reference,
                                DatasetHandle* out) {
   API_BEGIN();
-  Log::Info("LGBM_DatasetCreateFromMats() - start");
   auto param = Config::Str2Map(parameters);
   Config config;
   config.Set(param);
-  // the combination of commenting this out + initializing LGBM_DEFAULT = -1
-  // still results in the overall process creating 16 threads
-  //OMP_SET_NUM_THREADS(config.num_threads);
+  OMP_SET_NUM_THREADS(config.num_threads);
   std::unique_ptr<Dataset> ret;
   int32_t total_nrow = 0;
   for (int j = 0; j < nmat; ++j) {
@@ -1317,8 +1322,7 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
   int32_t start_row = 0;
   for (int j = 0; j < nmat; ++j) {
     OMP_INIT_EX();
-    int num_threads_to_use = OMP_NUM_THREADS();
-    #pragma omp parallel for num_threads(num_threads_to_use) schedule(static)
+    #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
     for (int i = 0; i < nrow[j]; ++i) {
       OMP_LOOP_EX_BEGIN();
       const int tid = omp_get_thread_num();
@@ -1332,7 +1336,6 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
   }
   ret->FinishLoad();
   *out = ret.release();
-  Log::Info("LGBM_DatasetCreateFromMats() - end");
   API_END();
 }
 
@@ -1394,6 +1397,7 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
     }
   }
   OMP_INIT_EX();
+  #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
   for (int i = 0; i < nindptr - 1; ++i) {
     OMP_LOOP_EX_BEGIN();
     const int tid = omp_get_thread_num();
@@ -1464,6 +1468,7 @@ int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
 
   OMP_INIT_EX();
   std::vector<std::pair<int, double>> thread_buffer;
+  #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) private(thread_buffer)
   for (int i = 0; i < num_rows; ++i) {
     OMP_LOOP_EX_BEGIN();
     {
