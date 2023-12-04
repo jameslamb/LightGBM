@@ -318,9 +318,6 @@ double GBDT::BoostFromAverage(int class_id, bool update_scorer) {
           }
         }
         Log::Info("Start training from score %lf", init_score);
-        Log::Info("LGBM_MAX_NUM_THREADS: %i", LGBM_MAX_NUM_THREADS);
-        Log::Info("LGBM_DEFAULT_NUM_THREADS: %i", LGBM_DEFAULT_NUM_THREADS);
-        Log::Info("OMP_NUM_THREADS(): %i", OMP_NUM_THREADS());
         return init_score;
       }
     } else if (std::string(objective_function_->GetName()) == std::string("regression_l1")

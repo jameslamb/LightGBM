@@ -1314,8 +1314,6 @@ void Dataset::ConstructHistogramsInner(
       }
     }
     OMP_INIT_EX();
-    Log::Info("Dataset::ConstructHistogramsInner (line 1312) share_state->num_threads: %i", share_state->num_threads);
-    Log::Info("Dataset::ConstructHistogramsInner (line 1313) OMP_NUM_THREADS(): %i", OMP_NUM_THREADS());
     for (int gi = 0; gi < num_used_dense_group; ++gi) {
       OMP_LOOP_EX_BEGIN();
       int group = used_dense_group[gi];

@@ -1256,7 +1256,6 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
                                const DatasetHandle reference,
                                DatasetHandle* out) {
   API_BEGIN();
-  Log::Info("DatasetCreateFromMats (line 1264) OMP_NUM_THREADS(): %i", OMP_NUM_THREADS());
   auto param = Config::Str2Map(parameters);
   Config config;
   config.Set(param);
@@ -1316,10 +1315,8 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
   }
 // maybe clang doesn't like defining this in a pragma!
   int num_threads = 1;
-  Log::Info("DatasetCreateFromMats (line 1325) OMP_NUM_THREADS()=%i, num_threads=%i", OMP_NUM_THREADS(), num_threads);
   int32_t start_row = 0;
   for (int j = 0; j < nmat; ++j) {
-    Log::Info("DatasetCreateFromMats (line 1328) OMP_NUM_THREADS()=%i, num_threads=%i", OMP_NUM_THREADS(), num_threads);
     OMP_INIT_EX();
     for (int i = 0; i < nrow[j]; ++i) {
       OMP_LOOP_EX_BEGIN();
@@ -2693,13 +2690,11 @@ int LGBM_NetworkInitWithFunctions(int num_machines, int rank,
 
 int LGBM_SetMaxThreads(int num_threads) {
   API_BEGIN();
-  LightGBM::Log::Info("SetMaxThreads() line 2707: OMP_NUM_THREADS()=%i, LGBM_MAX_NUM_THREADS=%i, num_threads=%i, LGBM_DEFAULT_NUM_THREADS=%i", OMP_NUM_THREADS(), LGBM_MAX_NUM_THREADS, num_threads, LGBM_DEFAULT_NUM_THREADS);
   if (num_threads <= 0) {
     LGBM_MAX_NUM_THREADS = -1;
   } else {
     LGBM_MAX_NUM_THREADS = num_threads;
   }
-  LightGBM::Log::Info("SetMaxThreads() line 2713: OMP_NUM_THREADS()=%i, LGBM_MAX_NUM_THREADS=%i, num_threads=%i, LGBM_DEFAULT_NUM_THREADS=%i", OMP_NUM_THREADS(), LGBM_MAX_NUM_THREADS, num_threads, LGBM_DEFAULT_NUM_THREADS);
   API_END();
 }
 
