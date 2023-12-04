@@ -223,6 +223,8 @@ R CMD INSTALL \
   --with-keep.source \
   lightgbm_4.1.0.99.tar.gz
 
+# OMP_THREAD_LIMIT=1 \
+
 OMP_MAX_ACTIVE_LEVELS=1 \
 OMP_NUM_THREADS=16 \
 Rscript --vanilla ./check-multithreading.R
