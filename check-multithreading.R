@@ -1,8 +1,16 @@
+library(data.table)
 library(lightgbm)
+
+LGBM_MAX_THREADS <- as.integer(
+    commandArgs(trailingOnly = TRUE)
+)
+if (is.na(LGBM_MAX_THREADS)){
+    stop("invoke this script with an integer, like 'Rscript check-multithread.R 6'")
+}
 
 # setting this to 1 means 0 multithreading should happen
 data.table::setDTthreads(1L)
-lightgbm::setLGBMthreads(1L)
+lightgbm::setLGBMthreads(LGBM_MAX_THREADS)
 
 X <- matrix(rnorm(1e6), ncol=1e2)
 y <- rnorm(nrow(X))
