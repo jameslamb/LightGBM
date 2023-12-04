@@ -233,7 +233,6 @@ class Predictor {
       std::vector<std::pair<int, double>> oneline_features;
       std::vector<std::string> result_to_write(lines.size());
       OMP_INIT_EX();
-      #pragma omp parallel for num_threads(1) schedule(static) firstprivate(oneline_features)
       for (data_size_t i = 0; i < static_cast<data_size_t>(lines.size()); ++i) {
         OMP_LOOP_EX_BEGIN();
         oneline_features.clear();
