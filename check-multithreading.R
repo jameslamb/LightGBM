@@ -1,6 +1,8 @@
 library(lightgbm)
 
-lightgbm::setLGBMthreads(7L)
+# setting this to 1 means 0 multithreading should happen
+data.table::setDTthreads(1L)
+lightgbm::setLGBMthreads(1L)
 
 X <- matrix(rnorm(1e6), ncol=1e2)
 y <- rnorm(nrow(X))

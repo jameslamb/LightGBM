@@ -18,7 +18,7 @@ int LGBM_DEFAULT_NUM_THREADS = -1;
 
 // NOTE: it's important that OMP_NUM_THREADS() be inlined, as it's used in OpenMP pragmas
 //       and some compilers will not generate lazy-evaluation of this function in those contexts
-int OMP_NUM_THREADS() {
+inline int OMP_NUM_THREADS() {
   // uncommenting this fixes all the parallelism problems
   // (i.e., only 2 threads ever created)
   //

@@ -223,6 +223,7 @@ R CMD INSTALL \
   --with-keep.source \
   lightgbm_4.1.0.99.tar.gz
 
+
 OMP_MAX_ACTIVE_LEVELS=1 \
 OMP_NUM_THREADS=16 \
 Rscript --vanilla ./check-multithreading.R
@@ -230,9 +231,28 @@ Rscript --vanilla ./check-multithreading.R
 
 ## Things that didn't work:
 
-* removing all the `#pragma omp` calls in `LightGBM_R.cpp`
-* removing the one `#pragma omp` call from `DatasetCreateFromMats()` in `c_api.cpp`
-* 
+* removing all the `#pragma omp` calls:
+    - ... in `LightGBM_R.cpp`
+    - ... from `DatasetCreateFromMats()` in `c_api.cpp`
+    - ... in `include/bin.h`
+    - ... in `include/common.h`
+    - ... in `include/feature_group.sh`
+    - ... in `include/LightGBM/tree.h`
+    - ... in `include/utils/threading.h`
+    - ... in `src/application/*`
+    - ... in `src/boosting/*`
+    - ... in `src/io/*`
+    - ... in `src/metric/*`
+    - ... in `src/objective/*`
+    - ... in `src/treelearner/*`
+    - ... in `src/c_api.cpp`
+
+## Notes
+
+Calling `OMP_NUM_THREADS()`, as I've currently writtten it, seems to result in multithreading being enabled.
+
+HMMMMM.
+
 
 ## References
 
