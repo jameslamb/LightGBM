@@ -1256,6 +1256,7 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
                                const DatasetHandle reference,
                                DatasetHandle* out) {
   API_BEGIN();
+  Log::Info("LGBM_DatasetCreateFromMats() - start");
   auto param = Config::Str2Map(parameters);
   Config config;
   config.Set(param);
@@ -1331,6 +1332,7 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
   }
   ret->FinishLoad();
   *out = ret.release();
+  Log::Info("LGBM_DatasetCreateFromMats() - end");
   API_END();
 }
 
@@ -1791,6 +1793,7 @@ int LGBM_DatasetGetField(DatasetHandle handle,
                          const void** out_ptr,
                          int* out_type) {
   API_BEGIN();
+  Log::Info("LGBM_DatasetGetField() - start");
   auto dataset = reinterpret_cast<Dataset*>(handle);
   bool is_success = false;
   if (dataset->GetFloatField(field_name, out_len, reinterpret_cast<const float**>(out_ptr))) {
@@ -1805,6 +1808,7 @@ int LGBM_DatasetGetField(DatasetHandle handle,
   }
   if (!is_success) { Log::Fatal("Field not found"); }
   if (*out_ptr == nullptr) { *out_len = 0; }
+  Log::Info("LGBM_DatasetGetField() - start");
   API_END();
 }
 
@@ -2074,8 +2078,10 @@ int LGBM_BoosterGetFeatureNames(BoosterHandle handle,
                                 size_t* out_buffer_len,
                                 char** out_strs) {
   API_BEGIN();
+  Log::Info("LGBM_DatasetGetFeatureNames() - start");
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   *out_len = ref_booster->GetFeatureNames(out_strs, len, buffer_len, out_buffer_len);
+  Log::Info("LGBM_DatasetGetFeatureNames() - end");
   API_END();
 }
 
