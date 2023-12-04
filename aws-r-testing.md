@@ -228,6 +228,22 @@ R CMD INSTALL \
 OMP_MAX_ACTIVE_LEVELS=1 \
 OMP_NUM_THREADS=16 \
 Rscript --vanilla ./check-multithreading.R 1
+
+OMP_MAX_ACTIVE_LEVELS=1 \
+OMP_NUM_THREADS=16 \
+Rscript --vanilla ./check-multithreading.R 2
+
+OMP_MAX_ACTIVE_LEVELS=1 \
+OMP_NUM_THREADS=16 \
+Rscript --vanilla ./check-multithreading.R 4
+
+OMP_MAX_ACTIVE_LEVELS=1 \
+OMP_NUM_THREADS=16 \
+Rscript --vanilla ./check-multithreading.R 8
+
+OMP_MAX_ACTIVE_LEVELS=1 \
+OMP_NUM_THREADS=16 \
+Rscript --vanilla ./check-multithreading.R 16
 ```
 
 ## Things that didn't work:

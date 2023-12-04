@@ -12,7 +12,7 @@ if (is.na(LGBM_MAX_THREADS)){
 data.table::setDTthreads(1L)
 lightgbm::setLGBMthreads(LGBM_MAX_THREADS)
 
-X <- matrix(rnorm(1e6), ncol=1e3)
+X <- matrix(rnorm(1e5), ncol=1e5)
 y <- rnorm(nrow(X))
 
 tic <- proc.time()
