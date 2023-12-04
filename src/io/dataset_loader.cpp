@@ -625,6 +625,7 @@ Dataset* DatasetLoader::ConstructFromSampleData(double** sample_values,
   if (Network::num_machines() == 1) {
     // if only one machine, find bin locally
     OMP_INIT_EX();
+    #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(guided)
     for (int i = 0; i < num_col; ++i) {
       OMP_LOOP_EX_BEGIN();
       if (ignore_features_.count(i) > 0) {
@@ -673,6 +674,7 @@ Dataset* DatasetLoader::ConstructFromSampleData(double** sample_values,
     }
     len[num_machines - 1] = num_total_features - start[num_machines - 1];
     OMP_INIT_EX();
+    #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(guided)
     for (int i = 0; i < len[rank]; ++i) {
       OMP_LOOP_EX_BEGIN();
       if (ignore_features_.count(start[rank] + i) > 0) {
@@ -739,7 +741,7 @@ Dataset* DatasetLoader::ConstructFromSampleData(double** sample_values,
       cp_ptr += bin_mappers[i]->SizesInByte();
     }
   }
-  // CheckCategoricalFeatureNumBin(bin_mappers, config_.max_bin, config_.max_bin_by_feature);
+  CheckCategoricalFeatureNumBin(bin_mappers, config_.max_bin, config_.max_bin_by_feature);
   auto dataset = std::unique_ptr<Dataset>(new Dataset(num_local_data));
   dataset->Construct(&bin_mappers, num_total_features, forced_bin_bounds, sample_indices, sample_values, num_per_col, num_col, total_sample_size, config_);
   if (dataset->has_raw()) {
@@ -1134,6 +1136,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
   if (num_machines == 1) {
     // if only one machine, find bin locally
     OMP_INIT_EX();
+    #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(guided)
     for (int i = 0; i < static_cast<int>(sample_values.size()); ++i) {
       OMP_LOOP_EX_BEGIN();
       if (ignore_features_.count(i) > 0) {
@@ -1174,6 +1177,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
     }
     len[num_machines - 1] = dataset->num_total_features_ - start[num_machines - 1];
     OMP_INIT_EX();
+    #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(guided)
     for (int i = 0; i < len[rank]; ++i) {
       OMP_LOOP_EX_BEGIN();
       if (ignore_features_.count(start[rank] + i) > 0) {
@@ -1242,7 +1246,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
       cp_ptr += bin_mappers[i]->SizesInByte();
     }
   }
-  // CheckCategoricalFeatureNumBin(bin_mappers, config_.max_bin, config_.max_bin_by_feature);
+  CheckCategoricalFeatureNumBin(bin_mappers, config_.max_bin, config_.max_bin_by_feature);
   dataset->Construct(&bin_mappers, dataset->num_total_features_, forced_bin_bounds, Common::Vector2Ptr<int>(&sample_indices).data(),
                      Common::Vector2Ptr<double>(&sample_values).data(),
                      Common::VectorSize<int>(sample_indices).data(), static_cast<int>(sample_indices.size()), sample_data.size(), config_);
@@ -1264,6 +1268,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
   if (!predict_fun_) {
     OMP_INIT_EX();
     // if doesn't need to prediction with initial model
+    #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) private(oneline_features) firstprivate(tmp_label, feature_row)
     for (data_size_t i = 0; i < dataset->num_data_; ++i) {
       OMP_LOOP_EX_BEGIN();
       const int tid = omp_get_thread_num();
@@ -1314,6 +1319,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
     OMP_INIT_EX();
     // if need to prediction with initial model
     std::vector<double> init_score(static_cast<size_t>(dataset->num_data_) * num_class_);
+    #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) private(oneline_features) firstprivate(tmp_label, feature_row)
     for (data_size_t i = 0; i < dataset->num_data_; ++i) {
       OMP_LOOP_EX_BEGIN();
       const int tid = omp_get_thread_num();
@@ -1388,6 +1394,7 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
     double tmp_label = 0.0f;
     std::vector<float> feature_row(dataset->num_features_);
     OMP_INIT_EX();
+    #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) private(oneline_features) firstprivate(tmp_label, feature_row)
     for (data_size_t i = 0; i < static_cast<data_size_t>(lines.size()); ++i) {
       OMP_LOOP_EX_BEGIN();
       const int tid = omp_get_thread_num();
@@ -1532,7 +1539,7 @@ void DatasetLoader::CheckCategoricalFeatureNumBin(
       }
     }
   } else {
-    const int num_threads = 1;
+    const int num_threads = OMP_NUM_THREADS();
     std::vector<bool> thread_need_warning(num_threads, false);
     Threading::For<size_t>(0, bin_mappers.size(), 1,
       [&bin_mappers, &thread_need_warning, &max_bin_by_feature, max_bin] (int thread_index, size_t start, size_t end) {

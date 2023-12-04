@@ -10,7 +10,7 @@
 namespace LightGBM {
 
 CUDAColumnData::CUDAColumnData(const data_size_t num_data, const int gpu_device_id) {
-  num_threads_ = 1;;
+  num_threads_ = OMP_NUM_THREADS();
   num_data_ = num_data;
   gpu_device_id_ = gpu_device_id >= 0 ? gpu_device_id : 0;
   SetCUDADevice(gpu_device_id_, __FILE__, __LINE__);
@@ -114,8 +114,10 @@ void CUDAColumnData::Init(const int num_columns,
   feature_mfb_is_na_ = feature_mfb_is_na;
   data_by_column_.resize(num_columns_, nullptr);
   OMP_INIT_EX();
+  #pragma omp parallel num_threads(num_threads_)
   {
     SetCUDADevice(gpu_device_id_, __FILE__, __LINE__);
+    #pragma omp for schedule(static)
     for (int column_index = 0; column_index < num_columns_; ++column_index) {
       OMP_LOOP_EX_BEGIN();
       const int8_t bit_type = column_bit_type[column_index];
@@ -181,8 +183,10 @@ void CUDAColumnData::CopySubrow(
     AllocateCUDAMemory<data_size_t>(&cuda_used_indices_, num_used_indices_size, __FILE__, __LINE__);
     data_by_column_.resize(num_columns_, nullptr);
     OMP_INIT_EX();
+    #pragma omp parallel num_threads(num_threads_)
     {
       SetCUDADevice(gpu_device_id_, __FILE__, __LINE__);
+      #pragma omp for schedule(static)
       for (int column_index = 0; column_index < num_columns_; ++column_index) {
         OMP_LOOP_EX_BEGIN();
         const uint8_t bit_type = column_bit_type_[column_index];
@@ -222,8 +226,10 @@ void CUDAColumnData::ResizeWhenCopySubrow(const data_size_t num_used_indices) {
   DeallocateCUDAMemory<data_size_t>(&cuda_used_indices_, __FILE__, __LINE__);
   AllocateCUDAMemory<data_size_t>(&cuda_used_indices_, num_used_indices_size, __FILE__, __LINE__);
   OMP_INIT_EX();
+  #pragma omp parallel num_threads(num_threads_)
   {
     SetCUDADevice(gpu_device_id_, __FILE__, __LINE__);
+    #pragma omp for schedule(static)
     for (int column_index = 0; column_index < num_columns_; ++column_index) {
       OMP_LOOP_EX_BEGIN();
       const uint8_t bit_type = column_bit_type_[column_index];

@@ -530,12 +530,13 @@ MultiValBin* Dataset::GetMultiBinFromSparseFeatures(const std::vector<uint32_t>&
     return nullptr;
   }
   const int num_feature = feature_groups_[multi_group_id]->num_feature_;
-  int num_threads = 1;
+  int num_threads = OMP_NUM_THREADS();
 
   std::vector<std::vector<std::unique_ptr<BinIterator>>> iters(num_threads);
   std::vector<uint32_t> most_freq_bins;
   double sum_sparse_rate = 0;
   for (int i = 0; i < num_feature; ++i) {
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 1)
     for (int tid = 0; tid < num_threads; ++tid) {
       iters[tid].emplace_back(
           feature_groups_[multi_group_id]->SubFeatureIterator(i));
@@ -559,7 +560,7 @@ MultiValBin* Dataset::GetMultiBinFromSparseFeatures(const std::vector<uint32_t>&
 MultiValBin* Dataset::GetMultiBinFromAllFeatures(const std::vector<uint32_t>& offsets) const {
   Common::FunctionTimer fun_time("Dataset::GetMultiBinFromAllFeatures",
                                  global_timer);
-  int num_threads = 1;
+  int num_threads = OMP_NUM_THREADS();
   double sum_dense_ratio = 0;
 
   std::unique_ptr<MultiValBin> ret;
@@ -583,6 +584,7 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures(const std::vector<uint32_t>& of
       for (int fid = 0; fid < feature_groups_[gid]->num_feature_; ++fid) {
         const auto& bin_mapper = feature_groups_[gid]->bin_mappers_[fid];
         most_freq_bins.push_back(bin_mapper->GetMostFreqBin());
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 1)
         for (int tid = 0; tid < num_threads; ++tid) {
           iters[tid].emplace_back(
               feature_groups_[gid]->SubFeatureIterator(fid));
@@ -821,6 +823,7 @@ void Dataset::ReSize(data_size_t num_data) {
   if (num_data_ != num_data) {
     num_data_ = num_data;
     OMP_INIT_EX();
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
     for (int group = 0; group < num_groups_; ++group) {
       OMP_LOOP_EX_BEGIN();
       feature_groups_[group]->ReSize(num_data_);
@@ -853,6 +856,7 @@ void Dataset::CopySubrow(const Dataset* fullset,
   int num_copy_tasks = static_cast<int>(group_ids.size());
 
   OMP_INIT_EX();
+  #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(dynamic)
   for (int task_id = 0; task_id < num_copy_tasks; ++task_id) {
     OMP_LOOP_EX_BEGIN();
     int group = group_ids[task_id];
@@ -871,6 +875,7 @@ void Dataset::CopySubrow(const Dataset* fullset,
   num_numeric_features_ = fullset->num_numeric_features_;
   if (has_raw_) {
     ResizeRaw(num_used_indices);
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
     for (int i = 0; i < num_used_indices; ++i) {
       for (int j = 0; j < num_numeric_features_; ++j) {
         raw_data_[j][i] = fullset->raw_data_[j][used_indices[i]];
@@ -1290,6 +1295,7 @@ void Dataset::ConstructHistogramsInner(
       int16_t* ordered_gradients_and_hessians = reinterpret_cast<int16_t*>(ordered_gradients);
       const int16_t* gradients_and_hessians = reinterpret_cast<const int16_t*>(gradients);
       if (USE_INDICES) {
+  #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) if (num_data >= 1024)
         for (data_size_t i = 0; i < num_data; ++i) {
           ordered_gradients_and_hessians[i] = gradients_and_hessians[data_indices[i]];
         }
@@ -1299,6 +1305,7 @@ void Dataset::ConstructHistogramsInner(
     } else {
       if (USE_INDICES) {
         if (USE_HESSIAN) {
+  #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) if (num_data >= 1024)
           for (data_size_t i = 0; i < num_data; ++i) {
             ordered_gradients[i] = gradients[data_indices[i]];
             ordered_hessians[i] = hessians[data_indices[i]];
@@ -1306,6 +1313,7 @@ void Dataset::ConstructHistogramsInner(
           ptr_ordered_grad = ordered_gradients;
           ptr_ordered_hess = ordered_hessians;
         } else {
+  #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) if (num_data >= 1024)
           for (data_size_t i = 0; i < num_data; ++i) {
             ordered_gradients[i] = gradients[data_indices[i]];
           }
@@ -1314,6 +1322,7 @@ void Dataset::ConstructHistogramsInner(
       }
     }
     OMP_INIT_EX();
+#pragma omp parallel for schedule(static) num_threads(share_state->num_threads)
     for (int gi = 0; gi < num_used_dense_group; ++gi) {
       OMP_LOOP_EX_BEGIN();
       int group = used_dense_group[gi];
