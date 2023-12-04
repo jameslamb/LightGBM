@@ -74,8 +74,9 @@ dtrain <- lightgbm::lgb.Dataset(
     data = X
     , label = y
     , params = list(
-        min_data_in_bin = 5L
+        force_row_wise = TRUE
         , max_bins = 128L
+        , min_data_in_bin = 5L
         , num_threads = -1L
         , verbosity = -1L
     )
