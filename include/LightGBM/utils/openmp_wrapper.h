@@ -5,9 +5,17 @@
 #ifndef LIGHTGBM_OPENMP_WRAPPER_H_
 #define LIGHTGBM_OPENMP_WRAPPER_H_
 
+#include <LightGBM/export.h>
+
+// this can only be changed by LGBM_SetMaxThreads()
+LIGHTGBM_EXTERN_C int LGBM_MAX_NUM_THREADS;
+
+// this is modified by OMP_SET_NUM_THREADS(), for example
+// by passing num_thread through params
+LIGHTGBM_EXTERN_C int LGBM_DEFAULT_NUM_THREADS;
+
 #ifdef _OPENMP
 
-#include <LightGBM/export.h>
 #include <LightGBM/utils/log.h>
 
 #include <omp.h>
@@ -17,13 +25,6 @@
 #include <mutex>
 #include <stdexcept>
 #include <vector>
-
-// this can only be changed by LGBM_SetMaxThreads()
-LIGHTGBM_EXTERN_C int LGBM_MAX_NUM_THREADS;
-
-// this is modified by OMP_SET_NUM_THREADS(), for example
-// by passing num_thread through params
-LIGHTGBM_EXTERN_C int LGBM_DEFAULT_NUM_THREADS;
 
 /*
     Get number of threads to use in OpenMP parallel regions.
@@ -36,9 +37,6 @@ LIGHTGBM_EXTERN_C int LGBM_DEFAULT_NUM_THREADS;
       - https://www.openmp.org/spec-html/5.0/openmpsu112.html
       - https://gcc.gnu.org/onlinedocs/libgomp/omp_005fget_005fmax_005fthreads.html
 */
-// int OMP_NUM_THREADS();
-// NOTE: it's important that OMP_NUM_THREADS() be inlined, as it's used in OpenMP pragmas
-//       and some compilers will not generate lazy-evaluation of this function in those contexts
 inline int OMP_NUM_THREADS() {
   int default_num_threads;
 
@@ -133,8 +131,6 @@ class ThreadExceptionHelper {
   void OMP_SET_NUM_THREADS(int) __GOMP_NOTHROW {}
   inline int omp_get_thread_num() __GOMP_NOTHROW {return 0;}
   inline int OMP_NUM_THREADS() __GOMP_NOTHROW { return 1; }
-  LIGHTGBM_EXTERN_C int LGBM_DEFAULT_NUM_THREADS = 1;
-  LIGHTGBM_EXTERN_C int LGBM_MAX_NUM_THREADS = 1;
 #ifdef __cplusplus
 }  // extern "C"
 #endif
