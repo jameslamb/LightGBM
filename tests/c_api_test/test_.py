@@ -253,10 +253,10 @@ def test_max_thread_control():
     # at initialization, should be -1
     num_threads = ctypes.c_int(0)
     ret = LIB.LGBM_GetMaxThreads(
-        ctypes.byref(num_thread)
+        ctypes.byref(num_threads)
     )
     assert ret == 0
-    assert num_thread.value == -1
+    assert num_threads.value == -1
 
     # updating that value through the C API should work
     ret = LIB.LGBM_SetMaxThreads(
@@ -265,10 +265,10 @@ def test_max_thread_control():
     assert ret == 0
 
     ret = LIB.LGBM_GetMaxThreads(
-        ctypes.byref(num_thread)
+        ctypes.byref(num_threads)
     )
     assert ret == 0
-    assert num_thread.value == 6
+    assert num_threads.value == 6
 
     # resetting to any negative number should set it to -1
     ret = LIB.LGBM_SetMaxThreads(
@@ -276,7 +276,7 @@ def test_max_thread_control():
     )
     assert ret == 0
     ret = LIB.LGBM_GetMaxThreads(
-        ctypes.byref(num_thread)
+        ctypes.byref(num_threads)
     )
     assert ret == 0
-    assert num_thread.value == -1
+    assert num_threads.value == -1

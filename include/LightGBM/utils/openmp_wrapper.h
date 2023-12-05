@@ -50,7 +50,7 @@ inline int OMP_NUM_THREADS() {
 
   // ensure that if LGBM_SetMaxThreads() was ever called, LightGBM doesn't
   // use more than that many threads
-  if (LGBM_MAX_NUM_THREADS > 0 and default_num_threads > LGBM_MAX_NUM_THREADS) {
+  if (LGBM_MAX_NUM_THREADS > 0 && default_num_threads > LGBM_MAX_NUM_THREADS) {
     return LGBM_MAX_NUM_THREADS;
   }
 
