@@ -290,3 +290,4 @@ Instead of this:
 * https://www.openmp.org/spec-html/5.0/openmpse23.html#x117-4350002.15
 * https://stackoverflow.com/a/11884188/3986677
 * all operations: https://www.openmp.org/wp-content/uploads/OpenMP-4.0-C.pdf
+* https://curc.readthedocs.io/en/latest/programming/OpenMP-C.html
