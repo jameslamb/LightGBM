@@ -274,7 +274,9 @@ Needs to be this:
 Instead of this:
 
 ```text
-
+#pragma omp parallel
+#pragma omp master
+{ default_num_threads = omp_get_max_threads(); }
 ```
 
 ## References
