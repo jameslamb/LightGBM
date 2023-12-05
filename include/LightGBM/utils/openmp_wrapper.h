@@ -5,17 +5,9 @@
 #ifndef LIGHTGBM_OPENMP_WRAPPER_H_
 #define LIGHTGBM_OPENMP_WRAPPER_H_
 
-#include <LightGBM/export.h>
-
-// this can only be changed by LGBM_SetMaxThreads()
-LIGHTGBM_EXTERN_C int LGBM_MAX_NUM_THREADS;
-
-// this is modified by OMP_SET_NUM_THREADS(), for example
-// by passing num_thread through params
-LIGHTGBM_EXTERN_C int LGBM_DEFAULT_NUM_THREADS;
-
 #ifdef _OPENMP
 
+#include <LightGBM/export.h>
 #include <LightGBM/utils/log.h>
 
 #include <omp.h>
@@ -25,6 +17,13 @@ LIGHTGBM_EXTERN_C int LGBM_DEFAULT_NUM_THREADS;
 #include <mutex>
 #include <stdexcept>
 #include <vector>
+
+// this can only be changed by LGBM_SetMaxThreads()
+LIGHTGBM_EXTERN_C int LGBM_MAX_NUM_THREADS;
+
+// this is modified by OMP_SET_NUM_THREADS(), for example
+// by passing num_thread through params
+LIGHTGBM_EXTERN_C int LGBM_DEFAULT_NUM_THREADS;
 
 /*
     Get number of threads to use in OpenMP parallel regions.
@@ -131,6 +130,8 @@ class ThreadExceptionHelper {
   void OMP_SET_NUM_THREADS(int) __GOMP_NOTHROW {}
   inline int omp_get_thread_num() __GOMP_NOTHROW {return 0;}
   inline int OMP_NUM_THREADS() __GOMP_NOTHROW { return 1; }
+  LIGHTGBM_EXTERN_C int LGBM_DEFAULT_NUM_THREADS = -1;
+  LIGHTGBM_EXTERN_C int LGBM_MAX_NUM_THREADS = -1;
 #ifdef __cplusplus
 }  // extern "C"
 #endif

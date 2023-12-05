@@ -1,10 +1,10 @@
-int LGBM_MAX_NUM_THREADS = -1;
-
-int LGBM_DEFAULT_NUM_THREADS = -1;
-
 #ifdef _OPENMP
 
 #include <LightGBM/utils/openmp_wrapper.h>
+
+int LGBM_MAX_NUM_THREADS = -1;
+
+int LGBM_DEFAULT_NUM_THREADS = -1;
 
 void OMP_SET_NUM_THREADS(int num_threads) {
   if (num_threads <= 0) {
