@@ -8,7 +8,7 @@
 getLGBMthreads()
 }
 \value{
-number of threads as an intger. \code{-1} means that in situations where parameter \code{num_threads} is
+number of threads as an integer. \code{-1} means that in situations where parameter \code{num_threads} is
         not explicitly supplied, LightGBM will choose a number of threads to use automatically.
 }
 \description{

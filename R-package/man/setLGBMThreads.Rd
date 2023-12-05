@@ -3,7 +3,7 @@
 \name{setLGBMThreads}
 \alias{setLGBMThreads}
 \alias{setLGBMthreads}
-\title{Set default number of threads used by LightGBM}
+\title{Set maximum number of threads used by LightGBM}
 \usage{
 setLGBMthreads(num_threads)
 }
@@ -18,10 +18,14 @@ LightGBM attempts to speed up many operations by using multi-threading.
              a model from a text file) are done via code paths that don't explicitly accept thread-control
              configuration.
 
-             Use this function to set the default number of threads LightGBM will use for such operations.
+             Use this function to set the maximum number of threads LightGBM will use for such operations.
 
-             NOTE: This function affects all LightGBM operations in the same process. So, for example,
-                   it can alter that number of threads used by multiple concurrent calls to \link{lgb.train}.
+             This function affects all LightGBM operations in the same process.
+
+             So, for example, if you call \code{setLGBMthreads(4)}, no other multi-threaded LightGBM
+             operation in the same process will use more than 4 threads.
+
+             Call \code{setLGBMthreads(-1)} to remove this limitation.
 }
 \seealso{
 \link{getLGBMthreads}
