@@ -10,7 +10,7 @@ if (is.na(LGBM_MAX_THREADS)){
 
 # setting this to 1 means 0 multithreading should happen
 data.table::setDTthreads(1L)
-lightgbm::setLGBMthreads(LGBM_MAX_THREADS)
+#lightgbm::setLGBMthreads(LGBM_MAX_THREADS)
 
 X <- matrix(rnorm(1e5), ncol=1e5)
 y <- rnorm(nrow(X))
@@ -76,7 +76,7 @@ dtrain <- lightgbm::lgb.Dataset(
     , params = list(
         max_bins = 128L
         , min_data_in_bin = 5L
-        , num_threads = -1L
+        , num_threads = LGBM_MAX_THREADS
         , verbosity = -1L
     )
 )
