@@ -4,7 +4,7 @@ Got a `c5a.4xlarge` instance.
 ```shell
 ssh \
     -i ${HOME}/.aws/gpu-testing-2.cer \
-    ubuntu@ec2-35-91-7-48.us-west-2.compute.amazonaws.com
+    ubuntu@ec2-35-93-5-76.us-west-2.compute.amazonaws.com
 ```
 
 ```shell
