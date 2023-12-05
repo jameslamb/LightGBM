@@ -19,8 +19,8 @@ import numpy as np
 import scipy.sparse
 
 from .compat import (PANDAS_INSTALLED, PYARROW_INSTALLED, arrow_cffi, arrow_is_floating, arrow_is_integer, concat,
-                     dt_DataTable, pa_Array, pa_ChunkedArray, pa_compute, pa_Table, pd_CategoricalDtype, pd_DataFrame,
-                     pd_Series)
+                     dt_DataTable, pa_Array, pa_chunked_array, pa_ChunkedArray, pa_compute, pa_Table,
+                     pd_CategoricalDtype, pd_DataFrame, pd_Series)
 from .libpath import find_lib_path
 
 if TYPE_CHECKING:
@@ -70,7 +70,9 @@ _LGBM_GroupType = Union[
     List[float],
     List[int],
     np.ndarray,
-    pd_Series
+    pd_Series,
+    pa_Array,
+    pa_ChunkedArray,
 ]
 _LGBM_PositionType = Union[
     np.ndarray,
@@ -82,6 +84,9 @@ _LGBM_InitScoreType = Union[
     np.ndarray,
     pd_Series,
     pd_DataFrame,
+    pa_Table,
+    pa_Array,
+    pa_ChunkedArray,
 ]
 _LGBM_TrainDataType = Union[
     str,
@@ -1652,13 +1657,13 @@ class Dataset:
             If this is Dataset for validation, training data should be used as reference.
         weight : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
             Weight for each instance. Weights should be non-negative.
-        group : list, numpy 1-D array, pandas Series or None, optional (default=None)
+        group : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
             Group/query data.
             Only used in the learning-to-rank task.
             sum(group) = n_samples.
             For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
             where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
-        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None, optional (default=None)
+        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow Array, pyarrow ChunkedArray, pyarrow Table (for multi-class task) or None, optional (default=None)
             Init score for Dataset.
         feature_name : list of str, or 'auto', optional (default="auto")
             Feature names.
@@ -2432,13 +2437,13 @@ class Dataset:
             Label of the data.
         weight : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
             Weight for each instance. Weights should be non-negative.
-        group : list, numpy 1-D array, pandas Series or None, optional (default=None)
+        group : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
             Group/query data.
             Only used in the learning-to-rank task.
             sum(group) = n_samples.
             For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
             where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
-        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None, optional (default=None)
+        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow Array, pyarrow ChunkedArray, pyarrow Table (for multi-class task) or None, optional (default=None)
             Init score for Dataset.
         params : dict or None, optional (default=None)
             Other parameters for validation Dataset.
@@ -2545,7 +2550,7 @@ class Dataset:
     def set_field(
         self,
         field_name: str,
-        data: Optional[Union[List[List[float]], List[List[int]], List[float], List[int], np.ndarray, pd_Series, pd_DataFrame, pa_Array, pa_ChunkedArray]]
+        data: Optional[Union[List[List[float]], List[List[int]], List[float], List[int], np.ndarray, pd_Series, pd_DataFrame, pa_Table, pa_Array, pa_ChunkedArray]]
     ) -> "Dataset":
         """Set property into the Dataset.
 
@@ -2574,7 +2579,16 @@ class Dataset:
             return self
 
         # If the data is a arrow data, we can just pass it to C
-        if _is_pyarrow_array(data):
+        if _is_pyarrow_array(data) or _is_pyarrow_table(data):
+            # If a table is being passed, we concatenate the columns. This is only valid for
+            # 'init_score'.
+            if _is_pyarrow_table(data):
+                if field_name != "init_score":
+                    raise ValueError(f"pyarrow tables are not supported for field '{field_name}'")
+                data = pa_chunked_array([
+                    chunk for array in data.columns for chunk in array.chunks  # type: ignore
+                ])
+
             c_array = _export_arrow_to_c(data)
             _safe_call(_LIB.LGBM_DatasetSetFieldFromArrow(
                 self._handle,
@@ -2867,7 +2881,7 @@ class Dataset:
 
         Parameters
         ----------
-        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None
+        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow Array, pyarrow ChunkedArray, pyarrow Table (for multi-class task) or None
             Init score for Booster.
 
         Returns
@@ -2889,7 +2903,7 @@ class Dataset:
 
         Parameters
         ----------
-        group : list, numpy 1-D array, pandas Series or None
+        group : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None
             Group/query data.
             Only used in the learning-to-rank task.
             sum(group) = n_samples.
@@ -2903,7 +2917,8 @@ class Dataset:
         """
         self.group = group
         if self._handle is not None and group is not None:
-            group = _list_to_1d_numpy(group, dtype=np.int32, name='group')
+            if not _is_pyarrow_array(group):
+                group = _list_to_1d_numpy(group, dtype=np.int32, name='group')
             self.set_field('group', group)
             # original values can be modified at cpp side
             constructed_group = self.get_field('group')
@@ -2948,7 +2963,7 @@ class Dataset:
         reserved_string_buffer_size = 255
         required_string_buffer_size = ctypes.c_size_t(0)
         string_buffers = [ctypes.create_string_buffer(reserved_string_buffer_size) for _ in range(num_feature)]
-        ptr_string_buffers = (ctypes.c_char_p * num_feature)(*map(ctypes.addressof, string_buffers))
+        ptr_string_buffers = (ctypes.c_char_p * num_feature)(*map(ctypes.addressof, string_buffers))  # type: ignore[misc]
         _safe_call(_LIB.LGBM_DatasetGetFeatureNames(
             self._handle,
             ctypes.c_int(num_feature),
@@ -2962,7 +2977,7 @@ class Dataset:
         # if buffer length is not long enough, reallocate buffers
         if reserved_string_buffer_size < actual_string_buffer_size:
             string_buffers = [ctypes.create_string_buffer(actual_string_buffer_size) for _ in range(num_feature)]
-            ptr_string_buffers = (ctypes.c_char_p * num_feature)(*map(ctypes.addressof, string_buffers))
+            ptr_string_buffers = (ctypes.c_char_p * num_feature)(*map(ctypes.addressof, string_buffers))  # type: ignore[misc]
             _safe_call(_LIB.LGBM_DatasetGetFeatureNames(
                 self._handle,
                 ctypes.c_int(num_feature),
@@ -4431,7 +4446,7 @@ class Booster:
 
             .. versionadded:: 4.0.0
 
-        group : list, numpy 1-D array, pandas Series or None, optional (default=None)
+        group : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
             Group/query size for ``data``.
             Only used in the learning-to-rank task.
             sum(group) = n_samples.
@@ -4440,7 +4455,7 @@ class Booster:
 
             .. versionadded:: 4.0.0
 
-        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None, optional (default=None)
+        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow Array, pyarrow ChunkedArray, pyarrow Table (for multi-class task) or None, optional (default=None)
             Init score for ``data``.
 
             .. versionadded:: 4.0.0
@@ -4628,7 +4643,7 @@ class Booster:
         reserved_string_buffer_size = 255
         required_string_buffer_size = ctypes.c_size_t(0)
         string_buffers = [ctypes.create_string_buffer(reserved_string_buffer_size) for _ in range(num_feature)]
-        ptr_string_buffers = (ctypes.c_char_p * num_feature)(*map(ctypes.addressof, string_buffers))
+        ptr_string_buffers = (ctypes.c_char_p * num_feature)(*map(ctypes.addressof, string_buffers))  # type: ignore[misc]
         _safe_call(_LIB.LGBM_BoosterGetFeatureNames(
             self._handle,
             ctypes.c_int(num_feature),
@@ -4642,7 +4657,7 @@ class Booster:
         # if buffer length is not long enough, reallocate buffers
         if reserved_string_buffer_size < actual_string_buffer_size:
             string_buffers = [ctypes.create_string_buffer(actual_string_buffer_size) for _ in range(num_feature)]
-            ptr_string_buffers = (ctypes.c_char_p * num_feature)(*map(ctypes.addressof, string_buffers))
+            ptr_string_buffers = (ctypes.c_char_p * num_feature)(*map(ctypes.addressof, string_buffers))  # type: ignore[misc]
             _safe_call(_LIB.LGBM_BoosterGetFeatureNames(
                 self._handle,
                 ctypes.c_int(num_feature),
@@ -4852,7 +4867,7 @@ class Booster:
                 string_buffers = [
                     ctypes.create_string_buffer(reserved_string_buffer_size) for _ in range(self.__num_inner_eval)
                 ]
-                ptr_string_buffers = (ctypes.c_char_p * self.__num_inner_eval)(*map(ctypes.addressof, string_buffers))
+                ptr_string_buffers = (ctypes.c_char_p * self.__num_inner_eval)(*map(ctypes.addressof, string_buffers))  # type: ignore[misc]
                 _safe_call(_LIB.LGBM_BoosterGetEvalNames(
                     self._handle,
                     ctypes.c_int(self.__num_inner_eval),
@@ -4868,7 +4883,7 @@ class Booster:
                     string_buffers = [
                         ctypes.create_string_buffer(actual_string_buffer_size) for _ in range(self.__num_inner_eval)
                     ]
-                    ptr_string_buffers = (ctypes.c_char_p * self.__num_inner_eval)(*map(ctypes.addressof, string_buffers))
+                    ptr_string_buffers = (ctypes.c_char_p * self.__num_inner_eval)(*map(ctypes.addressof, string_buffers))  # type: ignore[misc]
                     _safe_call(_LIB.LGBM_BoosterGetEvalNames(
                         self._handle,
                         ctypes.c_int(self.__num_inner_eval),
