@@ -291,3 +291,118 @@ Instead of this:
 * https://stackoverflow.com/a/11884188/3986677
 * all operations: https://www.openmp.org/wp-content/uploads/OpenMP-4.0-C.pdf
 * https://curc.readthedocs.io/en/latest/programming/OpenMP-C.html
+
+## PR write up
+
+Follow-up to #6135
+
+Contributes to #5124
+    - *might fix it, haven't tested*
+Contributes to #5987
+    - *I think this fixes it, but don't want to say that for sure until the package is actually accepted by CRAN)*
+Contributes to #6137
+    - *(I think)*
+Contributes to #6221
+
+Fixes #4705
+    - *for more, see https://github.com/microsoft/LightGBM/issues/4598#issuecomment-1094194477*
+Fixes #5102
+
+Replaces #6152
+
+### How I tested this
+
+Ran all of the following on a `c5a.4xlarge` AWS EC2 instance (16 vCPUs, 32GiB RAM), using Ubuntu 22.04.
+
+<details><summary>How I set that up (click me)</summary>
+
+Shelled in and ran the following.
+
+```shell
+sudo apt-get update
+sudo apt-get install --no-install-recommends -y \
+    software-properties-common
+
+sudo apt-get install --no-install-recommends -y \
+    apt-utils \
+    build-essential \
+    ca-certificates \
+    clang \
+    cmake \
+    curl \
+    git \
+    iputils-ping \
+    jq \
+    libcurl4 \
+    libicu-dev \
+    libomp-dev \
+    libssl-dev \
+    libunwind8 \
+    lldb \
+    locales \
+    locales-all \
+    netcat \
+    unzip \
+    zip
+
+# use UTF-8 locale
+export LANG="en_US.UTF-8"
+sudo update-locale LANG=${LANG}
+export LC_ALL="${LANG}"
+
+# set up R environment
+export CRAN_MIRROR="https://cran.rstudio.com"
+export MAKEFLAGS=-j8
+export R_LIB_PATH=~/Rlib
+export R_LIBS=$R_LIB_PATH
+export PATH="$R_LIB_PATH/R/bin:$PATH"
+export R_APT_REPO="jammy-cran40/"
+export R_LINUX_VERSION="4.3.1-1.2204.0"
+
+mkdir -p $R_LIB_PATH
+
+mkdir -p ~/.gnupg
+echo "disable-ipv6" >> ~/.gnupg/dirmngr.conf
+sudo apt-key adv \
+    --homedir ~/.gnupg \
+    --keyserver keyserver.ubuntu.com \
+    --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
+
+sudo add-apt-repository \
+    "deb ${CRAN_MIRROR}/bin/linux/ubuntu ${R_APT_REPO}"
+
+sudo apt-get update
+sudo apt-get install \
+    --no-install-recommends \
+    -y \
+        autoconf \
+        automake \
+        devscripts \
+        r-base-core=${R_LINUX_VERSION} \
+        r-base-dev=${R_LINUX_VERSION} \
+        texinfo \
+        texlive-latex-extra \
+        texlive-latex-recommended \
+        texlive-fonts-recommended \
+        texlive-fonts-extra \
+        tidy \
+        qpdf
+
+# install dependencies
+Rscript \
+    --vanilla \
+    -e "install.packages(c('data.table', 'jsonlite', 'knitr', 'Matrix', 'R6', 'RhpcBLASctl', 'rmarkdown', 'testthat'), repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'), Ncpus = parallel::detectCores())"
+
+# use clang to compile packages
+mkdir -p ${HOME}/.R
+cat << EOF > ${HOME}/.R/Makevars
+CC=clang
+CXX=clang++
+CXX17=clang++
+EOF
+
+````
+
+</details>
+
+
