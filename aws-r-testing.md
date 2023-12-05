@@ -400,9 +400,249 @@ CC=clang
 CXX=clang++
 CXX17=clang++
 EOF
-
 ````
 
 </details>
 
+To be sure I wasn't cheating, confirmed all OpenMP environment variables were unset.
 
+```shell
+env | grep OMP
+# (no results)
+```
+
+Then, built the R package from this branch.
+
+```shell
+cd ${HOME}/repos/LightGBM
+git checkout master
+git branch -D r/tighter-thread-control || true
+git fetch origin r/tighter-thread-control
+git checkout r/tighter-thread-control
+
+sh build-cran-package.sh --no-build-vignettes
+```
+
+### First approach: dataset construction
+
+Created a test script which times construction of a `Dataset` from a numeric R matrix of shape `[10_000, 10_000]`.
+
+<details><summary>check-multithreading.R (click me)</summary>
+
+```shell
+cat << EOF > check-multithreading.R
+library(data.table)
+library(lightgbm)
+
+LGBM_NUM_THREADS <- as.integer(
+    commandArgs(trailingOnly = TRUE)
+)
+if (is.na(LGBM_NUM_THREADS)){
+    stop("invoke this script with an integer, like 'Rscript check-multithreading.R 6'")
+}
+
+# ensure data.table multithreading isn't used
+data.table::setDTthreads(1L)
+
+X <- matrix(rnorm(1e5), ncol=1e5)
+y <- rnorm(nrow(X))
+
+tic <- proc.time()
+print(tic)
+dtrain <- lightgbm::lgb.Dataset(
+    data = X
+    , label = y
+    , params = list(
+        max_bins = 128L
+        , min_data_in_bin = 5L
+        , num_threads = LGBM_NUM_THREADS
+        , verbosity = -1L
+    )
+)
+dtrain\$construct()
+toc <- proc.time() - tic
+print(toc)
+
+ratio <- toc[[1]] / toc[[3]]
+print(sprintf("ratio: %f", ratio))
+
+# append to file of traces
+cat(
+    paste0("  ", LGBM_NUM_THREADS, "  -  ", round(ratio, 4))
+    , file = "traces.out"
+    , append = TRUE
+    , sep = "\n"
+)
+EOF
+```
+</details>
+
+Installed the R package
+
+```shell
+R CMD INSTALL \
+  --with-keep.source \
+  lightgbm_4.1.0.99.tar.gz
+```
+
+I set environment variable `OMP_NUM_THREADS=16` (the number of vCPUs) and tried running the script
+with various values of `num_thread` passed through `params` to `lgb.Dataset`.
+
+```shell
+rm -f ./traces.out
+for i in 1 1 1 1 1 2 2 2 2 2 6 8 16; do
+    OMP_NUM_THREADS=16 \
+        Rscript --vanilla ./check-multithreading.R ${i}
+done
+cat ./traces.out
+````
+
+On this branch, I saw what I'd expect if multithreading is working correctly:
+
+* more threads results in a higher ratio of CPU time to elapsed time
+* runs with `num_threads = 1` passed to LightGBM have a `{CPU}/{elapsed} <= 1`
+* runs with `num_threads = 2` passed to LightGBM have a `{CPU}/{elapsed} <= 2`
+
+```text
+  1  -  0.7203
+  1  -  0.838
+  1  -  0.8889
+  1  -  0.8601
+  1  -  0.7778
+  2  -  1.3087
+  2  -  1.2276
+  2  -  1.3724
+  2  -  1.3103
+  2  -  1.2685
+  6  -  2.657
+  8  -  3.4368
+  16  -  6.9447
+```
+
+Repeating that same approach with `{lightgbm}` built from latest `master` (https://github.com/microsoft/LightGBM/commit/f5b6bd60d9d752c8e5a75b11ab771d0422214bb4), I got the following:
+
+```text
+  1  -  11.7955
+  1  -  11.9402
+  1  -  11.4011
+  1  -  12.4866
+  1  -  13.1563
+  2  -  11.3018
+  2  -  11.1033
+  2  -  13
+  2  -  9.7208
+  2  -  11.2056
+  6  -  10.3423
+  8  -  10.3786
+  16  -  9.7287
+```
+
+### Second approach: `R CMD check`
+
+Ran `R CMD check` as follows on the built package.
+
+```shell
+Rscript -e "remove.packages('lightgbm')"
+
+OMP_NUM_THREADS=16 \
+_R_CHECK_EXAMPLE_TIMING_THRESHOLD_=0 \
+_R_CHECK_EXAMPLE_TIMING_CPU_TO_ELAPSED_THRESHOLD_=2.0 \
+R --vanilla CMD check \
+    --no-codoc \
+    --no-manual \
+    --no-tests \
+    --no-vignettes \
+    --run-dontrun \
+    --run-donttest \
+    --timings \
+    ./lightgbm_4.1.0.99.tar.gz
+```
+
+On this branch, no examples show `{CPU}/{elapsed} >= 2.0`.
+
+<details><summary>timings (click me)</summary>
+
+```text
+* checking examples ... OK
+Examples with CPU (user + system) or elapsed time > 0s
+                             user system elapsed
+lgb.plot.interpretation     0.456  0.024   0.241
+lgb.interprete              0.330  0.008   0.169
+lgb.importance              0.235  0.008   0.121
+lgb.model.dt.tree           0.208  0.008   0.108
+lgb.cv                      0.201  0.003   0.102
+saveRDS.lgb.Booster         0.160  0.016   0.088
+lgb.plot.importance         0.162  0.001   0.081
+lgb.Dataset.create.valid    0.112  0.040   0.076
+readRDS.lgb.Booster         0.117  0.004   0.060
+lgb.load                    0.110  0.011   0.061
+lgb.restore_handle          0.108  0.012   0.060
+predict.lgb.Booster         0.104  0.004   0.054
+lgb.dump                    0.101  0.005   0.053
+lgb.save                    0.094  0.011   0.053
+lgb.train                   0.089  0.013   0.051
+lgb.get.eval.result         0.092  0.008   0.050
+lgb.configure_fast_predict  0.095  0.004   0.050
+lgb.Dataset                 0.076  0.020   0.048
+get_field                   0.087  0.007   0.047
+set_field                   0.093  0.000   0.047
+slice                       0.092  0.000   0.045
+lgb.Dataset.save            0.076  0.000   0.038
+lgb.Dataset.set.categorical 0.076  0.000   0.038
+lgb.Dataset.construct       0.070  0.004   0.036
+lgb.Dataset.set.reference   0.067  0.003   0.035
+dimnames.lgb.Dataset        0.043  0.008   0.043
+dim                         0.046  0.004   0.049
+lgb.convert_with_rules      0.028  0.004   0.016
+```
+
+</details>
+
+On `master`, several examples show `{CPU}/{elapsed} >= 2.0`, and those have ratios `> 10.0`.
+
+<details><summary>timings (click me)</summary>
+
+```text
+* checking examples ... OK
+Examples with CPU (user + system) or elapsed time > 0s
+                             user system elapsed
+lgb.plot.interpretation     3.536  0.214   0.274
+lgb.interprete              2.346  0.114   0.189
+lgb.cv                      1.866  0.133   0.125
+saveRDS.lgb.Booster         1.542  0.065   0.100
+lgb.Dataset.create.valid    1.225  0.132   0.085
+lgb.load                    1.043  0.078   0.070
+readRDS.lgb.Booster         1.040  0.078   0.070
+lgb.configure_fast_predict  0.914  0.065   0.061
+lgb.model.dt.tree           0.886  0.065   0.109
+lgb.dump                    0.835  0.038   0.058
+lgb.Dataset                 0.745  0.058   0.050
+slice                       0.745  0.029   0.048
+get_field                   0.711  0.046   0.051
+set_field                   0.644  0.050   0.050
+lgb.Dataset.save            0.570  0.042   0.039
+lgb.Dataset.set.reference   0.572  0.037   0.038
+lgb.Dataset.set.categorical 0.578  0.022   0.038
+lgb.Dataset.construct       0.553  0.038   0.037
+lgb.importance              0.520  0.032   0.121
+lgb.restore_handle          0.490  0.032   0.061
+lgb.save                    0.401  0.024   0.053
+lgb.train                   0.395  0.016   0.051
+dimnames.lgb.Dataset        0.286  0.037   0.061
+lgb.convert_with_rules      0.292  0.015   0.020
+lgb.plot.importance         0.273  0.013   0.081
+lgb.get.eval.result         0.218  0.036   0.051
+predict.lgb.Booster         0.245  0.007   0.054
+dim                         0.049  0.000   0.050
+Examples with CPU time > 2 times elapsed time
+                          user system elapsed  ratio
+saveRDS.lgb.Booster      1.542  0.065   0.100 16.070
+lgb.load                 1.043  0.078   0.070 16.014
+lgb.cv                   1.866  0.133   0.125 15.992
+readRDS.lgb.Booster      1.040  0.078   0.070 15.971
+lgb.Dataset.create.valid 1.225  0.132   0.085 15.965
+lgb.plot.interpretation  3.536  0.214   0.274 13.686
+lgb.interprete           2.346  0.114   0.189 13.016
+```
+
+</details>
