@@ -8,11 +8,11 @@
 #include <LightGBM/export.h>
 
 // this can only be changed by LGBM_SetMaxThreads()
-LIGHTGBM_EXTERN_C int LGBM_MAX_NUM_THREADS;
+LIGHTGBM_EXTERN_C THREAD_LOCAL int LGBM_MAX_NUM_THREADS;
 
 // this is modified by OMP_SET_NUM_THREADS(), for example
 // by passing num_thread through params
-LIGHTGBM_EXTERN_C int LGBM_DEFAULT_NUM_THREADS;
+LIGHTGBM_EXTERN_C THREAD_LOCAL int LGBM_DEFAULT_NUM_THREADS;
 
 #ifdef _OPENMP
 
