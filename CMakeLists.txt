@@ -118,6 +118,9 @@ include_directories(${EIGEN_DIR})
 add_definitions(-DEIGEN_MPL2_ONLY)
 add_definitions(-DEIGEN_DONT_PARALLELIZE)
 
+include_directories("${PROJECT_SOURCE_DIR}/external_libs/fast_double_parser/include")
+include_directories("${PROJECT_SOURCE_DIR}/external_libs/fmt/include")
+
 if(__BUILD_FOR_R)
     find_package(LibR REQUIRED)
     message(STATUS "LIBR_EXECUTABLE: ${LIBR_EXECUTABLE}")
