@@ -27,6 +27,12 @@ cmake_minimum_required(VERSION 3.18)
 
 project(lightgbm LANGUAGES C CXX)
 
+# if(APPLE)
+#   set(CMAKE_BUILD_RPATH_USE_ORIGIN TRUE)
+#   set(MACOSX_RPATH TRUE)
+#   set(CMAKE_INSTALL_RPATH "")
+# endif()
+
 if(BUILD_CPP_TEST)
   set(CMAKE_CXX_STANDARD 14)
 else()
@@ -592,6 +598,13 @@ if(USE_OPENMP)
     # https://cmake.org/cmake/help/v3.16/manual/cmake-buildsystem.7.html#transitive-usage-requirements
     target_link_libraries(lightgbm_capi_objs PUBLIC OpenMP::OpenMP_CXX)
   endif()
+  # set_target_properties(
+  #   OpenMP::OpenMP_CXX
+  #   PROPERTIES
+  #     BUILD_WITH_INSTALL_RPATH FALSE
+  #     INSTALL_RPATH_USE_LINK_PATH FALSE
+  #     LINK_FLAGS "-Wl,-rpath,@rpath/libompy.dylib"
+  # )
 endif()
 
 if(USE_GPU)
@@ -705,6 +718,17 @@ endif()
 if(__BUILD_FOR_PYTHON)
     set(CMAKE_INSTALL_PREFIX "lightgbm")
 endif()
+
+set_property(
+  TARGET _lightgbm
+  PROPERTY BUILD_RPATH
+    "@rpath/libomp.dylib"
+)
+# set_property(
+#   TARGET _lightgbm
+#   PROPERTY INSTALL_RPATH
+#     "@rpath/libomp.dylib"
+# )
 
 install(
   TARGETS _lightgbm
