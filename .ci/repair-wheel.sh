@@ -3,38 +3,35 @@
 set -eou pipefail
 
 repair-macos-wheel() {
-    wheel_file=$1
-
+    local wheel_file=$1
     mkdir -p ./staging
     unzip \
         -d ./staging \
         "${wheel_file}"
+
     pushd ./staging
     omp_library=$(
         otool -L ./lightgbm/lib/lib_lightgbm.dylib \
         | awk '{$1=$1};1' \
         | grep -o -E '.*libomp\.dylib[0-9.]*'
     )
-
-    # set RPATH hints teling the linker to look in the following places (in this order)
-    #
-    #   1. right next to wherver lib_lightgbm.dylib is ()
     install_name_tool \
-        -change \
-        "${omp_library}" \
+        -change ${omp_library} \
         '@rpath/libomp.dylib' \
         ./lightgbm/lib/lib_lightgbm.dylib
 
-    # add RPATHs to find libomp.dylib
+    # set RPATH hints teling the linker to look in the following places:
+    #
+    #   1. right next to wherever lib_lightgbm.dylib is ()
     install_name_tool \
         -add_rpath \
-        '@rpath/' \
+        '@rpath/libomp.dylib' \
         ./lightgbm/lib/lib_lightgbm.dylib
 
-    omp_library_dir=$(dirname "${omp_library}")
+    # 2. wherever homebrew put OpenMP
     install_name_tool \
         -add_rpath \
-        "${omp_library_dir}" \
+        "${omp_library}" \
         ./lightgbm/lib/lib_lightgbm.dylib
 
     zip -r $(basename "${wheel_file}") .
