@@ -44,6 +44,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
 
+# library-like targets should have symbols hidden by default
+set_target_properties(
+  _lightgbm
+  PROPERTIES
+    C_VISIBILITY_PRESET hidden
+    CXX_VISIBILITY_PRESET hidden
+)
+
 #-- Sanitizer
 if(USE_SANITIZER)
   if(MSVC)

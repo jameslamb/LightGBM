@@ -18,8 +18,13 @@
 #define LIGHTGBM_EXPORT __declspec(dllexport)
 #define LIGHTGBM_C_EXPORT LIGHTGBM_EXTERN_C __declspec(dllexport)
 #else
-#define LIGHTGBM_EXPORT
-#define LIGHTGBM_C_EXPORT LIGHTGBM_EXTERN_C
+    #if defined(__GNUC__)
+        #define LIGHTGBM_EXPORT __attribute__ ((visibility ("default")))
+        #define LIGHTGBM_C_EXPORT LIGHTGBM_EXTERN_C __attribute__ ((visibility ("default")))
+    #else
+        #define LIGHTGBM_EXPORT
+        #define LIGHTGBM_C_EXPORT LIGHTGBM_EXTERN_C
+    #endif
 #endif
 
 #endif /** LIGHTGBM_EXPORT_H_ **/
