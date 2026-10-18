@@ -1,5 +1,6 @@
 /*!
- * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Copyright (c) 2016-2026 Microsoft Corporation. All rights reserved.
+ * Copyright (c) 2016-2026 The LightGBM developers. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 #include <LightGBM/c_api.h>
@@ -20,15 +21,22 @@
 #include <LightGBM/utils/random.h>
 #include <LightGBM/utils/threading.h>
 
-#include <string>
+#include <algorithm>
+#include <cstdint>
 #include <cstdio>
 #include <functional>
 #include <memory>
 #include <mutex>
 #include <stdexcept>
+#include <string>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "application/predictor.hpp"
+#ifndef LGB_R_BUILD
+#include "arrow/array.hpp"
+#endif  // LGB_R_BUILD
 #include <LightGBM/utils/yamc/alternate_shared_mutex.hpp>
 #include <LightGBM/utils/yamc/yamc_shared_lock.hpp>
 
@@ -59,12 +67,12 @@ yamc::shared_lock<yamc::alternate::shared_mutex> lock(&mtx);
 const int PREDICTOR_TYPES = 4;
 
 // Single row predictor to abstract away caching logic
-class SingleRowPredictor {
+class SingleRowPredictorInner {
  public:
   PredictFunction predict_function;
   int64_t num_pred_in_one_row;
 
-  SingleRowPredictor(int predict_type, Boosting* boosting, const Config& config, int start_iter, int num_iter) {
+  SingleRowPredictorInner(int predict_type, Boosting* boosting, const Config& config, int start_iter, int num_iter) {
     bool is_predict_leaf = false;
     bool is_raw_score = false;
     bool predict_contrib = false;
@@ -86,7 +94,7 @@ class SingleRowPredictor {
     num_total_model_ = boosting->NumberOfTotalModel();
   }
 
-  ~SingleRowPredictor() {}
+  ~SingleRowPredictorInner() {}
 
   bool IsPredictorEqual(const Config& config, int iter, Boosting* boosting) {
     return early_stop_ == config.pred_early_stop &&
@@ -105,10 +113,64 @@ class SingleRowPredictor {
   int num_total_model_;
 };
 
+/*!
+ * \brief Object to store resources meant for single-row Fast Predict methods.
+ *
+ * For legacy reasons this is called `FastConfig` in the public C API.
+ *
+ * Meant to be used by the *Fast* predict methods only.
+ * It stores the configuration and prediction resources for reuse across predictions.
+ */
+struct SingleRowPredictor {
+ public:
+  SingleRowPredictor(yamc::alternate::shared_mutex *booster_mutex,
+             const char *parameters,
+             const int data_type,
+             const int32_t num_cols,
+             int predict_type,
+             Boosting *boosting,
+             int start_iter,
+             int num_iter) : config(Config::Str2Map(parameters)), data_type(data_type), num_cols(num_cols), single_row_predictor_inner(predict_type, boosting, config, start_iter, num_iter), booster_mutex(booster_mutex) {
+    if (!config.predict_disable_shape_check && num_cols != boosting->MaxFeatureIdx() + 1) {
+      Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d).\n"\
+                 "You can set ``predict_disable_shape_check=true`` to discard this error, but please be aware what you are doing.", num_cols, boosting->MaxFeatureIdx() + 1);
+    }
+  }
+
+  void Predict(std::function<std::vector<std::pair<int, double>>(int row_idx)> get_row_fun,
+               double* out_result, int64_t* out_len) const {
+    UNIQUE_LOCK(single_row_predictor_mutex)
+    yamc::shared_lock<yamc::alternate::shared_mutex> booster_shared_lock(booster_mutex);
+
+    auto one_row = get_row_fun(0);
+    single_row_predictor_inner.predict_function(one_row, out_result);
+
+    *out_len = single_row_predictor_inner.num_pred_in_one_row;
+  }
+
+ public:
+  Config config;
+  const int data_type;
+  const int32_t num_cols;
+
+ private:
+  SingleRowPredictorInner single_row_predictor_inner;
+
+  // Prevent the booster from being modified while we have a predictor relying on it during prediction
+  yamc::alternate::shared_mutex *booster_mutex;
+
+  // If several threads try to predict at the same time using the same SingleRowPredictor
+  // we want them to still provide correct values, so the mutex is necessary due to the shared
+  // resources in the predictor.
+  // However the recommended approach is to instantiate one SingleRowPredictor per thread,
+  // to avoid contention here.
+  mutable yamc::alternate::shared_mutex single_row_predictor_mutex;
+};
+
 class Booster {
  public:
   explicit Booster(const char* filename) {
-    boosting_.reset(Boosting::CreateBoosting("gbdt", filename));
+    boosting_.reset(Boosting::CreateBoosting("gbdt", filename, std::string("cpu"), 0));
   }
 
   Booster(const Dataset* train_data,
@@ -122,7 +184,7 @@ class Booster {
                    "please use continued train with input score");
     }
 
-    boosting_.reset(Boosting::CreateBoosting(config_.boosting, nullptr));
+    boosting_.reset(Boosting::CreateBoosting(config_.boosting, nullptr, config_.device_type, config_.num_gpu));
 
     train_data_ = train_data;
     CreateObjectiveAndMetrics();
@@ -163,7 +225,9 @@ class Booster {
     for (auto metric_type : config_.metric) {
       auto metric = std::unique_ptr<Metric>(
         Metric::CreateMetric(metric_type, config_));
-      if (metric == nullptr) { continue; }
+      if (metric == nullptr) {
+        continue;
+      }
       metric->Init(train_data_->metadata(), train_data_->num_data());
       train_metric_.push_back(std::move(metric));
     }
@@ -339,7 +403,9 @@ class Booster {
     valid_metrics_.emplace_back();
     for (auto metric_type : config_.metric) {
       auto metric = std::unique_ptr<Metric>(Metric::CreateMetric(metric_type, config_));
-      if (metric == nullptr) { continue; }
+      if (metric == nullptr) {
+        continue;
+      }
       metric->Init(valid_data->metadata(), valid_data->num_data());
       valid_metrics_.back().push_back(std::move(metric));
     }
@@ -355,13 +421,7 @@ class Booster {
 
   void Refit(const int32_t* leaf_preds, int32_t nrow, int32_t ncol) {
     UNIQUE_LOCK(mutex_)
-    std::vector<std::vector<int32_t>> v_leaf_preds(nrow, std::vector<int32_t>(ncol, 0));
-    for (int i = 0; i < nrow; ++i) {
-      for (int j = 0; j < ncol; ++j) {
-        v_leaf_preds[i][j] = leaf_preds[static_cast<size_t>(i) * static_cast<size_t>(ncol) + static_cast<size_t>(j)];
-      }
-    }
-    boosting_->RefitTree(v_leaf_preds);
+    boosting_->RefitTree(leaf_preds, nrow, ncol);
   }
 
   bool TrainOneIter(const score_t* gradients, const score_t* hessians) {
@@ -374,13 +434,24 @@ class Booster {
     boosting_->RollbackOneIter();
   }
 
-  void SetSingleRowPredictor(int start_iteration, int num_iteration, int predict_type, const Config& config) {
+  void SetSingleRowPredictorInner(int start_iteration, int num_iteration, int predict_type, const Config& config) {
       UNIQUE_LOCK(mutex_)
       if (single_row_predictor_[predict_type].get() == nullptr ||
           !single_row_predictor_[predict_type]->IsPredictorEqual(config, num_iteration, boosting_.get())) {
-        single_row_predictor_[predict_type].reset(new SingleRowPredictor(predict_type, boosting_.get(),
+        single_row_predictor_[predict_type].reset(new SingleRowPredictorInner(predict_type, boosting_.get(),
                                                                          config, start_iteration, num_iteration));
       }
+  }
+
+  std::unique_ptr<SingleRowPredictor> InitSingleRowPredictor(int predict_type, int start_iteration, int num_iteration, int data_type, int32_t num_cols, const char *parameters) {
+    // Workaround https://github.com/lightgbm-org/LightGBM/issues/6142 by locking here
+    // This is only a workaround because if predictors are initialized differently it may still behave incorrectly,
+    // and because multiple racing Predictor initializations through LGBM_BoosterPredictForMat suffers from that same issue of Predictor init writing things in the booster.
+    // Once #6142 is fixed (predictor doesn't write in the Booster as should have been the case since 1c35c3b9ede9adab8ccc5fd7b4b2b6af188a79f0), this line can be removed.
+    UNIQUE_LOCK(mutex_)
+
+    return std::unique_ptr<SingleRowPredictor>(new SingleRowPredictor(
+      &mutex_, parameters, data_type, num_cols, predict_type, boosting_.get(), start_iteration, num_iteration));
   }
 
   void PredictSingleRow(int predict_type, int ncol,
@@ -400,7 +471,7 @@ class Booster {
     *out_len = single_row_predictor->num_pred_in_one_row;
   }
 
-  Predictor CreatePredictor(int start_iteration, int num_iteration, int predict_type, int ncol, const Config& config) const {
+  std::shared_ptr<Predictor> CreatePredictor(int start_iteration, int num_iteration, int predict_type, int ncol, const Config& config) const {
     if (!config.predict_disable_shape_check && ncol != boosting_->MaxFeatureIdx() + 1) {
       Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d).\n" \
                  "You can set ``predict_disable_shape_check=true`` to discard this error, but please be aware what you are doing.", ncol, boosting_->MaxFeatureIdx() + 1);
@@ -418,7 +489,7 @@ class Booster {
       is_raw_score = false;
     }
 
-    return Predictor(boosting_.get(), start_iteration, num_iteration, is_raw_score, is_predict_leaf, predict_contrib,
+    return std::make_shared<Predictor>(boosting_.get(), start_iteration, num_iteration, is_raw_score, is_predict_leaf, predict_contrib,
                         config.pred_early_stop, config.pred_early_stop_freq, config.pred_early_stop_margin);
   }
 
@@ -436,7 +507,7 @@ class Booster {
       predict_contrib = true;
     }
     int64_t num_pred_in_one_row = boosting_->NumPredictOneRow(start_iteration, num_iteration, is_predict_leaf, predict_contrib);
-    auto pred_fun = predictor.GetPredictFunction();
+    auto pred_fun = predictor->GetPredictFunction();
     OMP_INIT_EX();
     #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
     for (int i = 0; i < nrow; ++i) {
@@ -457,7 +528,7 @@ class Booster {
                      int32_t** out_indices, void** out_data, int data_type,
                      bool* is_data_float32_ptr, int num_matrices) const {
     auto predictor = CreatePredictor(start_iteration, num_iteration, predict_type, ncol, config);
-    auto pred_sparse_fun = predictor.GetPredictSparseFunction();
+    auto pred_sparse_fun = predictor->GetPredictSparseFunction();
     std::vector<std::vector<std::unordered_map<int, double>>>& agg = *agg_ptr;
     OMP_INIT_EX();
     #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
@@ -592,7 +663,7 @@ class Booster {
     // Get the number of trees per iteration (for multiclass scenario we output multiple sparse matrices)
     int num_matrices = boosting_->NumModelPerIteration();
     auto predictor = CreatePredictor(start_iteration, num_iteration, predict_type, ncol, config);
-    auto pred_sparse_fun = predictor.GetPredictSparseFunction();
+    auto pred_sparse_fun = predictor->GetPredictSparseFunction();
     bool is_col_ptr_int32 = false;
     bool is_data_float32 = false;
     int num_output_cols = ncol + 1;
@@ -815,7 +886,7 @@ class Booster {
  private:
   const Dataset* train_data_;
   std::unique_ptr<Boosting> boosting_;
-  std::unique_ptr<SingleRowPredictor> single_row_predictor_[PREDICTOR_TYPES];
+  std::unique_ptr<SingleRowPredictorInner> single_row_predictor_[PREDICTOR_TYPES];
 
   /*! \brief All configs */
   Config config_;
@@ -833,8 +904,9 @@ class Booster {
 
 // explicitly declare symbols from LightGBM namespace
 using LightGBM::AllgatherFunction;
+#ifndef LGB_R_BUILD
 using LightGBM::ArrowChunkedArray;
-using LightGBM::ArrowTable;
+#endif  // LGB_R_BUILD
 using LightGBM::Booster;
 using LightGBM::Common::CheckElementsIntervalClosed;
 using LightGBM::Common::RemoveQuotationSymbol;
@@ -850,14 +922,15 @@ using LightGBM::Log;
 using LightGBM::Network;
 using LightGBM::Random;
 using LightGBM::ReduceScatterFunction;
+using LightGBM::SingleRowPredictor;
 
 // some help functions used to convert data
 
 std::function<std::vector<double>(int row_idx)>
-RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_type, int is_row_major);
+RowFunctionFromDenseMatrix(const void* data, int num_row, int num_col, int data_type, int is_row_major);
 
 std::function<std::vector<std::pair<int, double>>(int row_idx)>
-RowPairFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_type, int is_row_major);
+RowPairFunctionFromDenseMatrix(const void* data, int num_row, int num_col, int data_type, int is_row_major);
 
 std::function<std::vector<std::pair<int, double>>(int row_idx)>
 RowPairFunctionFromDenseRows(const void** data, int num_col, int data_type);
@@ -1072,7 +1145,7 @@ int LGBM_DatasetPushRows(DatasetHandle dataset,
                          int32_t start_row) {
   API_BEGIN();
   auto p_dataset = reinterpret_cast<Dataset*>(dataset);
-  auto get_row_fun = RowFunctionFromDenseMatric(data, nrow, ncol, data_type, 1);
+  auto get_row_fun = RowFunctionFromDenseMatrix(data, nrow, ncol, data_type, 1);
   if (p_dataset->has_raw()) {
     p_dataset->ResizeRaw(p_dataset->num_numeric_features() + nrow);
   }
@@ -1111,7 +1184,7 @@ int LGBM_DatasetPushRowsWithMetadata(DatasetHandle dataset,
     Log::Fatal("data cannot be null.");
   }
   auto p_dataset = reinterpret_cast<Dataset*>(dataset);
-  auto get_row_fun = RowFunctionFromDenseMatric(data, nrow, ncol, data_type, 1);
+  auto get_row_fun = RowFunctionFromDenseMatrix(data, nrow, ncol, data_type, 1);
   if (p_dataset->has_raw()) {
     p_dataset->ResizeRaw(p_dataset->num_numeric_features() + nrow);
   }
@@ -1248,7 +1321,7 @@ int LGBM_DatasetCreateFromMat(const void* data,
                                     data_type,
                                     &nrow,
                                     ncol,
-                                    is_row_major,
+                                    &is_row_major,
                                     parameters,
                                     reference,
                                     out);
@@ -1259,7 +1332,7 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
                                int data_type,
                                int32_t* nrow,
                                int32_t ncol,
-                               int is_row_major,
+                               int* is_row_major,
                                const char* parameters,
                                const DatasetHandle reference,
                                DatasetHandle* out) {
@@ -1276,7 +1349,7 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
 
   std::vector<std::function<std::vector<double>(int row_idx)>> get_row_fun;
   for (int j = 0; j < nmat; ++j) {
-    get_row_fun.push_back(RowFunctionFromDenseMatric(data[j], nrow[j], ncol, data_type, is_row_major));
+    get_row_fun.push_back(RowFunctionFromDenseMatrix(data[j], nrow[j], ncol, data_type, is_row_major[j]));
   }
 
   if (reference == nullptr) {
@@ -1398,7 +1471,7 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
   }
   OMP_INIT_EX();
   #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
-  for (int i = 0; i < nindptr - 1; ++i) {
+  for (int i = 0; i < static_cast<int>(nindptr - 1); ++i) {
     OMP_LOOP_EX_BEGIN();
     const int tid = omp_get_thread_num();
     auto one_row = get_row_fun(i);
@@ -1538,13 +1611,15 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
   }
   OMP_INIT_EX();
   #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
-  for (int i = 0; i < ncol_ptr - 1; ++i) {
+  for (int i = 0; i < static_cast<int>(ncol_ptr - 1); ++i) {
     OMP_LOOP_EX_BEGIN();
     const int tid = omp_get_thread_num();
     int feature_idx = ret->InnerFeatureIndex(i);
-    if (feature_idx < 0) { continue; }
+    if (feature_idx < 0) {
+      continue;
+    }
     int group = ret->Feature2Group(feature_idx);
-    int sub_feature = ret->Feture2SubFeature(feature_idx);
+    int sub_feature = ret->Feature2SubFeature(feature_idx);
     CSC_RowIterator col_it(col_ptr, col_ptr_type, indices, data, data_type, ncol_ptr, nelem, i);
     auto bin_mapper = ret->FeatureBinMapper(feature_idx);
     if (bin_mapper->GetDefaultBin() == bin_mapper->GetMostFreqBin()) {
@@ -1553,7 +1628,9 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
         auto pair = col_it.NextNonZero();
         row_idx = pair.first;
         // no more data
-        if (row_idx < 0) { break; }
+        if (row_idx < 0) {
+          break;
+        }
         ret->PushOneData(tid, row_idx, group, feature_idx, sub_feature, pair.second);
       }
     } else {
@@ -1570,36 +1647,31 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
   API_END();
 }
 
-int LGBM_DatasetCreateFromArrow(int64_t n_chunks,
-                                const ArrowArray* chunks,
-                                const ArrowSchema* schema,
-                                const char* parameters,
-                                const DatasetHandle reference,
-                                DatasetHandle *out) {
-  API_BEGIN();
-
+#ifndef LGB_R_BUILD
+void DatasetCreateFromArrowChunkedArray(ArrowChunkedArray& chunked_array,
+                                        const char* parameters,
+                                        const DatasetHandle reference,
+                                        DatasetHandle* out) {
   auto param = Config::Str2Map(parameters);
   Config config;
   config.Set(param);
   OMP_SET_NUM_THREADS(config.num_threads);
 
   std::unique_ptr<Dataset> ret;
-
-  // Prepare the Arrow data
-  ArrowTable table(n_chunks, chunks, schema);
+  auto chunked_array_view = chunked_array.view();
 
   // Initialize the dataset
   if (reference == nullptr) {
     // If there is no reference dataset, we first sample indices
-    auto sample_indices = CreateSampleIndices(static_cast<int32_t>(table.get_num_rows()), config);
+    auto sample_indices = CreateSampleIndices(static_cast<int32_t>(chunked_array.get_length()), config);
     auto sample_count = static_cast<int>(sample_indices.size());
-    std::vector<std::vector<double>> sample_values(table.get_num_columns());
-    std::vector<std::vector<int>> sample_idx(table.get_num_columns());
+    std::vector<std::vector<double>> sample_values(chunked_array.get_num_fields());
+    std::vector<std::vector<int>> sample_idx(chunked_array.get_num_fields());
 
     // Then, we obtain sample values by parallelizing across columns
     OMP_INIT_EX();
     #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
-    for (int64_t j = 0; j < table.get_num_columns(); ++j) {
+    for (int64_t j = 0; j < chunked_array.get_num_fields(); ++j) {
       OMP_LOOP_EX_BEGIN();
 
       // Values need to be copied from the record batches.
@@ -1607,19 +1679,21 @@ int LGBM_DatasetCreateFromArrow(int64_t n_chunks,
       sample_idx[j].reserve(sample_indices.size());
 
       // The chunks are iterated over in the inner loop as columns can be treated independently.
-      int last_idx = 0;
-      int i = 0;
-      auto it = table.get_column(j).begin<double>();
-      for (auto idx : sample_indices) {
-        std::advance(it, idx - last_idx);
-        auto v = *it;
-        if (std::fabs(v) > kZeroThreshold || std::isnan(v)) {
-          sample_values[j].emplace_back(v);
-          sample_idx[j].emplace_back(i);
+      chunked_array_view.field(j).visit<double>([&](auto&& visitor) {
+        int last_idx = 0;
+        int i = 0;
+        auto it = visitor.begin();
+        for (auto idx : sample_indices) {
+          std::advance(it, idx - last_idx);
+          auto v = *it;
+          if (std::fabs(v) > kZeroThreshold || std::isnan(v)) {
+            sample_values[j].emplace_back(v);
+            sample_idx[j].emplace_back(i);
+          }
+          last_idx = idx;
+          i++;
         }
-        last_idx = idx;
-        i++;
-      }
+      });
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();
@@ -1628,16 +1702,16 @@ int LGBM_DatasetCreateFromArrow(int64_t n_chunks,
     DatasetLoader loader(config, nullptr, 1, nullptr);
     ret.reset(loader.ConstructFromSampleData(Vector2Ptr<double>(&sample_values).data(),
                                              Vector2Ptr<int>(&sample_idx).data(),
-                                             table.get_num_columns(),
+                                             static_cast<int>(chunked_array.get_num_fields()),
                                              VectorSize<double>(sample_values).data(),
                                              sample_count,
-                                             table.get_num_rows(),
-                                             table.get_num_rows()));
+                                             static_cast<int>(chunked_array.get_length()),
+                                             static_cast<int>(chunked_array.get_length())));
   } else {
-    ret.reset(new Dataset(static_cast<data_size_t>(table.get_num_rows())));
+    ret.reset(new Dataset(static_cast<data_size_t>(chunked_array.get_length())));
     ret->CreateValid(reinterpret_cast<const Dataset*>(reference));
     if (ret->has_raw()) {
-      ret->ResizeRaw(static_cast<int>(table.get_num_rows()));
+      ret->ResizeRaw(static_cast<int>(chunked_array.get_length()));
     }
   }
 
@@ -1645,22 +1719,47 @@ int LGBM_DatasetCreateFromArrow(int64_t n_chunks,
   // we parallelize across rows.
   OMP_INIT_EX();
   #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
-  for (int64_t j = 0; j < table.get_num_columns(); ++j) {
+  for (int64_t j = 0; j < chunked_array.get_num_fields(); ++j) {
     OMP_LOOP_EX_BEGIN();
     const int tid = omp_get_thread_num();
     data_size_t idx = 0;
-    auto column = table.get_column(j);
-    for (auto it = column.begin<double>(), end = column.end<double>(); it != end; ++it) {
-      ret->PushOneValue(tid, idx++, j, *it);
-    }
+    chunked_array_view.field(j).visit<double>([&](auto&& visitor) {
+      for (auto it = visitor.begin(), end = visitor.end(); it != end; ++it) {
+        ret->PushOneValue(tid, idx++, j, *it);
+      }
+    });
     OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();
 
   ret->FinishLoad();
   *out = ret.release();
+}
+
+[[deprecated("Use LGBM_DatasetCreateFromArrowStream instead.")]]
+int LGBM_DatasetCreateFromArrow(int64_t n_chunks,
+                                ArrowArray* chunks,
+                                ArrowSchema* schema,
+                                const char* parameters,
+                                const DatasetHandle reference,
+                                DatasetHandle *out) {
+  API_BEGIN();
+  Log::Warning("LGBM_DatasetCreateFromArrow is deprecated. Please use LGBM_DatasetCreateFromArrowStream instead.");
+  ArrowChunkedArray chunked_array(n_chunks, chunks, schema);
+  DatasetCreateFromArrowChunkedArray(chunked_array, parameters, reference, out);
   API_END();
 }
+
+int LGBM_DatasetCreateFromArrowStream(ArrowArrayStream* stream,
+                                      const char* parameters,
+                                      const DatasetHandle reference,
+                                      DatasetHandle *out) {
+  API_BEGIN();
+  ArrowChunkedArray chunked_array(stream);
+  DatasetCreateFromArrowChunkedArray(chunked_array, parameters, reference, out);
+  API_END();
+}
+#endif  // LGB_R_BUILD
 
 int LGBM_DatasetGetSubset(
   const DatasetHandle handle,
@@ -1777,24 +1876,41 @@ int LGBM_DatasetSetField(DatasetHandle handle,
   } else if (type == C_API_DTYPE_FLOAT64) {
     is_success = dataset->SetDoubleField(field_name, reinterpret_cast<const double*>(field_data), static_cast<int32_t>(num_element));
   }
-  if (!is_success) { Log::Fatal("Input data type error or field not found"); }
+  if (!is_success) {
+    Log::Fatal("Input data type error or field not found");
+  }
   API_END();
 }
 
+#ifndef LGB_R_BUILD
+[[deprecated("Use LGBM_DatasetSetFieldFromArrowStream instead.")]]
 int LGBM_DatasetSetFieldFromArrow(DatasetHandle handle,
                                   const char* field_name,
                                   int64_t n_chunks,
-                                  const ArrowArray* chunks,
-                                  const ArrowSchema* schema) {
+                                  ArrowArray* chunks,
+                                  ArrowSchema* schema) {
   API_BEGIN();
+  Log::Warning("LGBM_DatasetSetFieldFromArrow is deprecated. Please use LGBM_DatasetSetFieldFromArrowStream instead.");
   auto dataset = reinterpret_cast<Dataset*>(handle);
-  ArrowChunkedArray ca(n_chunks, chunks, schema);
-  auto is_success = dataset->SetFieldFromArrow(field_name, ca);
+  auto is_success = dataset->SetFieldFromArrow(field_name, n_chunks, chunks, schema);
   if (!is_success) {
     Log::Fatal("Input field is not supported");
   }
   API_END();
 }
+
+int LGBM_DatasetSetFieldFromArrowStream(DatasetHandle handle,
+                                        const char* field_name,
+                                        ArrowArrayStream* stream) {
+  API_BEGIN();
+  auto dataset = reinterpret_cast<Dataset*>(handle);
+  auto is_success = dataset->SetFieldFromArrow(field_name, stream);
+  if (!is_success) {
+    Log::Fatal("Input field is not supported");
+  }
+  API_END();
+}
+#endif  // LGB_R_BUILD
 
 int LGBM_DatasetGetField(DatasetHandle handle,
                          const char* field_name,
@@ -1814,8 +1930,12 @@ int LGBM_DatasetGetField(DatasetHandle handle,
     *out_type = C_API_DTYPE_FLOAT64;
     is_success = true;
   }
-  if (!is_success) { Log::Fatal("Field not found"); }
-  if (*out_ptr == nullptr) { *out_len = 0; }
+  if (!is_success) {
+    Log::Fatal("Field not found");
+  }
+  if (*out_ptr == nullptr) {
+    *out_len = 0;
+  }
   API_END();
 }
 
@@ -1998,13 +2118,13 @@ int LGBM_BoosterRefit(BoosterHandle handle, const int32_t* leaf_preds, int32_t n
   API_END();
 }
 
-int LGBM_BoosterUpdateOneIter(BoosterHandle handle, int* is_finished) {
+int LGBM_BoosterUpdateOneIter(BoosterHandle handle, int* produced_empty_tree) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   if (ref_booster->TrainOneIter()) {
-    *is_finished = 1;
+    *produced_empty_tree = 1;
   } else {
-    *is_finished = 0;
+    *produced_empty_tree = 0;
   }
   API_END();
 }
@@ -2012,20 +2132,20 @@ int LGBM_BoosterUpdateOneIter(BoosterHandle handle, int* is_finished) {
 int LGBM_BoosterUpdateOneIterCustom(BoosterHandle handle,
                                     const float* grad,
                                     const float* hess,
-                                    int* is_finished) {
+                                    int* produced_empty_tree) {
   API_BEGIN();
   #ifdef SCORE_T_USE_DOUBLE
   (void) handle;       // UNUSED VARIABLE
   (void) grad;         // UNUSED VARIABLE
   (void) hess;         // UNUSED VARIABLE
-  (void) is_finished;  // UNUSED VARIABLE
+  (void) produced_empty_tree;  // UNUSED VARIABLE
   Log::Fatal("Don't support custom loss function when SCORE_T_USE_DOUBLE is enabled");
   #else
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   if (ref_booster->TrainOneIter(grad, hess)) {
-    *is_finished = 1;
+    *produced_empty_tree = 1;
   } else {
-    *is_finished = 0;
+    *produced_empty_tree = 0;
   }
   #endif
   API_END();
@@ -2163,35 +2283,15 @@ int LGBM_BoosterCalcNumPredict(BoosterHandle handle,
   API_END();
 }
 
-/*!
- * \brief Object to store resources meant for single-row Fast Predict methods.
- *
- * Meant to be used as a basic struct by the *Fast* predict methods only.
- * It stores the configuration resources for reuse during prediction.
- *
- * Even the row function is stored. We score the instance at the same memory
- * address all the time. One just replaces the feature values at that address
- * and scores again with the *Fast* methods.
- */
-struct FastConfig {
-  FastConfig(Booster *const booster_ptr,
-             const char *parameter,
-             const int predict_type_,
-             const int data_type_,
-             const int32_t num_cols) : booster(booster_ptr), predict_type(predict_type_), data_type(data_type_), ncol(num_cols) {
-    config.Set(Config::Str2Map(parameter));
-  }
-
-  Booster* const booster;
-  Config config;
-  const int predict_type;
-  const int data_type;
-  const int32_t ncol;
-};
-
+// Naming: In future versions of LightGBM, public API named around `FastConfig` should be made named around
+// `SingleRowPredictor`, because it is specific to single row prediction, and doesn't actually hold only config.
+// For now this is kept as `FastConfig` for backwards compatibility.
+// At the same time, one should consider removing the old non-fast single row public API that stores its Predictor
+// in the Booster, because that will enable removing these Predictors from the Booster, and associated initialization
+// code.
 int LGBM_FastConfigFree(FastConfigHandle fastConfig) {
   API_BEGIN();
-  delete reinterpret_cast<FastConfig*>(fastConfig);
+  delete reinterpret_cast<SingleRowPredictor*>(fastConfig);
   API_END();
 }
 
@@ -2339,7 +2439,7 @@ int LGBM_BoosterPredictForCSRSingleRow(BoosterHandle handle,
   OMP_SET_NUM_THREADS(config.num_threads);
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto get_row_fun = RowFunctionFromCSR<int>(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
-  ref_booster->SetSingleRowPredictor(start_iteration, num_iteration, predict_type, config);
+  ref_booster->SetSingleRowPredictorInner(start_iteration, num_iteration, predict_type, config);
   ref_booster->PredictSingleRow(predict_type, static_cast<int32_t>(num_col), get_row_fun, config, out_result, out_len);
   API_END();
 }
@@ -2359,18 +2459,14 @@ int LGBM_BoosterPredictForCSRSingleRowFastInit(BoosterHandle handle,
     Log::Fatal("The number of columns should be smaller than INT32_MAX.");
   }
 
-  auto fastConfig_ptr = std::unique_ptr<FastConfig>(new FastConfig(
-    reinterpret_cast<Booster*>(handle),
-    parameter,
-    predict_type,
-    data_type,
-    static_cast<int32_t>(num_col)));
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
 
-  OMP_SET_NUM_THREADS(fastConfig_ptr->config.num_threads);
+  std::unique_ptr<SingleRowPredictor> single_row_predictor =
+    ref_booster->InitSingleRowPredictor(predict_type, start_iteration, num_iteration, data_type, static_cast<int32_t>(num_col), parameter);
 
-  fastConfig_ptr->booster->SetSingleRowPredictor(start_iteration, num_iteration, predict_type, fastConfig_ptr->config);
+  OMP_SET_NUM_THREADS(single_row_predictor->config.num_threads);
 
-  *out_fastConfig = fastConfig_ptr.release();
+  *out_fastConfig = single_row_predictor.release();
   API_END();
 }
 
@@ -2384,10 +2480,9 @@ int LGBM_BoosterPredictForCSRSingleRowFast(FastConfigHandle fastConfig_handle,
                                            int64_t* out_len,
                                            double* out_result) {
   API_BEGIN();
-  FastConfig *fastConfig = reinterpret_cast<FastConfig*>(fastConfig_handle);
-  auto get_row_fun = RowFunctionFromCSR<int>(indptr, indptr_type, indices, data, fastConfig->data_type, nindptr, nelem);
-  fastConfig->booster->PredictSingleRow(fastConfig->predict_type, fastConfig->ncol,
-                                        get_row_fun, fastConfig->config, out_result, out_len);
+  SingleRowPredictor *single_row_predictor = reinterpret_cast<SingleRowPredictor*>(fastConfig_handle);
+  auto get_row_fun = RowFunctionFromCSR<int>(indptr, indptr_type, indices, data, single_row_predictor->data_type, nindptr, nelem);
+  single_row_predictor->Predict(get_row_fun, out_result, out_len);
   API_END();
 }
 
@@ -2478,7 +2573,7 @@ int LGBM_BoosterPredictForMat(BoosterHandle handle,
   config.Set(param);
   OMP_SET_NUM_THREADS(config.num_threads);
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  auto get_row_fun = RowPairFunctionFromDenseMatric(data, nrow, ncol, data_type, is_row_major);
+  auto get_row_fun = RowPairFunctionFromDenseMatrix(data, nrow, ncol, data_type, is_row_major);
   ref_booster->Predict(start_iteration, num_iteration, predict_type, nrow, ncol, get_row_fun,
                        config, out_result, out_len);
   API_END();
@@ -2501,8 +2596,8 @@ int LGBM_BoosterPredictForMatSingleRow(BoosterHandle handle,
   config.Set(param);
   OMP_SET_NUM_THREADS(config.num_threads);
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  auto get_row_fun = RowPairFunctionFromDenseMatric(data, 1, ncol, data_type, is_row_major);
-  ref_booster->SetSingleRowPredictor(start_iteration, num_iteration, predict_type, config);
+  auto get_row_fun = RowPairFunctionFromDenseMatrix(data, 1, ncol, data_type, is_row_major);
+  ref_booster->SetSingleRowPredictorInner(start_iteration, num_iteration, predict_type, config);
   ref_booster->PredictSingleRow(predict_type, ncol, get_row_fun, config, out_result, out_len);
   API_END();
 }
@@ -2516,18 +2611,14 @@ int LGBM_BoosterPredictForMatSingleRowFastInit(BoosterHandle handle,
                                                const char* parameter,
                                                FastConfigHandle *out_fastConfig) {
   API_BEGIN();
-  auto fastConfig_ptr = std::unique_ptr<FastConfig>(new FastConfig(
-    reinterpret_cast<Booster*>(handle),
-    parameter,
-    predict_type,
-    data_type,
-    ncol));
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
 
-  OMP_SET_NUM_THREADS(fastConfig_ptr->config.num_threads);
+  std::unique_ptr<SingleRowPredictor> single_row_predictor =
+    ref_booster->InitSingleRowPredictor(predict_type, start_iteration, num_iteration, data_type, ncol, parameter);
 
-  fastConfig_ptr->booster->SetSingleRowPredictor(start_iteration, num_iteration, predict_type, fastConfig_ptr->config);
+  OMP_SET_NUM_THREADS(single_row_predictor->config.num_threads);
 
-  *out_fastConfig = fastConfig_ptr.release();
+  *out_fastConfig = single_row_predictor.release();
   API_END();
 }
 
@@ -2536,12 +2627,10 @@ int LGBM_BoosterPredictForMatSingleRowFast(FastConfigHandle fastConfig_handle,
                                            int64_t* out_len,
                                            double* out_result) {
   API_BEGIN();
-  FastConfig *fastConfig = reinterpret_cast<FastConfig*>(fastConfig_handle);
+  SingleRowPredictor *single_row_predictor = reinterpret_cast<SingleRowPredictor*>(fastConfig_handle);
   // Single row in row-major format:
-  auto get_row_fun = RowPairFunctionFromDenseMatric(data, 1, fastConfig->ncol, fastConfig->data_type, 1);
-  fastConfig->booster->PredictSingleRow(fastConfig->predict_type, fastConfig->ncol,
-                                        get_row_fun, fastConfig->config,
-                                        out_result, out_len);
+  auto get_row_fun = RowPairFunctionFromDenseMatrix(data, 1, single_row_predictor->num_cols, single_row_predictor->data_type, 1);
+  single_row_predictor->Predict(get_row_fun, out_result, out_len);
   API_END();
 }
 
@@ -2568,39 +2657,40 @@ int LGBM_BoosterPredictForMats(BoosterHandle handle,
   API_END();
 }
 
-int LGBM_BoosterPredictForArrow(BoosterHandle handle,
-                                int64_t n_chunks,
-                                const ArrowArray* chunks,
-                                const ArrowSchema* schema,
-                                int predict_type,
-                                int start_iteration,
-                                int num_iteration,
-                                const char* parameter,
-                                int64_t* out_len,
-                                double* out_result) {
-  API_BEGIN();
-
+#ifndef LGB_R_BUILD
+void LGBM_BoosterPredictForArrowChunkedArray(BoosterHandle handle,
+                                             ArrowChunkedArray& chunked_array,
+                                             int predict_type,
+                                             int start_iteration,
+                                             int num_iteration,
+                                             const char* parameter,
+                                             int64_t* out_len,
+                                             double* out_result) {
   // Apply the configuration
   auto param = Config::Str2Map(parameter);
   Config config;
   config.Set(param);
   OMP_SET_NUM_THREADS(config.num_threads);
 
-  // Set up chunked array and iterators for all columns
-  ArrowTable table(n_chunks, chunks, schema);
-  std::vector<ArrowChunkedArray::Iterator<double>> its;
-  its.reserve(table.get_num_columns());
-  for (int64_t j = 0; j < table.get_num_columns(); ++j) {
-    its.emplace_back(table.get_column(j).begin<double>());
+  // Set up iterators for all fields
+  auto chunked_array_view = chunked_array.view();
+
+  // Collect type-erased accessors for all fields to prevent type lookups on every iteration
+  std::vector<std::function<double(int64_t)>> accessors;
+  accessors.reserve(chunked_array.get_num_fields());
+  for (int64_t j = 0; j < chunked_array.get_num_fields(); ++j) {
+    chunked_array_view.field(j).visit<double>([&](auto&& visitor) {
+      accessors.emplace_back([visitor](int64_t i) { return visitor.begin()[i]; });
+    });
   }
 
   // Build row function
-  auto num_columns = table.get_num_columns();
-  auto row_fn = [num_columns, &its] (int row_idx) {
+  auto num_columns = chunked_array.get_num_fields();
+  auto row_fn = [num_columns, &accessors] (int row_idx) {
     std::vector<std::pair<int, double>> result;
     result.reserve(num_columns);
     for (int64_t j = 0; j < num_columns; ++j) {
-      result.emplace_back(static_cast<int>(j), its[j][row_idx]);
+      result.emplace_back(j, accessors[j](row_idx));
     }
     return result;
   };
@@ -2610,14 +2700,48 @@ int LGBM_BoosterPredictForArrow(BoosterHandle handle,
   ref_booster->Predict(start_iteration,
                        num_iteration,
                        predict_type,
-                       static_cast<int>(table.get_num_rows()),
-                       static_cast<int>(table.get_num_columns()),
+                       static_cast<int>(chunked_array.get_length()),
+                       static_cast<int>(chunked_array.get_num_fields()),
                        row_fn,
                        config,
                        out_result,
                        out_len);
+}
+
+[[deprecated("Use LGBM_BoosterPredictForArrowStream instead.")]]
+int LGBM_BoosterPredictForArrow(BoosterHandle handle,
+                                int64_t n_chunks,
+                                ArrowArray* chunks,
+                                ArrowSchema* schema,
+                                int predict_type,
+                                int start_iteration,
+                                int num_iteration,
+                                const char* parameter,
+                                int64_t* out_len,
+                                double* out_result) {
+  API_BEGIN();
+  Log::Warning("LGBM_BoosterPredictForArrow is deprecated. Please use LGBM_BoosterPredictForArrowStream instead.");
+  ArrowChunkedArray chunked_array(n_chunks, chunks, schema);
+  LGBM_BoosterPredictForArrowChunkedArray(
+    handle, chunked_array, predict_type, start_iteration, num_iteration, parameter, out_len, out_result);
   API_END();
 }
+
+int LGBM_BoosterPredictForArrowStream(BoosterHandle handle,
+                                      ArrowArrayStream* stream,
+                                      int predict_type,
+                                      int start_iteration,
+                                      int num_iteration,
+                                      const char* parameter,
+                                      int64_t* out_len,
+                                      double* out_result) {
+  API_BEGIN();
+  ArrowChunkedArray chunked_array(stream);
+  LGBM_BoosterPredictForArrowChunkedArray(
+    handle, chunked_array, predict_type, start_iteration, num_iteration, parameter, out_len, out_result);
+  API_END();
+}
+#endif  // LGB_R_BUILD
 
 int LGBM_BoosterSaveModel(BoosterHandle handle,
                           int start_iteration,
@@ -2772,7 +2896,7 @@ int LGBM_GetMaxThreads(int* out) {
 
 template<typename T>
 std::function<std::vector<double>(int row_idx)>
-RowFunctionFromDenseMatric_helper(const void* data, int num_row, int num_col, int is_row_major) {
+RowFunctionFromDenseMatrix_helper(const void* data, int num_row, int num_col, int is_row_major) {
   const T* data_ptr = reinterpret_cast<const T*>(data);
   if (is_row_major) {
     return [=] (int row_idx) {
@@ -2795,19 +2919,19 @@ RowFunctionFromDenseMatric_helper(const void* data, int num_row, int num_col, in
 }
 
 std::function<std::vector<double>(int row_idx)>
-RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_type, int is_row_major) {
+RowFunctionFromDenseMatrix(const void* data, int num_row, int num_col, int data_type, int is_row_major) {
   if (data_type == C_API_DTYPE_FLOAT32) {
-    return RowFunctionFromDenseMatric_helper<float>(data, num_row, num_col, is_row_major);
+    return RowFunctionFromDenseMatrix_helper<float>(data, num_row, num_col, is_row_major);
   } else if (data_type == C_API_DTYPE_FLOAT64) {
-    return RowFunctionFromDenseMatric_helper<double>(data, num_row, num_col, is_row_major);
+    return RowFunctionFromDenseMatrix_helper<double>(data, num_row, num_col, is_row_major);
   }
-  Log::Fatal("Unknown data type in RowFunctionFromDenseMatric");
+  Log::Fatal("Unknown data type in RowFunctionFromDenseMatrix");
   return nullptr;
 }
 
 std::function<std::vector<std::pair<int, double>>(int row_idx)>
-RowPairFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_type, int is_row_major) {
-  auto inner_function = RowFunctionFromDenseMatric(data, num_row, num_col, data_type, is_row_major);
+RowPairFunctionFromDenseMatrix(const void* data, int num_row, int num_col, int data_type, int is_row_major) {
+  auto inner_function = RowFunctionFromDenseMatrix(data, num_row, num_col, data_type, is_row_major);
   if (inner_function != nullptr) {
     return [inner_function] (int row_idx) {
       auto raw_values = inner_function(row_idx);
@@ -2828,7 +2952,7 @@ RowPairFunctionFromDenseMatric(const void* data, int num_row, int num_col, int d
 std::function<std::vector<std::pair<int, double>>(int row_idx)>
 RowPairFunctionFromDenseRows(const void** data, int num_col, int data_type) {
   return [=](int row_idx) {
-    auto inner_function = RowFunctionFromDenseMatric(data[row_idx], 1, num_col, data_type, /* is_row_major */ true);
+    auto inner_function = RowFunctionFromDenseMatrix(data[row_idx], 1, num_col, data_type, /* is_row_major */ true);
     auto raw_values = inner_function(0);
     std::vector<std::pair<int, double>> ret;
     ret.reserve(raw_values.size());

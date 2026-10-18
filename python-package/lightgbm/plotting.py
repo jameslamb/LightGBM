@@ -1,14 +1,15 @@
 # coding: utf-8
 """Plotting library."""
+
 import math
 from copy import deepcopy
 from io import BytesIO
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
 from .basic import Booster, _data_from_pandas, _is_zero, _log_warning, _MissingType
-from .compat import GRAPHVIZ_INSTALLED, MATPLOTLIB_INSTALLED, pd_DataFrame
+from .compat import pd_DataFrame
 from .sklearn import LGBMModel
 
 __all__ = [
@@ -18,6 +19,9 @@ __all__ = [
     "plot_split_value_histogram",
     "plot_tree",
 ]
+
+if TYPE_CHECKING:
+    import matplotlib
 
 
 def _check_not_tuple_of_2_elements(obj: Any, obj_name: str) -> None:
@@ -32,7 +36,7 @@ def _float2str(value: float, precision: Optional[int]) -> str:
 
 def plot_importance(
     booster: Union[Booster, LGBMModel],
-    ax=None,
+    ax: "Optional[matplotlib.axes.Axes]" = None,
     height: float = 0.2,
     xlim: Optional[Tuple[float, float]] = None,
     ylim: Optional[Tuple[float, float]] = None,
@@ -99,10 +103,10 @@ def plot_importance(
     ax : matplotlib.axes.Axes
         The plot with model's feature importances.
     """
-    if MATPLOTLIB_INSTALLED:
-        import matplotlib.pyplot as plt
-    else:
-        raise ImportError("You must install matplotlib and restart your session to plot importance.")
+    try:
+        import matplotlib.pyplot as plt  # noqa: PLC0415
+    except ImportError as err:
+        raise ImportError("You must install matplotlib and restart your session to plot importance.") from err
 
     if isinstance(booster, LGBMModel):
         if importance_type == "auto":
@@ -120,12 +124,17 @@ def plot_importance(
     if not len(importance):
         raise ValueError("Booster's feature_importance is empty.")
 
-    tuples = sorted(zip(feature_name, importance), key=lambda x: x[1])
+    tuples = sorted(zip(feature_name, importance, strict=True), key=lambda x: x[1])
     if ignore_zero:
         tuples = [x for x in tuples if x[1] > 0]
     if max_num_features is not None and max_num_features > 0:
         tuples = tuples[-max_num_features:]
-    labels, values = zip(*tuples)
+    if not tuples:
+        raise ValueError(
+            "No non-zero feature importances found. The model may have no splits. "
+            "Use ignore_zero=False to show all features."
+        )
+    labels, values = zip(*tuples, strict=True)
 
     if ax is None:
         if figsize is not None:
@@ -135,8 +144,8 @@ def plot_importance(
     ylocs = np.arange(len(values))
     ax.barh(ylocs, values, align="center", height=height, **kwargs)
 
-    for x, y in zip(values, ylocs):
-        ax.text(x + 1, y, _float2str(x, precision) if importance_type == "gain" else x, va="center")
+    for x, y in zip(values, ylocs, strict=True):
+        ax.text(x + 1, float(y), _float2str(x, precision) if importance_type == "gain" else x, va="center")
 
     ax.set_yticks(ylocs)
     ax.set_yticklabels(labels)
@@ -168,7 +177,7 @@ def plot_split_value_histogram(
     booster: Union[Booster, LGBMModel],
     feature: Union[int, str],
     bins: Union[int, str, None] = None,
-    ax=None,
+    ax: "Optional[matplotlib.axes.Axes]" = None,
     width_coef: float = 0.8,
     xlim: Optional[Tuple[float, float]] = None,
     ylim: Optional[Tuple[float, float]] = None,
@@ -230,11 +239,13 @@ def plot_split_value_histogram(
     ax : matplotlib.axes.Axes
         The plot with specified model's feature split value histogram.
     """
-    if MATPLOTLIB_INSTALLED:
-        import matplotlib.pyplot as plt
-        from matplotlib.ticker import MaxNLocator
-    else:
-        raise ImportError("You must install matplotlib and restart your session to plot split value histogram.")
+    try:
+        import matplotlib.pyplot as plt  # noqa: PLC0415
+        from matplotlib.ticker import MaxNLocator  # noqa: PLC0415
+    except ImportError as err:
+        raise ImportError(
+            "You must install matplotlib and restart your session to plot split value histogram."
+        ) from err
 
     if isinstance(booster, LGBMModel):
         booster = booster.booster_
@@ -243,7 +254,7 @@ def plot_split_value_histogram(
 
     hist, split_bins = booster.get_split_value_histogram(feature=feature, bins=bins, xgboost_style=False)
     if np.count_nonzero(hist) == 0:
-        raise ValueError("Cannot plot split value histogram, " f"because feature {feature} was not used in splitting")
+        raise ValueError(f"Cannot plot split value histogram, because feature {feature} was not used in splitting")
     width = width_coef * (split_bins[1] - split_bins[0])
     centred = (split_bins[:-1] + split_bins[1:]) / 2
 
@@ -284,7 +295,7 @@ def plot_metric(
     booster: Union[Dict, LGBMModel],
     metric: Optional[str] = None,
     dataset_names: Optional[List[str]] = None,
-    ax=None,
+    ax: "Optional[matplotlib.axes.Axes]" = None,
     xlim: Optional[Tuple[float, float]] = None,
     ylim: Optional[Tuple[float, float]] = None,
     title: Optional[str] = "Metric during training",
@@ -337,10 +348,10 @@ def plot_metric(
     ax : matplotlib.axes.Axes
         The plot with metric's history over the training.
     """
-    if MATPLOTLIB_INSTALLED:
-        import matplotlib.pyplot as plt
-    else:
-        raise ImportError("You must install matplotlib and restart your session to plot metric.")
+    try:
+        import matplotlib.pyplot as plt  # noqa: PLC0415
+    except ImportError as err:
+        raise ImportError("You must install matplotlib and restart your session to plot metric.") from err
 
     if isinstance(booster, LGBMModel):
         eval_results = deepcopy(booster.evals_result_)
@@ -421,6 +432,7 @@ def plot_metric(
 
 
 def _determine_direction_for_numeric_split(
+    *,
     fval: float,
     threshold: float,
     missing_type_str: str,
@@ -446,6 +458,7 @@ def _determine_direction_for_categorical_split(fval: float, thresholds: str) -> 
 
 
 def _to_graphviz(
+    *,
     tree_info: Dict[str, Any],
     show_info: List[str],
     feature_names: Union[List[str], None],
@@ -461,10 +474,10 @@ def _to_graphviz(
     See:
       - https://graphviz.readthedocs.io/en/stable/api.html#digraph
     """
-    if GRAPHVIZ_INSTALLED:
-        from graphviz import Digraph
-    else:
-        raise ImportError("You must install graphviz and restart your session to plot tree.")
+    try:
+        from graphviz import Digraph  # noqa: PLC0415
+    except ImportError as err:
+        raise ImportError("You must install graphviz and restart your session to plot tree.") from err
 
     def add(
         root: Dict[str, Any], total_count: int, parent: Optional[str], decision: Optional[str], highlight: bool
@@ -735,7 +748,7 @@ def create_tree_digraph(
 
 def plot_tree(
     booster: Union[Booster, LGBMModel],
-    ax=None,
+    ax: "Optional[matplotlib.axes.Axes]" = None,
     tree_index: int = 0,
     figsize: Optional[Tuple[float, float]] = None,
     dpi: Optional[int] = None,
@@ -805,11 +818,11 @@ def plot_tree(
     ax : matplotlib.axes.Axes
         The plot with single tree.
     """
-    if MATPLOTLIB_INSTALLED:
-        import matplotlib.image
-        import matplotlib.pyplot as plt
-    else:
-        raise ImportError("You must install matplotlib and restart your session to plot tree.")
+    try:
+        import matplotlib.image  # noqa: PLC0415
+        import matplotlib.pyplot as plt  # noqa: PLC0415
+    except ImportError as err:
+        raise ImportError("You must install matplotlib and restart your session to plot tree.") from err
 
     if ax is None:
         if figsize is not None:

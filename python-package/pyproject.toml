@@ -3,97 +3,111 @@
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
     "Natural Language :: English",
     "Operating System :: MacOS",
     "Operating System :: Microsoft :: Windows",
     "Operating System :: POSIX",
     "Operating System :: Unix",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Scientific/Engineering :: Artificial Intelligence"
 ]
 dependencies = [
-    "dataclasses ; python_version < '3.7'",
-    "numpy",
+    "narwhals>=1.15",
+    "numpy>=1.21.3",
     "scipy"
 ]
-description = "LightGBM Python Package"
-license = {file = "LICENSE"}
+description = "LightGBM Python-package"
+license = "MIT"
+license-files = [
+    "LICENSE"
+]
 maintainers = [
   {name = "Yu Shi", email = "yushi@microsoft.com"}
 ]
 name = "lightgbm"
 readme = "README.rst"
-requires-python = ">=3.6"
-version = "4.3.0.99"
+requires-python = ">=3.10"
+version = "4.7.0.99"
 
 [project.optional-dependencies]
 arrow = [
-    "cffi>=1.15.1",
-    "pyarrow>=6.0.1"
+    "narwhals[pyarrow]",
+    "pyarrow>=16.0.0"
 ]
 dask = [
     "dask[array,dataframe,distributed]>=2.0.0",
-    "pandas>=0.24.0"
+    "narwhals[pandas]",
+    "pandas>=1.3.4"
 ]
 pandas = [
-    "pandas>=0.24.0"
+    "narwhals[pandas]",
+    "pandas>=1.3.4"
+]
+plotting = [
+    "graphviz",
+    "matplotlib"
+]
+polars = [
+    "narwhals[polars]",
+    "polars>=1.0.0"
 ]
 scikit-learn = [
-    "scikit-learn!=0.22.0"
+    "scikit-learn>=1.0.2"
 ]
 
 [project.urls]
-homepage = "https://github.com/microsoft/LightGBM"
+homepage = "https://github.com/lightgbm-org/LightGBM"
 documentation = "https://lightgbm.readthedocs.io/en/latest/"
-repository = "https://github.com/microsoft/LightGBM.git"
-changelog = "https://github.com/microsoft/LightGBM/releases"
+repository = "https://github.com/lightgbm-org/LightGBM.git"
+changelog = "https://github.com/lightgbm-org/LightGBM/releases"
 
 # start:build-system
 [build-system]
 
-requires = ["scikit-build-core>=0.4.4"]
+requires = ["scikit-build-core>=0.11.0"]
 build-backend = "scikit_build_core.build"
 
 # based on https://github.com/scikit-build/scikit-build-core#configuration
 [tool.scikit-build]
-
-cmake.minimum-version = "3.18"
-ninja.minimum-version = "1.11"
+ninja.version = ">=1.11"
 ninja.make-fallback = true
-cmake.args = [
-    "-D__BUILD_FOR_PYTHON:BOOL=ON"
-]
-cmake.verbose = false
-cmake.build-type = "Release"
+build.verbose = false
+build.targets = ["_lightgbm"]
+install.strip = true
 logging.level = "INFO"
 sdist.reproducible = true
 wheel.py-api = "py3"
 experimental = false
-strict-config = true
-minimum-version = "0.4.4"
+strict-config = false
+minimum-version = "build-system.requires"
+
+[tool.scikit-build.cmake]
+version = "CMakeLists.txt"
+build-type = "Release"
+
+[tool.scikit-build.cmake.define]
+__BUILD_FOR_PYTHON = "ON"
 
 # end:build-system
 
-[tool.isort]
-include_trailing_comma = true
-line_length = 120
-# "vertical hanging indent", to match what ruff-format does
-# ref: https://pycqa.github.io/isort/docs/configuration/multi_line_output_modes.html#3-vertical-hanging-indent
-multi_line_output = 3
-skip_glob = [
-    "*/external_libs/*",
-    "*/lightgbm-python/*",
-]
-
 [tool.mypy]
-exclude = 'build/*|compile/*|docs/*|examples/*|external_libs/*|lightgbm-python/*|tests/*'
+disallow_untyped_defs = true
+exclude = 'build/*|compile/*|docs/*|examples/*|external_libs/*|lightgbm-python/*|.pixi/*|tests/*'
 ignore_missing_imports = true
+
+[tool.rstcheck]
+report_level = "WARNING"
+ignore_directives = [
+    "autoclass",
+    "autofunction",
+    "autosummary",
+    "doxygenfile"
+]
 
 [tool.ruff]
 exclude = [
@@ -105,7 +119,7 @@ exclude = [
 line-length = 120
 
 # this should be set to the oldest version of python LightGBM supports
-target-version = "py37"
+target-version = "py310"
 
 [tool.ruff.format]
 docstring-code-format = false
@@ -135,10 +149,12 @@ ignore = [
     "PLR1714",
     # (pylint) Magic value used in comparison
     "PLR2004",
-    # (pylint) for loop veriable overwritten by assignment target
+    # (pylint) for loop variable overwritten by assignment target
     "PLW2901",
     # (pylint) use 'elif' instead of 'else' then 'if', to reduce indentation
-    "PLR5501"
+    "PLR5501",
+    # (flake8-pytest-style) `scope='function'` is implied in `@pytest.fixture()`
+    "PT003"
 ]
 select = [
     # flake8-bugbear
@@ -147,23 +163,40 @@ select = [
     "C4",
     # pydocstyle
     "D",
-    # pycodestyle
+    # pycodestyle (errors)
     "E",
     # pyflakes
     "F",
+    # isort
+    "I",
+    # NumPy-specific rules
+    "NPY",
     # pylint
     "PL",
+    # flake8-pytest-style
+    "PT",
     # flake8-return: unnecessary assignment before return
     "RET504",
+    # flake8-return: superfluous-else-raise
+    "RET506",
     # flake8-simplify: use dict.get() instead of an if-else block
     "SIM401",
     # flake8-print
     "T",
+    # pycodestyle (warnings)
+    "W",
 ]
 
+[tool.ruff.lint.flake8-pytest-style]
+raises-extend-require-match-for = ["*Exception", "*Error"]
+
 [tool.ruff.lint.per-file-ignores]
+".ci/create-nuget.py" = [
+    # (flake8-print) flake8-print
+    "T201"
+]
 "docs/conf.py" = [
-    # (flake8-bugbear) raise exceptions with "raise ... from errr"
+    # (flake8-bugbear) raise exceptions with "raise ... from err"
     "B904",
     # (flake8-print) flake8-print
     "T"
@@ -181,6 +214,8 @@ select = [
 "tests/*" = [
     # (flake8-bugbear) Found useless expression
     "B018",
+    # (pycodestyle) Module level import not at top of file
+    "E402",
     # pydocstyle
     "D",
     # flake8-print
@@ -189,3 +224,6 @@ select = [
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"
+
+[tool.ruff.lint.isort]
+known-first-party = ["lightgbm"]

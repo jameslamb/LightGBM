@@ -1,14 +1,16 @@
 /*!
- * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Copyright (c) 2016-2026 Microsoft Corporation. All rights reserved.
+ * Copyright (c) 2016-2026 The LightGBM developers. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#ifndef LIGHTGBM_BIN_H_
-#define LIGHTGBM_BIN_H_
+#ifndef LIGHTGBM_INCLUDE_LIGHTGBM_BIN_H_
+#define LIGHTGBM_INCLUDE_LIGHTGBM_BIN_H_
 
 #include <LightGBM/meta.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/file_io.h>
 
+#include <cstdint>
 #include <limits>
 #include <string>
 #include <functional>
@@ -144,7 +146,7 @@ class BinMapper {
 
   /*!
   * \brief Maximum categorical value
-  * \return Maximum categorical value for categorical features, 0 for numerical features  
+  * \return Maximum categorical value for categorical features, 0 for numerical features
   */
   inline int MaxCatValue() const {
     if (bin_2_categorical_.size() == 0) {
@@ -650,4 +652,4 @@ inline uint32_t BinMapper::ValueToBin(double value) const {
 
 }  // namespace LightGBM
 
-#endif   // LightGBM_BIN_H_
+#endif   // LIGHTGBM_INCLUDE_LIGHTGBM_BIN_H_

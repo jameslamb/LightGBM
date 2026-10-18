@@ -1,9 +1,10 @@
 /*!
- * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Copyright (c) 2016-2026 Microsoft Corporation. All rights reserved.
+ * Copyright (c) 2016-2026 The LightGBM developers. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#ifndef LIGHTGBM_TREELEARNER_PARALLEL_TREE_LEARNER_H_
-#define LIGHTGBM_TREELEARNER_PARALLEL_TREE_LEARNER_H_
+#ifndef LIGHTGBM_SRC_TREELEARNER_PARALLEL_TREE_LEARNER_H_
+#define LIGHTGBM_SRC_TREELEARNER_PARALLEL_TREE_LEARNER_H_
 
 #include <LightGBM/network.h>
 #include <LightGBM/utils/array_args.h>
@@ -47,7 +48,7 @@ class FeatureParallelTreeLearner: public TREELEARNER_T {
 /*!
 * \brief Data parallel learning algorithm.
 *        Workers use local data to construct histograms locally, then sync up global histograms.
-*        It is recommonded used when #data is large or #feature is small
+*        It is recommended used when #data is large or #feature is small
 */
 template <typename TREELEARNER_T>
 class DataParallelTreeLearner: public TREELEARNER_T {
@@ -148,12 +149,12 @@ class VotingParallelTreeLearner: public TREELEARNER_T {
   * \brief Perform global voting
   * \param leaf_idx index of leaf
   * \param splits All splits from local voting
-  * \param out Result of gobal voting, only store feature indices
+  * \param out Result of global voting, only store feature indices
   */
   void GlobalVoting(int leaf_idx, const std::vector<LightSplitInfo>& splits,
     std::vector<int>* out);
   /*!
-  * \brief Copy local histgram to buffer
+  * \brief Copy local histogram to buffer
   * \param smaller_top_features Selected features for smaller leaf
   * \param larger_top_features Selected features for larger leaf
   */
@@ -183,9 +184,9 @@ class VotingParallelTreeLearner: public TREELEARNER_T {
   std::vector<comm_size_t> block_start_;
   /*! \brief Block size for reduce scatter */
   std::vector<comm_size_t> block_len_;
-  /*! \brief Read positions for feature histgrams at smaller leaf */
+  /*! \brief Read positions for feature histograms at smaller leaf */
   std::vector<comm_size_t> smaller_buffer_read_start_pos_;
-  /*! \brief Read positions for feature histgrams at larger leaf */
+  /*! \brief Read positions for feature histograms at larger leaf */
   std::vector<comm_size_t> larger_buffer_read_start_pos_;
   /*! \brief Size for reduce scatter */
   comm_size_t reduce_scatter_size_;
@@ -232,4 +233,4 @@ inline void SyncUpGlobalBestSplit(char* input_buffer_, char* output_buffer_, Spl
 }
 
 }  // namespace LightGBM
-#endif   // LightGBM_TREELEARNER_PARALLEL_TREE_LEARNER_H_
+#endif   // LIGHTGBM_SRC_TREELEARNER_PARALLEL_TREE_LEARNER_H_

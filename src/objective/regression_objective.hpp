@@ -1,9 +1,10 @@
 /*!
- * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Copyright (c) 2016-2026 Microsoft Corporation. All rights reserved.
+ * Copyright (c) 2016-2026 The LightGBM developers. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#ifndef LIGHTGBM_OBJECTIVE_REGRESSION_OBJECTIVE_HPP_
-#define LIGHTGBM_OBJECTIVE_REGRESSION_OBJECTIVE_HPP_
+#ifndef LIGHTGBM_SRC_OBJECTIVE_REGRESSION_OBJECTIVE_HPP_
+#define LIGHTGBM_SRC_OBJECTIVE_REGRESSION_OBJECTIVE_HPP_
 
 #include <LightGBM/meta.h>
 #include <LightGBM/objective_function.h>
@@ -77,13 +78,13 @@ namespace LightGBM {
     CHECK_LT(threshold, weighted_cdf[pos]);                                   \
     T v1 = data_reader(sorted_idx[pos - 1]);                                  \
     T v2 = data_reader(sorted_idx[pos]);                                      \
-    if (weighted_cdf[pos + 1] - weighted_cdf[pos] >= 1.0f) {                  \
-      return static_cast<T>((threshold - weighted_cdf[pos]) /                 \
-                                (weighted_cdf[pos + 1] - weighted_cdf[pos]) * \
+    if (weighted_cdf[pos] - weighted_cdf[pos - 1] >= 1.0) {                   \
+      return static_cast<T>((threshold - weighted_cdf[pos - 1]) /             \
+                                (weighted_cdf[pos] - weighted_cdf[pos - 1]) * \
                                 (v2 - v1) +                                   \
                             v1);                                              \
     } else {                                                                  \
-      return static_cast<T>(v2);                                              \
+      return static_cast<T>(v1);                                              \
     }                                                                         \
   }\
 
@@ -760,4 +761,4 @@ class RegressionTweedieLoss: public RegressionPoissonLoss {
 #undef WeightedPercentileFun
 
 }  // namespace LightGBM
-#endif   // LightGBM_OBJECTIVE_REGRESSION_OBJECTIVE_HPP_
+#endif   // LIGHTGBM_SRC_OBJECTIVE_REGRESSION_OBJECTIVE_HPP_

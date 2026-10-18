@@ -5,16 +5,16 @@ import pytest
 from sklearn.model_selection import train_test_split
 
 import lightgbm as lgb
-from lightgbm.compat import GRAPHVIZ_INSTALLED, MATPLOTLIB_INSTALLED, PANDAS_INSTALLED, pd_DataFrame
-
-if MATPLOTLIB_INSTALLED:
-    import matplotlib
-
-    matplotlib.use("Agg")
-if GRAPHVIZ_INSTALLED:
-    import graphviz
 
 from .utils import load_breast_cancer, make_synthetic_regression
+
+
+@pytest.fixture(scope="function")
+def matplotlib():
+    mpl = pytest.importorskip("matplotlib")
+    # use non-interactive, in-memory renderer
+    mpl.use("Agg")
+    return mpl
 
 
 @pytest.fixture(scope="module")
@@ -44,8 +44,7 @@ def params():
     return {"objective": "binary", "verbose": -1, "num_leaves": 3}
 
 
-@pytest.mark.skipif(not MATPLOTLIB_INSTALLED, reason="matplotlib is not installed")
-def test_plot_importance(params, breast_cancer_split, train_data):
+def test_plot_importance(params, breast_cancer_split, train_data, matplotlib):
     X_train, _, y_train, _ = breast_cancer_split
 
     gbm0 = lgb.train(params, train_data, num_boost_round=10)
@@ -88,6 +87,53 @@ def test_plot_importance(params, breast_cancer_split, train_data):
     assert ax3.get_ylabel() == "y @importance_type@"
     assert len(ax3.patches) <= 30
 
+    ax4 = lgb.plot_importance(gbm0, title=None, xlabel=None, ylabel=None, xlim=(0, 30))
+    assert isinstance(ax4, matplotlib.axes.Axes)
+    assert ax4.get_title() == ""
+    assert ax4.get_xlabel() == ""
+    assert ax4.get_ylabel() == ""
+    assert ax4.get_xlim() == (0, 30)
+    assert len(ax4.patches) <= 30
+
+    with pytest.raises(TypeError, match="xlim must be a tuple of 2 elements."):
+        lgb.plot_importance(gbm0, title=None, xlabel=None, ylabel=None, xlim="not a tuple")
+
+    ax5 = lgb.plot_importance(gbm0, title=None, xlabel=None, ylabel=None, ylim=(0, 30))
+    assert isinstance(ax5, matplotlib.axes.Axes)
+    assert ax5.get_title() == ""
+    assert ax5.get_xlabel() == ""
+    assert ax5.get_ylabel() == ""
+    assert ax5.get_ylim() == (0, 30)
+    assert len(ax5.patches) <= 30
+
+    with pytest.raises(TypeError, match="ylim must be a tuple of 2 elements."):
+        lgb.plot_importance(gbm0, title=None, xlabel=None, ylabel=None, ylim="not a tuple")
+
+    ax6 = lgb.plot_importance(gbm0, title=None, xlabel=None, ylabel=None, figsize=(0, 30))
+    assert isinstance(ax6, matplotlib.axes.Axes)
+    assert ax6.get_title() == ""
+    assert ax6.get_xlabel() == ""
+    assert ax6.get_ylabel() == ""
+    assert list(ax6.get_figure().get_size_inches()) == [0, 30]
+    assert len(ax6.patches) <= 30
+
+    with pytest.raises(TypeError, match="figsize must be a tuple of 2 elements."):
+        lgb.plot_importance(gbm0, title=None, xlabel=None, ylabel=None, figsize="not a tuple")
+
+    # test max_num_features parameter
+    total_features = len(gbm0.feature_importance())
+    assert total_features > 5, "model must have more than 5 features to test max_num_features"
+    ax7 = lgb.plot_importance(gbm0, max_num_features=5)
+    assert isinstance(ax7, matplotlib.axes.Axes)
+    assert len(ax7.patches) == 5
+    # verify the 5 displayed features are the top 5 by importance
+    importance = gbm0.feature_importance()
+    feature_names = gbm0.feature_name()
+    sorted_pairs = sorted(zip(feature_names, importance, strict=True), key=lambda x: x[1])
+    top5_names = [name for name, _ in sorted_pairs[-5:]]
+    displayed_labels = [label.get_text() for label in ax7.get_yticklabels()]
+    assert displayed_labels == top5_names
+
     gbm2 = lgb.LGBMClassifier(n_estimators=10, num_leaves=3, verbose=-1, importance_type="gain")
     gbm2.fit(X_train, y_train)
 
@@ -108,8 +154,26 @@ def test_plot_importance(params, breast_cancer_split, train_data):
     assert first_bar1 != first_bar3
 
 
-@pytest.mark.skipif(not MATPLOTLIB_INSTALLED, reason="matplotlib is not installed")
-def test_plot_split_value_histogram(params, breast_cancer_split, train_data):
+def test_plot_importance_zero_splits(matplotlib):
+    X, y = load_breast_cancer(return_X_y=True)
+    model = lgb.train(
+        params={
+            "min_data_in_bin": X.shape[0] + 1,
+            "objective": "regression",
+            "verbose": -1,
+        },
+        train_set=lgb.Dataset(X, label=y),
+        num_boost_round=1,
+    )
+    with pytest.raises(ValueError, match="No non-zero feature importances found"):
+        lgb.plot_importance(model)
+    # ignore_zero=False should still produce a valid plot
+    ax = lgb.plot_importance(model, ignore_zero=False)
+    assert isinstance(ax, matplotlib.axes.Axes)
+    assert len(ax.patches) == X.shape[1]
+
+
+def test_plot_split_value_histogram(params, breast_cancer_split, train_data, matplotlib):
     X_train, _, y_train, _ = breast_cancer_split
 
     gbm0 = lgb.train(params, train_data, num_boost_round=10)
@@ -154,19 +218,40 @@ def test_plot_split_value_histogram(params, breast_cancer_split, train_data):
     assert ax2.patches[2].get_facecolor() == (0, 0.5, 0, 1.0)  # g
     assert ax2.patches[3].get_facecolor() == (0, 0, 1.0, 1.0)  # b
 
-    with pytest.raises(ValueError):
+    # test xlim parameter
+    ax3 = lgb.plot_split_value_histogram(gbm0, 27, xlim=(0, 100), title=None, xlabel=None, ylabel=None)
+    assert isinstance(ax3, matplotlib.axes.Axes)
+    assert ax3.get_title() == ""
+    assert ax3.get_xlabel() == ""
+    assert ax3.get_ylabel() == ""
+    assert ax3.get_xlim() == (0, 100)
+
+    with pytest.raises(TypeError, match="xlim must be a tuple of 2 elements."):
+        lgb.plot_split_value_histogram(gbm0, 27, xlim="not a tuple")
+
+    ax4 = lgb.plot_split_value_histogram(gbm0, 27, ylim=(0, 100), title=None, xlabel=None, ylabel=None)
+    assert isinstance(ax4, matplotlib.axes.Axes)
+    assert ax4.get_title() == ""
+    assert ax4.get_xlabel() == ""
+    assert ax4.get_ylabel() == ""
+    assert ax4.get_ylim() == (0, 100)
+
+    with pytest.raises(TypeError, match="ylim must be a tuple of 2 elements."):
+        lgb.plot_split_value_histogram(gbm0, 27, ylim="not a tuple")
+
+    with pytest.raises(
+        ValueError, match="Cannot plot split value histogram, because feature 0 was not used in splitting"
+    ):
         lgb.plot_split_value_histogram(gbm0, 0)  # was not used in splitting
 
 
-@pytest.mark.skipif(
-    not MATPLOTLIB_INSTALLED or not GRAPHVIZ_INSTALLED, reason="matplotlib or graphviz is not installed"
-)
-def test_plot_tree(breast_cancer_split):
+def test_plot_tree(breast_cancer_split, matplotlib):
+    pytest.importorskip("graphviz")
     X_train, _, y_train, _ = breast_cancer_split
     gbm = lgb.LGBMClassifier(n_estimators=10, num_leaves=3, verbose=-1)
     gbm.fit(X_train, y_train)
 
-    with pytest.raises(IndexError):
+    with pytest.raises(IndexError, match="tree_index is out of range."):
         lgb.plot_tree(gbm, tree_index=83)
 
     ax = lgb.plot_tree(gbm, tree_index=3, figsize=(15, 8), show_info=["split_gain"])
@@ -176,15 +261,15 @@ def test_plot_tree(breast_cancer_split):
     assert int(h) == 8
 
 
-@pytest.mark.skipif(not GRAPHVIZ_INSTALLED, reason="graphviz is not installed")
-def test_create_tree_digraph(breast_cancer_split):
+def test_create_tree_digraph(tmp_path, breast_cancer_split):
+    graphviz = pytest.importorskip("graphviz")
     X_train, _, y_train, _ = breast_cancer_split
 
     constraints = [-1, 1] * int(X_train.shape[1] / 2)
     gbm = lgb.LGBMClassifier(n_estimators=10, num_leaves=3, verbose=-1, monotone_constraints=constraints)
     gbm.fit(X_train, y_train)
 
-    with pytest.raises(IndexError):
+    with pytest.raises(IndexError, match="tree_index is out of range."):
         lgb.create_tree_digraph(gbm, tree_index=83)
 
     graph = lgb.create_tree_digraph(
@@ -193,6 +278,7 @@ def test_create_tree_digraph(breast_cancer_split):
         show_info=["split_gain", "internal_value", "internal_weight"],
         name="Tree4",
         node_attr={"color": "red"},
+        directory=tmp_path,
     )
     graph.render(view=False)
     assert isinstance(graph, graphviz.Digraph)
@@ -212,8 +298,8 @@ def test_create_tree_digraph(breast_cancer_split):
     assert "count" not in graph_body
 
 
-@pytest.mark.skipif(not GRAPHVIZ_INSTALLED, reason="graphviz is not installed")
-def test_tree_with_categories_below_max_category_values():
+def test_tree_with_categories_below_max_category_values(tmp_path):
+    graphviz = pytest.importorskip("graphviz")
     X_train, y_train = _categorical_data(2, 10)
     params = {
         "n_estimators": 10,
@@ -228,7 +314,7 @@ def test_tree_with_categories_below_max_category_values():
     gbm = lgb.LGBMClassifier(**params)
     gbm.fit(X_train, y_train)
 
-    with pytest.raises(IndexError):
+    with pytest.raises(IndexError, match="tree_index is out of range."):
         lgb.create_tree_digraph(gbm, tree_index=83)
 
     graph = lgb.create_tree_digraph(
@@ -238,6 +324,7 @@ def test_tree_with_categories_below_max_category_values():
         name="Tree4",
         node_attr={"color": "red"},
         max_category_values=10,
+        directory=tmp_path,
     )
     graph.render(view=False)
     assert isinstance(graph, graphviz.Digraph)
@@ -256,8 +343,8 @@ def test_tree_with_categories_below_max_category_values():
     assert "||...||" not in graph_body
 
 
-@pytest.mark.skipif(not GRAPHVIZ_INSTALLED, reason="graphviz is not installed")
-def test_tree_with_categories_above_max_category_values():
+def test_tree_with_categories_above_max_category_values(tmp_path):
+    graphviz = pytest.importorskip("graphviz")
     X_train, y_train = _categorical_data(20, 30)
     params = {
         "n_estimators": 10,
@@ -272,7 +359,7 @@ def test_tree_with_categories_above_max_category_values():
     gbm = lgb.LGBMClassifier(**params)
     gbm.fit(X_train, y_train)
 
-    with pytest.raises(IndexError):
+    with pytest.raises(IndexError, match="tree_index is out of range."):
         lgb.create_tree_digraph(gbm, tree_index=83)
 
     graph = lgb.create_tree_digraph(
@@ -282,6 +369,7 @@ def test_tree_with_categories_above_max_category_values():
         name="Tree4",
         node_attr={"color": "red"},
         max_category_values=4,
+        directory=tmp_path,
     )
     graph.render(view=False)
     assert isinstance(graph, graphviz.Digraph)
@@ -303,8 +391,6 @@ def test_tree_with_categories_above_max_category_values():
 @pytest.mark.parametrize("use_missing", [True, False])
 @pytest.mark.parametrize("zero_as_missing", [True, False])
 def test_numeric_split_direction(use_missing, zero_as_missing):
-    if use_missing and zero_as_missing:
-        pytest.skip("use_missing and zero_as_missing both set to True")
     X, y = make_synthetic_regression()
     rng = np.random.RandomState(0)
     zero_mask = rng.rand(X.shape[0]) < 0.05
@@ -326,7 +412,10 @@ def test_numeric_split_direction(use_missing, zero_as_missing):
     node = bst.dump_model()["tree_info"][0]["tree_structure"]
     while "decision_type" in node:
         direction = lgb.plotting._determine_direction_for_numeric_split(
-            case_with_zero[0][node["split_feature"]], node["threshold"], node["missing_type"], node["default_left"]
+            fval=case_with_zero[0][node["split_feature"]],
+            threshold=node["threshold"],
+            missing_type_str=node["missing_type"],
+            default_left=node["default_left"],
         )
         node = node["left_child"] if direction == "left" else node["right_child"]
     assert node["leaf_index"] == expected_leaf_zero
@@ -337,15 +426,23 @@ def test_numeric_split_direction(use_missing, zero_as_missing):
         node = bst.dump_model()["tree_info"][0]["tree_structure"]
         while "decision_type" in node:
             direction = lgb.plotting._determine_direction_for_numeric_split(
-                case_with_nan[0][node["split_feature"]], node["threshold"], node["missing_type"], node["default_left"]
+                fval=case_with_nan[0][node["split_feature"]],
+                threshold=node["threshold"],
+                missing_type_str=node["missing_type"],
+                default_left=node["default_left"],
             )
             node = node["left_child"] if direction == "left" else node["right_child"]
         assert node["leaf_index"] == expected_leaf_nan
-        assert expected_leaf_zero != expected_leaf_nan
+        if zero_as_missing:
+            # zeros treated as missing -> same leaf as NaN
+            assert expected_leaf_zero == expected_leaf_nan
+        else:
+            # zeros are regular values -> different leaf from NaN
+            assert expected_leaf_zero != expected_leaf_nan
 
 
-@pytest.mark.skipif(not GRAPHVIZ_INSTALLED, reason="graphviz is not installed")
 def test_example_case_in_tree_digraph():
+    pytest.importorskip("graphviz")
     rng = np.random.RandomState(0)
     x1 = rng.rand(100)
     cat = rng.randint(1, 3, size=x1.size)
@@ -374,10 +471,10 @@ def test_example_case_in_tree_digraph():
             edge_to_node = [e for e in gbody if f"-> split{split_index}" in e]
             if node["decision_type"] == "<=":
                 direction = lgb.plotting._determine_direction_for_numeric_split(
-                    example_case[0][node["split_feature"]],
-                    node["threshold"],
-                    node["missing_type"],
-                    node["default_left"],
+                    fval=example_case[0][node["split_feature"]],
+                    threshold=node["threshold"],
+                    missing_type_str=node["missing_type"],
+                    default_left=node["default_left"],
                 )
             else:
                 makes_categorical_splits = True
@@ -410,25 +507,23 @@ def test_example_case_in_tree_digraph():
     assert makes_categorical_splits
 
 
-@pytest.mark.skipif(not GRAPHVIZ_INSTALLED, reason="graphviz is not installed")
 @pytest.mark.parametrize("input_type", ["array", "dataframe"])
 def test_empty_example_case_on_tree_digraph_raises_error(input_type):
+    pytest.importorskip("graphviz")
     X, y = make_synthetic_regression()
     if input_type == "dataframe":
-        if not PANDAS_INSTALLED:
-            pytest.skip(reason="pandas is not installed")
-        X = pd_DataFrame(X)
+        pd = pytest.importorskip("pandas")
+        X = pd.DataFrame(X)
+        example_case = pd.DataFrame(X[:0])
+    else:
+        example_case = X[:0]
     ds = lgb.Dataset(X, y)
     bst = lgb.train({"num_leaves": 3}, ds, num_boost_round=1)
-    example_case = X[:0]
-    if input_type == "dataframe":
-        example_case = pd_DataFrame(example_case)
     with pytest.raises(ValueError, match="example_case must have a single row."):
         lgb.create_tree_digraph(bst, tree_index=0, example_case=example_case)
 
 
-@pytest.mark.skipif(not MATPLOTLIB_INSTALLED, reason="matplotlib is not installed")
-def test_plot_metrics(params, breast_cancer_split, train_data):
+def test_plot_metrics(params, breast_cancer_split, train_data, matplotlib):
     X_train, X_test, y_train, y_test = breast_cancer_split
     test_data = lgb.Dataset(X_test, y_test, reference=train_data)
     params.update({"metric": {"binary_logloss", "binary_error"}})
@@ -513,3 +608,24 @@ def test_plot_metrics(params, breast_cancer_split, train_data):
     legend_items = ax4.get_legend().get_texts()
     assert len(legend_items) == 1
     assert legend_items[0].get_text() == "valid_0"
+
+    # test xlim parameter
+    ax5 = lgb.plot_metric(evals_result0, metric="binary_logloss", xlim=(0, 15), title=None, xlabel=None, ylabel=None)
+    assert isinstance(ax5, matplotlib.axes.Axes)
+    assert ax5.get_title() == ""
+    assert ax5.get_xlabel() == ""
+    assert ax5.get_ylabel() == ""
+    assert ax5.get_xlim() == (0, 15)
+
+    with pytest.raises(TypeError, match="xlim must be a tuple of 2 elements."):
+        lgb.plot_metric(evals_result0, metric="binary_logloss", xlim="not a tuple")
+
+    ax6 = lgb.plot_metric(evals_result0, metric="binary_logloss", ylim=(0, 15), title=None, xlabel=None, ylabel=None)
+    assert isinstance(ax6, matplotlib.axes.Axes)
+    assert ax6.get_title() == ""
+    assert ax6.get_xlabel() == ""
+    assert ax6.get_ylabel() == ""
+    assert ax6.get_ylim() == (0, 15)
+
+    with pytest.raises(TypeError, match="ylim must be a tuple of 2 elements."):
+        lgb.plot_metric(evals_result0, metric="binary_logloss", ylim="not a tuple")

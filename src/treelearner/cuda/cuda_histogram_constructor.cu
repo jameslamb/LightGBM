@@ -1,7 +1,9 @@
 /*!
- * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
+ * Copyright (c) 2021-2026 Microsoft Corporation. All rights reserved.
+ * Copyright (c) 2021-2026 The LightGBM developers. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for
  * license information.
+ * Modifications Copyright(C) 2023 Advanced Micro Devices, Inc. All rights reserved.
  */
 
 #ifdef USE_CUDA
@@ -9,6 +11,7 @@
 #include "cuda_histogram_constructor.hpp"
 
 #include <LightGBM/cuda/cuda_algorithms.hpp>
+#include <LightGBM/cuda/cuda_rocm_interop.h>
 
 #include <algorithm>
 
@@ -400,7 +403,7 @@ __global__ void CUDAConstructDiscretizedHistogramDenseKernel_GlobalMemory(
   const uint32_t partition_hist_end = column_hist_offsets_full[blockIdx.x + 1];
   const uint32_t num_items_in_partition = (partition_hist_end - partition_hist_start);
   const int num_total_bin = column_hist_offsets_full[gridDim.x];
-  int32_t* shared_hist_packed = global_hist_buffer + (blockIdx.y * num_total_bin + partition_column_start);
+  int32_t* shared_hist_packed = global_hist_buffer + (blockIdx.y * num_total_bin + partition_hist_start);
   const unsigned int thread_idx = threadIdx.x + threadIdx.y * blockDim.x;
   for (unsigned int i = thread_idx; i < num_items_in_partition; i += num_threads_per_block) {
     shared_hist_packed[i] = 0;
@@ -742,7 +745,7 @@ __global__ void FixHistogramKernel(
   const int* cuda_need_fix_histogram_features,
   const uint32_t* cuda_need_fix_histogram_features_num_bin_aligned,
   const CUDALeafSplitsStruct* cuda_smaller_leaf_splits) {
-  __shared__ hist_t shared_mem_buffer[32];
+  __shared__ hist_t shared_mem_buffer[WARPSIZE];
   const unsigned int blockIdx_x = blockIdx.x;
   const int feature_index = cuda_need_fix_histogram_features[blockIdx_x];
   const uint32_t num_bin_aligned = cuda_need_fix_histogram_features_num_bin_aligned[blockIdx_x];
@@ -833,7 +836,7 @@ __global__ void FixHistogramDiscretizedKernel(
   const int* cuda_need_fix_histogram_features,
   const uint32_t* cuda_need_fix_histogram_features_num_bin_aligned,
   const CUDALeafSplitsStruct* cuda_smaller_leaf_splits) {
-  __shared__ int64_t shared_mem_buffer[32];
+  __shared__ int64_t shared_mem_buffer[WARPSIZE];
   const unsigned int blockIdx_x = blockIdx.x;
   const int feature_index = cuda_need_fix_histogram_features[blockIdx_x];
   const uint32_t num_bin_aligned = cuda_need_fix_histogram_features_num_bin_aligned[blockIdx_x];

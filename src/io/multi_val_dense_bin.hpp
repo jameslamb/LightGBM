@@ -1,9 +1,10 @@
 /*!
- * Copyright (c) 2020 Microsoft Corporation. All rights reserved.
+ * Copyright (c) 2020-2026 Microsoft Corporation. All rights reserved.
+ * Copyright (c) 2020-2026 The LightGBM developers. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#ifndef LIGHTGBM_IO_MULTI_VAL_DENSE_BIN_HPP_
-#define LIGHTGBM_IO_MULTI_VAL_DENSE_BIN_HPP_
+#ifndef LIGHTGBM_SRC_IO_MULTI_VAL_DENSE_BIN_HPP_
+#define LIGHTGBM_SRC_IO_MULTI_VAL_DENSE_BIN_HPP_
 
 #include <LightGBM/bin.h>
 #include <LightGBM/utils/openmp_wrapper.h>
@@ -343,7 +344,7 @@ class MultiValDenseBin : public MultiValBin {
   std::vector<uint32_t> offsets_;
   std::vector<VAL_T, Common::AlignmentAllocator<VAL_T, 32>> data_;
 
-  MultiValDenseBin<VAL_T>(const MultiValDenseBin<VAL_T>& other)
+  MultiValDenseBin(const MultiValDenseBin<VAL_T>& other)
     : num_data_(other.num_data_), num_bin_(other.num_bin_), num_feature_(other.num_feature_),
       offsets_(other.offsets_), data_(other.data_) {
   }
@@ -356,4 +357,4 @@ MultiValDenseBin<VAL_T>* MultiValDenseBin<VAL_T>::Clone() {
 
 }  // namespace LightGBM
 
-#endif   // LIGHTGBM_IO_MULTI_VAL_DENSE_BIN_HPP_
+#endif   // LIGHTGBM_SRC_IO_MULTI_VAL_DENSE_BIN_HPP_

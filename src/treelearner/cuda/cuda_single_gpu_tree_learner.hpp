@@ -1,10 +1,11 @@
 /*!
- * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
+ * Copyright (c) 2021-2026 Microsoft Corporation. All rights reserved.
+ * Copyright (c) 2021-2026 The LightGBM developers. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for
  * license information.
  */
-#ifndef LIGHTGBM_TREELEARNER_CUDA_CUDA_SINGLE_GPU_TREE_LEARNER_HPP_
-#define LIGHTGBM_TREELEARNER_CUDA_CUDA_SINGLE_GPU_TREE_LEARNER_HPP_
+#ifndef LIGHTGBM_SRC_TREELEARNER_CUDA_CUDA_SINGLE_GPU_TREE_LEARNER_HPP_
+#define LIGHTGBM_SRC_TREELEARNER_CUDA_CUDA_SINGLE_GPU_TREE_LEARNER_HPP_
 
 #include <memory>
 #include <vector>
@@ -23,7 +24,7 @@ namespace LightGBM {
 
 #define CUDA_SINGLE_GPU_TREE_LEARNER_BLOCK_SIZE (1024)
 
-class CUDASingleGPUTreeLearner: public SerialTreeLearner {
+class CUDASingleGPUTreeLearner: public SerialTreeLearner, public NCCLInfo {
  public:
   explicit CUDASingleGPUTreeLearner(const Config* config, const bool boosting_on_cuda);
 
@@ -52,6 +53,13 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
 
   void ResetBoostingOnGPU(const bool boosting_on_gpu) override;
 
+  void SetNCCLInfo(
+    ncclComm_t nccl_communicator,
+    int nccl_gpu_rank,
+    int local_gpu_rank,
+    int gpu_device_id,
+    data_size_t global_num_data) override;
+
  protected:
   void BeforeTrain() override;
 
@@ -71,16 +79,15 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
 
   #ifdef DEBUG
   void CheckSplitValid(
-    const int left_leaf, const int right_leaf,
-    const double sum_left_gradients, const double sum_right_gradients);
+    const int left_leaf, const int right_leaf);
   #endif  // DEBUG
 
   void RenewDiscretizedTreeLeaves(CUDATree* cuda_tree);
 
   void LaunchCalcLeafValuesGivenGradStat(CUDATree* cuda_tree, const data_size_t* num_data_in_leaf);
 
-  // GPU device ID
-  int gpu_device_id_;
+  void NCCLReduceHistogram();
+
   // number of threads on CPU
   int num_threads_;
 
@@ -103,6 +110,7 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
   std::vector<uint8_t> leaf_best_split_default_left_;
   std::vector<data_size_t> leaf_num_data_;
   std::vector<data_size_t> leaf_data_start_;
+  std::vector<double> leaf_sum_gradients_;
   std::vector<double> leaf_sum_hessians_;
   int smaller_leaf_index_;
   int larger_leaf_index_;
@@ -128,11 +136,21 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
   int* cuda_categorical_bin_offsets_;
 
   /*! \brief gradients on CUDA */
-  score_t* cuda_gradients_;
+  CUDAVector<score_t> cuda_gradients_;
   /*! \brief hessians on CUDA */
-  score_t* cuda_hessians_;
+  CUDAVector<score_t> cuda_hessians_;
   /*! \brief whether boosting is done on CUDA */
   bool boosting_on_cuda_;
+
+  // members used in multi-GPU training
+  /*! \brief cuda stream for nccl operations */
+  cudaStream_t nccl_stream_;
+  /*! \brief index map from leaf index to histogram index */
+  std::vector<int> leaf_to_hist_index_map_;
+  /*! \brief number of total histogram bins */
+  int num_total_bin_;
+  /*! \brief global number of data in the leaves across */
+  std::vector<data_size_t> global_num_data_in_leaf_;
 
   #ifdef DEBUG
   /*! \brief gradients on CPU */
@@ -155,11 +173,11 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
     #pragma warning(disable : 4702)
     explicit CUDASingleGPUTreeLearner(const Config* tree_config, const bool /*boosting_on_cuda*/) : SerialTreeLearner(tree_config) {
       Log::Fatal("CUDA Tree Learner was not enabled in this build.\n"
-                 "Please recompile with CMake option -DUSE_CUDA=1");
+                 "Please recompile with CMake option -DUSE_CUDA=1 (NVIDIA GPUs) or -DUSE_ROCM=1 (AMD GPUs)");
     }
 };
 
 }  // namespace LightGBM
 
 #endif  // USE_CUDA
-#endif  // LIGHTGBM_TREELEARNER_CUDA_CUDA_SINGLE_GPU_TREE_LEARNER_HPP_
+#endif  // LIGHTGBM_SRC_TREELEARNER_CUDA_CUDA_SINGLE_GPU_TREE_LEARNER_HPP_

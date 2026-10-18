@@ -1,5 +1,6 @@
 /*!
- * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
+ * Copyright (c) 2021-2026 Microsoft Corporation. All rights reserved.
+ * Copyright (c) 2021-2026 The LightGBM developers. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for
  * license information.
  */
@@ -9,6 +10,7 @@
 #include "cuda_histogram_constructor.hpp"
 
 #include <algorithm>
+#include <vector>
 
 namespace LightGBM {
 
@@ -117,13 +119,15 @@ void CUDAHistogramConstructor::Init(const Dataset* train_data, TrainingShareStat
 void CUDAHistogramConstructor::ConstructHistogramForLeaf(
   const CUDALeafSplitsStruct* cuda_smaller_leaf_splits,
   const CUDALeafSplitsStruct* /*cuda_larger_leaf_splits*/,
+  const data_size_t global_num_data_in_smaller_leaf,
+  const data_size_t global_num_data_in_larger_leaf,
   const data_size_t num_data_in_smaller_leaf,
-  const data_size_t num_data_in_larger_leaf,
+  const data_size_t /*num_data_in_larger_leaf*/,
   const double sum_hessians_in_smaller_leaf,
   const double sum_hessians_in_larger_leaf,
   const uint8_t num_bits_in_histogram_bins) {
-  if ((num_data_in_smaller_leaf <= min_data_in_leaf_ || sum_hessians_in_smaller_leaf <= min_sum_hessian_in_leaf_) &&
-    (num_data_in_larger_leaf <= min_data_in_leaf_ || sum_hessians_in_larger_leaf <= min_sum_hessian_in_leaf_)) {
+if ((global_num_data_in_smaller_leaf <= min_data_in_leaf_ || sum_hessians_in_smaller_leaf <= min_sum_hessian_in_leaf_) &&
+    (global_num_data_in_larger_leaf <= min_data_in_leaf_ || sum_hessians_in_larger_leaf <= min_sum_hessian_in_leaf_)) {
     return;
   }
   LaunchConstructHistogramKernel(cuda_smaller_leaf_splits, num_data_in_smaller_leaf, num_bits_in_histogram_bins);
@@ -150,7 +154,7 @@ void CUDAHistogramConstructor::CalcConstructHistogramKernelDim(
   int* block_dim_y,
   const data_size_t num_data_in_smaller_leaf) {
   *block_dim_x = cuda_row_data_->max_num_column_per_partition();
-  *block_dim_y = NUM_THRADS_PER_BLOCK / cuda_row_data_->max_num_column_per_partition();
+  *block_dim_y = NUM_THREADS_PER_BLOCK / cuda_row_data_->max_num_column_per_partition();
   *grid_dim_x = cuda_row_data_->num_feature_partitions();
   *grid_dim_y = std::max(min_grid_dim_y_,
     ((num_data_in_smaller_leaf + NUM_DATA_PER_THREAD - 1) / NUM_DATA_PER_THREAD + (*block_dim_y) - 1) / (*block_dim_y));

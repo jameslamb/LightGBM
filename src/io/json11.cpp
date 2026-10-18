@@ -23,9 +23,14 @@
 #include <LightGBM/utils/log.h>
 
 #include <cmath>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <limits>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace json11_internal_lightgbm {
 

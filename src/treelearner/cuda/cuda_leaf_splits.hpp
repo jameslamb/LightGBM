@@ -1,10 +1,11 @@
 /*!
- * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
+ * Copyright (c) 2021-2026 Microsoft Corporation. All rights reserved.
+ * Copyright (c) 2021-2026 The LightGBM developers. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for
  * license information.
  */
-#ifndef LIGHTGBM_TREELEARNER_CUDA_CUDA_LEAF_SPLITS_HPP_
-#define LIGHTGBM_TREELEARNER_CUDA_CUDA_LEAF_SPLITS_HPP_
+#ifndef LIGHTGBM_SRC_TREELEARNER_CUDA_CUDA_LEAF_SPLITS_HPP_
+#define LIGHTGBM_SRC_TREELEARNER_CUDA_CUDA_LEAF_SPLITS_HPP_
 
 #ifdef USE_CUDA
 
@@ -13,7 +14,7 @@
 #include <LightGBM/utils/log.h>
 #include <LightGBM/meta.h>
 
-#define NUM_THRADS_PER_BLOCK_LEAF_SPLITS (1024)
+#define NUM_THREADS_PER_BLOCK_LEAF_SPLITS (1024)
 #define NUM_DATA_THREAD_ADD_LEAF_SPLITS (6)
 
 namespace LightGBM {
@@ -31,7 +32,7 @@ struct CUDALeafSplitsStruct {
   hist_t* hist_in_leaf;
 };
 
-class CUDALeafSplits {
+class CUDALeafSplits: public NCCLInfo {
  public:
   explicit CUDALeafSplits(const data_size_t num_data);
 
@@ -44,14 +45,14 @@ class CUDALeafSplits {
     const score_t* cuda_gradients, const score_t* cuda_hessians,
     const data_size_t* cuda_bagging_data_indices,
     const data_size_t* cuda_data_indices_in_leaf, const data_size_t num_used_indices,
-    hist_t* cuda_hist_in_leaf, double* root_sum_hessians);
+    hist_t* cuda_hist_in_leaf, double* root_sum_gradients, double* root_sum_hessians);
 
   void InitValues(
     const double lambda_l1, const double lambda_l2,
     const int16_t* cuda_gradients_and_hessians,
     const data_size_t* cuda_bagging_data_indices,
     const data_size_t* cuda_data_indices_in_leaf, const data_size_t num_used_indices,
-    hist_t* cuda_hist_in_leaf, double* root_sum_hessians,
+    hist_t* cuda_hist_in_leaf, double* root_sum_gradients, double* root_sum_hessians,
     const score_t* grad_scale, const score_t* hess_scale);
 
   void InitValues();
@@ -142,14 +143,14 @@ class CUDALeafSplits {
  private:
   void LaunchInitValuesEmptyKernel();
 
-  void LaunchInitValuesKernal(
+  void LaunchInitValuesKernel(
     const double lambda_l1, const double lambda_l2,
     const data_size_t* cuda_bagging_data_indices,
     const data_size_t* cuda_data_indices_in_leaf,
     const data_size_t num_used_indices,
     hist_t* cuda_hist_in_leaf);
 
-  void LaunchInitValuesKernal(
+  void LaunchInitValuesKernel(
     const double lambda_l1, const double lambda_l2,
     const data_size_t* cuda_bagging_data_indices,
     const data_size_t* cuda_data_indices_in_leaf,
@@ -176,4 +177,4 @@ class CUDALeafSplits {
 }  // namespace LightGBM
 
 #endif  // USE_CUDA
-#endif  // LIGHTGBM_TREELEARNER_CUDA_CUDA_LEAF_SPLITS_HPP_
+#endif  // LIGHTGBM_SRC_TREELEARNER_CUDA_CUDA_LEAF_SPLITS_HPP_

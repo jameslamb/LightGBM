@@ -3,7 +3,7 @@
 # [description]
 #
 #     Prepare a source distribution (sdist) or built distribution (wheel)
-#     of the Python package, and optionally install it.
+#     of the Python-package, and optionally install it.
 #
 # [usage]
 #
@@ -13,10 +13,10 @@
 #     # build wheel and put it in dist/
 #     sh ./build-python.sh bdist_wheel [OPTIONS]
 #
-#     # compile lib_lightgbm and install the Python package wrapping it
+#     # compile lib_lightgbm and install the Python-package wrapping it
 #     sh ./build-python.sh install [OPTIONS]
 #
-#     # install the Python package using a pre-compiled lib_lightgbm
+#     # install the Python-package using a pre-compiled lib_lightgbm
 #     # (assumes lib_lightgbm.{dll,so} is located at the root of the repo)
 #     sh ./build-python.sh install --precompile
 #
@@ -40,8 +40,6 @@
 #                                   Compile CUDA version.
 #     --gpu
 #                                   Compile GPU version.
-#     --hdfs
-#                                   Compile HDFS version.
 #     --integrated-opencl
 #                                   Compile integrated OpenCL version.
 #     --mingw
@@ -56,15 +54,17 @@
 #     --precompile
 #                                   Use precompiled library.
 #                                   Only used with 'install' command.
+#     --rocm
+#                                   Compile ROCm version.
 #     --time-costs
-#                                   Output time costs for different internal routines.
+#                                   Compile version that outputs time costs for different internal routines.
 #     --user
 #                                   Install into user-specific instead of global site-packages directory.
 #                                   Only used with 'install' command.
 
 set -e -u
 
-echo "building lightgbm"
+echo "[INFO] building lightgbm"
 
 # Default values of arguments
 INSTALL="false"
@@ -93,42 +93,42 @@ while [ $# -gt 0 ]; do
     # customized library paths #
     ############################
     --boost-dir|--boost-dir=*)
-        if [[ "$1" != *=* ]];
+        if echo "$1" | grep -q '^*=*$';
             then shift;
         fi
         BOOST_DIR="${1#*=}"
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.Boost_DIR='${BOOST_DIR}'"
         ;;
     --boost-include-dir|--boost-include-dir=*)
-        if [[ "$1" != *=* ]];
+        if echo "$1" | grep -q '^*=*$';
             then shift;
         fi
         BOOST_INCLUDE_DIR="${1#*=}"
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.Boost_INCLUDE_DIR='${BOOST_INCLUDE_DIR}'"
         ;;
     --boost-librarydir|--boost-librarydir=*)
-        if [[ "$1" != *=* ]];
+        if echo "$1" | grep -q '^*=*$';
             then shift;
         fi
         BOOST_LIBRARY_DIR="${1#*=}"
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.BOOST_LIBRARYDIR='${BOOST_LIBRARY_DIR}'"
         ;;
     --boost-root|--boost-root=*)
-        if [[ "$1" != *=* ]];
+        if echo "$1" | grep -q '^*=*$';
             then shift;
         fi
         BOOST_ROOT="${1#*=}"
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.Boost_ROOT='${BOOST_ROOT}'"
         ;;
     --opencl-include-dir|--opencl-include-dir=*)
-        if [[ "$1" != *=* ]];
+        if echo "$1" | grep -q '^*=*$';
             then shift;
         fi
         OPENCL_INCLUDE_DIR="${1#*=}"
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.OpenCL_INCLUDE_DIR='${OPENCL_INCLUDE_DIR}'"
         ;;
     --opencl-library|--opencl-library=*)
-        if [[ "$1" != *=* ]];
+        if echo "$1" | grep -q '^*=*$';
             then shift;
         fi
         OPENCL_LIBRARY="${1#*=}"
@@ -138,26 +138,25 @@ while [ $# -gt 0 ]; do
     # flags #
     #########
     --bit32)
-        export CMAKE_GENERATOR="Visual Studio 17 2022"
-        export CMAKE_GENERATOR_PLATFORM="Win32"
-        echo "[INFO] Attempting to build 32-bit version of LightGBM, which is only supported on Windows with generator '${CMAKE_GENERATOR}'."
+        echo "[INFO] Attempting to build 32-bit version of LightGBM, which is only supported on Windows with Visual Studio."
+        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.args=-AWin32"
         ;;
     --cuda)
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_CUDA=ON"
         ;;
+    --rocm)
+        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_ROCM=ON"
+        ;;
     --gpu)
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_GPU=ON"
-        ;;
-    --hdfs)
-        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_HDFS=ON"
         ;;
     --integrated-opencl)
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.__INTEGRATE_OPENCL=ON"
         ;;
     --mingw)
-        export CMAKE_GENERATOR='MinGW Makefiles'
         # ref: https://stackoverflow.com/a/45104058/3986677
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.CMAKE_SH=CMAKE_SH-NOTFOUND"
+        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.args=-G'MinGW Makefiles'"
         ;;
     --mpi)
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_MPI=ON"
@@ -179,17 +178,25 @@ while [ $# -gt 0 ]; do
         PIP_INSTALL_ARGS="${PIP_INSTALL_ARGS} --user"
         ;;
     *)
-        echo "invalid argument '${1}'"
+        echo "[ERROR] invalid argument '${1}'. Aborting"
         exit 1
         ;;
   esac
   shift
 done
 
-pip install --prefer-binary 'build>=0.10.0'
+# ref: https://cmake.org/cmake/help/latest/variable/CMAKE_CUDA_ARCHITECTURES.html
+if [ -n "${CUDAARCHS:-}" ]; then
+    BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.CMAKE_CUDA_ARCHITECTURES=${CUDAARCHS}"
+fi
+
+if ! python -m build --version >/dev/null; then
+    echo "'build' is required to build 'lightgbm'. Install it with 'pip install build' or similar."
+    exit 1
+fi
 
 # create a new directory that just contains the files needed
-# to build the Python package
+# to build the Python-package
 create_isolated_source_dir() {
     rm -rf \
         ./lightgbm-python \
@@ -210,7 +217,6 @@ create_isolated_source_dir() {
     cp -R ./include ./lightgbm-python
     cp -R ./src ./lightgbm-python
     cp -R ./swig ./lightgbm-python
-    cp -R ./windows ./lightgbm-python
 
     # include only specific files from external_libs, to keep the package
     # small and avoid redistributing code with licenses incompatible with
@@ -259,14 +265,14 @@ create_isolated_source_dir() {
     modules="Cholesky Core Dense Eigenvalues Geometry Householder Jacobi LU QR SVD"
     for eigen_module in ${modules}; do
         cp \
-            external_libs/eigen/Eigen/${eigen_module} \
-            ./lightgbm-python/external_libs/eigen/Eigen/${eigen_module}
-        if [ ${eigen_module} != "Dense" ]; then
-            mkdir -p ./lightgbm-python/external_libs/eigen/Eigen/src/${eigen_module}/
+            "external_libs/eigen/Eigen/${eigen_module}" \
+            "./lightgbm-python/external_libs/eigen/Eigen/${eigen_module}"
+        if [ "${eigen_module}" != "Dense" ]; then
+            mkdir -p "./lightgbm-python/external_libs/eigen/Eigen/src/${eigen_module}/"
             cp \
                 -R \
-                external_libs/eigen/Eigen/src/${eigen_module}/* \
-                ./lightgbm-python/external_libs/eigen/Eigen/src/${eigen_module}/
+                "external_libs/eigen/Eigen/src/${eigen_module}"/* \
+                "./lightgbm-python/external_libs/eigen/Eigen/src/${eigen_module}/"
         fi
     done
 
@@ -290,86 +296,142 @@ create_isolated_source_dir() {
         -R \
         external_libs/compute/include \
         ./lightgbm-python/external_libs/compute/include/
+
+    #############
+    # nanoarrow #
+    #############
+    mkdir -p ./lightgbm-python/external_libs/nanoarrow
+    cp \
+        external_libs/nanoarrow/CMakeLists.txt \
+        external_libs/nanoarrow/LICENSE.txt \
+        external_libs/nanoarrow/NOTICE.txt \
+        ./lightgbm-python/external_libs/nanoarrow/
+    cp -R \
+        external_libs/nanoarrow/cmake \
+        ./lightgbm-python/external_libs/nanoarrow/cmake/
+    mkdir -p ./lightgbm-python/external_libs/nanoarrow/src/nanoarrow
+    cp \
+        external_libs/nanoarrow/src/nanoarrow/nanoarrow.h \
+        external_libs/nanoarrow/src/nanoarrow/nanoarrow.hpp \
+        external_libs/nanoarrow/src/nanoarrow/nanoarrow_config.h.in \
+        ./lightgbm-python/external_libs/nanoarrow/src/nanoarrow/
+    mkdir -p ./lightgbm-python/external_libs/nanoarrow/src/nanoarrow/common
+    cp -R \
+        external_libs/nanoarrow/src/nanoarrow/common/*.h \
+        ./lightgbm-python/external_libs/nanoarrow/src/nanoarrow/common
+    cp -R \
+        external_libs/nanoarrow/src/nanoarrow/common/*.c \
+        ./lightgbm-python/external_libs/nanoarrow/src/nanoarrow/common
+    mkdir -p ./lightgbm-python/external_libs/nanoarrow/src/nanoarrow/hpp
+    cp -R \
+        external_libs/nanoarrow/src/nanoarrow/hpp/*.hpp \
+        ./lightgbm-python/external_libs/nanoarrow/src/nanoarrow/hpp
 }
 
 create_isolated_source_dir
 
 cd ./lightgbm-python
 
-# installation involves building the wheel + `pip install`-ing it
+# if 'install' was passed, choose the type of package to build and install
 if test "${INSTALL}" = true; then
     if test "${PRECOMPILE}" = true; then
-        BUILD_SDIST=true
-        BUILD_WHEEL=false
-        BUILD_ARGS=""
+        BUILD_SDIST=false
+        BUILD_WHEEL=true
         rm -rf \
             ./cmake \
             ./CMakeLists.txt \
             ./external_libs \
             ./include \
             ./src \
-            ./swig \
-            ./windows
-        # use regular-old setuptools for these builds, to avoid
-        # trying to recompile the shared library
+            ./swig
+        # avoid trying to recompile, just use hatchling and copy in relevant files
         sed -i.bak -e '/start:build-system/,/end:build-system/d' pyproject.toml
-        echo '[build-system]' >> ./pyproject.toml
-        echo 'requires = ["setuptools"]' >> ./pyproject.toml
-        echo 'build-backend = "setuptools.build_meta"' >> ./pyproject.toml
-        echo "" >> ./pyproject.toml
-        echo "recursive-include lightgbm *.dll *.so" > ./MANIFEST.in
-        echo "" >> ./MANIFEST.in
+
+# replace build backend configuration
+cat >> ./pyproject.toml <<EOF
+
+[build-system]
+requires = ["hatchling>=1.27.0"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+# do not consider .gitignore when choosing files to include / exclude
+ignore-vcs = true
+packages = ["lightgbm"]
+
+EOF
         mkdir -p ./lightgbm/lib
         if test -f ../lib_lightgbm.so; then
-            echo "found pre-compiled lib_lightgbm.so"
+            echo "[INFO] found pre-compiled lib_lightgbm.so"
             cp ../lib_lightgbm.so ./lightgbm/lib/lib_lightgbm.so
+        elif test -f ../lib_lightgbm.dylib; then
+            echo "[INFO] found pre-compiled lib_lightgbm.dylib"
+            cp ../lib_lightgbm.dylib ./lightgbm/lib/lib_lightgbm.dylib
+        elif test -f ../lib_lightgbm.dll; then
+            echo "[INFO] found pre-compiled lib_lightgbm.dll"
+            cp ../lib_lightgbm.dll ./lightgbm/lib/lib_lightgbm.dll
         elif test -f ../Release/lib_lightgbm.dll; then
-            echo "found pre-compiled Release/lib_lightgbm.dll"
+            echo "[INFO] found pre-compiled Release/lib_lightgbm.dll"
             cp ../Release/lib_lightgbm.dll ./lightgbm/lib/lib_lightgbm.dll
         elif test -f ../windows/x64/DLL/lib_lightgbm.dll; then
-            echo "found pre-compiled windows/x64/DLL/lib_lightgbm.dll"
+            echo "[INFO] found pre-compiled windows/x64/DLL/lib_lightgbm.dll"
             cp ../windows/x64/DLL/lib_lightgbm.dll ./lightgbm/lib/lib_lightgbm.dll
             cp ../windows/x64/DLL/lib_lightgbm.lib ./lightgbm/lib/lib_lightgbm.lib
+        elif test -f ../windows/x64/Debug_DLL/lib_lightgbm.dll; then
+            echo "[INFO] found pre-compiled windows/x64/Debug_DLL/lib_lightgbm.dll"
+            cp ../windows/x64/Debug_DLL/lib_lightgbm.dll ./lightgbm/lib/lib_lightgbm.dll
+            cp ../windows/x64/Debug_DLL/lib_lightgbm.lib ./lightgbm/lib/lib_lightgbm.lib
+        else
+            echo "[ERROR] cannot find pre-compiled library. Aborting"
+            exit 1
         fi
         rm -f ./*.bak
-    else
+    fi
+
+    # at this point, if 'install' was passed but the package type wasn't indicated, prefer wheel
+    if test "${BUILD_SDIST}" = false && test "${BUILD_WHEEL}" = false; then
+        echo "[INFO] 'install' passed but no package type ('bdist_wheel', 'sdist') chosen. Defaulting to 'bdist_wheel'."
         BUILD_SDIST="false"
         BUILD_WHEEL="true"
     fi
 fi
 
 if test "${BUILD_SDIST}" = true; then
-    echo "--- building sdist ---"
+    echo "[INFO] --- building sdist ---"
     rm -f ../dist/*.tar.gz
-    python -m build \
-        --sdist \
-        --outdir ../dist \
-        ${BUILD_ARGS} \
-        .
+    # use xargs to work with args that contain whitespaces
+    # note that empty echo string leads to that xargs doesn't run the command
+    # in some implementations of xargs
+    # ref: https://stackoverflow.com/a/8296746
+    echo "--sdist --outdir ../dist ${BUILD_ARGS} ." | xargs python -m build
 fi
 
 if test "${BUILD_WHEEL}" = true; then
-    echo "--- building wheel ---"
+    echo "[INFO] --- building wheel ---"
     rm -f ../dist/*.whl || true
-    python -m build \
-        --wheel \
-        --outdir ../dist \
-        ${BUILD_ARGS} \
-        .
+    # use xargs to work with args that contain whitespaces
+    # note that empty echo string leads to that xargs doesn't run the command
+    # in some implementations of xargs
+    # ref: https://stackoverflow.com/a/8296746
+    echo "--wheel --outdir ../dist ${BUILD_ARGS} ." | xargs python -m build
 fi
 
 if test "${INSTALL}" = true; then
-    echo "--- installing lightgbm ---"
-    # ref for use of '--find-links': https://stackoverflow.com/a/52481267/3986677
-    cd ../dist
-    pip install \
+    echo "[INFO] --- installing lightgbm ---"
+    cd ..
+    if test "${BUILD_WHEEL}" = true; then
+        PACKAGE_FILE="$(echo dist/lightgbm*.whl)"
+    else
+        PACKAGE_FILE="$(echo dist/lightgbm*.tar.gz)"
+    fi
+    # shellcheck disable=SC2086
+    python -m pip install \
         ${PIP_INSTALL_ARGS} \
         --force-reinstall \
         --no-cache-dir \
-        --find-links=. \
-        lightgbm
-    cd ../
+        --no-deps \
+        "${PACKAGE_FILE}"
 fi
 
-echo "cleaning up"
+echo "[INFO] cleaning up"
 rm -rf ./lightgbm-python

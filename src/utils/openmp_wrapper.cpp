@@ -1,5 +1,6 @@
 /*!
- * Copyright (c) 2023 Microsoft Corporation. All rights reserved.
+ * Copyright (c) 2023-2026 Microsoft Corporation. All rights reserved.
+ * Copyright (c) 2023-2026 The LightGBM developers. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 #include <LightGBM/utils/openmp_wrapper.h>
@@ -20,8 +21,7 @@ int OMP_NUM_THREADS() {
     default_num_threads = LGBM_DEFAULT_NUM_THREADS;
   } else {
     // otherwise, default to OpenMP-global config
-    #pragma omp single
-    { default_num_threads = omp_get_max_threads(); }
+    default_num_threads = omp_get_max_threads();
   }
 
   // ensure that if LGBM_SetMaxThreads() was ever called, LightGBM doesn't

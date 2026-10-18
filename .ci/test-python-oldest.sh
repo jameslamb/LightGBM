@@ -1,25 +1,13 @@
 #!/bin/bash
 
-# oldest versions of dependencies published after
-# minimum supported Python version's first release
-#
-# see https://devguide.python.org/versions/
-#
-echo "installing lightgbm's dependencies"
-pip install \
-  'cffi==1.15.1' \
-  'dataclasses' \
-  'numpy==1.16.6' \
-  'pandas==0.24.0' \
-  'pyarrow==6.0.1' \
-  'scikit-learn==0.18.2' \
-  'scipy==0.19.0' \
-|| exit 1
-echo "done installing lightgbm's dependencies"
+set -e -E -u -o pipefail
 
-echo "installing lightgbm"
-pip install --no-deps dist/*.whl || exit 1
-echo "done installing lightgbm"
+echo "installing lightgbm and its dependencies"
+pip install \
+    --prefer-binary \
+    --upgrade \
+    --constraint ./.ci/pip-envs/requirements-oldest.txt \
+    "$(echo dist/*.whl)[arrow,pandas,scikit-learn]"
 
 echo "installed package versions:"
 pip freeze
@@ -27,7 +15,7 @@ pip freeze
 echo ""
 echo "checking that examples run without error"
 
-# run a few examples to test that Python package minimally works
+# run a few examples to test that Python-package minimally works
 echo ""
 echo "--- advanced_example.py ---"
 echo ""
@@ -47,6 +35,22 @@ echo ""
 echo "--- sklearn_example.py ---"
 echo ""
 python ./examples/python-guide/sklearn_example.py || exit 1
+echo ""
+
+echo "checking that imports work without any optional dependencies"
+pip uninstall --yes \
+    cffi \
+    dask \
+    distributed \
+    graphviz \
+    joblib \
+    matplotlib \
+    pandas \
+    psutil \
+    pyarrow \
+    scikit-learn
+
+python -c "import lightgbm"
 
 echo ""
 echo "done testing on oldest supported Python version"

@@ -1,10 +1,11 @@
 /*!
- * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Copyright (c) 2016-2026 Microsoft Corporation. All rights reserved.
+ * Copyright (c) 2016-2026 The LightGBM developers. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for
  * license information.
  */
-#ifndef LIGHTGBM_TREELEARNER_FEATURE_HISTOGRAM_HPP_
-#define LIGHTGBM_TREELEARNER_FEATURE_HISTOGRAM_HPP_
+#ifndef LIGHTGBM_SRC_TREELEARNER_FEATURE_HISTOGRAM_HPP_
+#define LIGHTGBM_SRC_TREELEARNER_FEATURE_HISTOGRAM_HPP_
 
 #include <LightGBM/bin.h>
 #include <LightGBM/dataset.h>
@@ -53,8 +54,9 @@ class FeatureHistogram {
 
   /*!
    * \brief Init the feature histogram
-   * \param feature the feature data for this histogram
-   * \param min_num_data_one_leaf minimal number of data in one leaf
+   * \param data the histogram data for this feature
+   * \param data_int16 the 16-bit histogram data for this feature (used for quantized training via 'use_quantized_grad')
+   * \param meta pointer to a FeatureMetaInfo object for this feature, with details like how missing values are handled and a pointer to the Config object with parameters
    */
   void Init(hist_t* data, int16_t* data_int16, const FeatureMetainfo* meta) {
     meta_ = meta;
@@ -65,8 +67,8 @@ class FeatureHistogram {
 
   /*!
    * \brief Init the feature histogram
-   * \param feature the feature data for this histogram
-   * \param min_num_data_one_leaf minimal number of data in one leaf
+   * \param data the histogram data for this feature
+   * \param meta pointer to a FeatureMetaInfo object for this feature, with details like how missing values are handled and a pointer to the Config object with parameters
    */
   void Init(hist_t* data, const FeatureMetainfo* meta) {
     meta_ = meta;
@@ -668,15 +670,15 @@ class FeatureHistogram {
   /*!
    * \brief Binary size of this histogram
    */
-  int SizeOfHistgram() const {
+  int SizeOfHistogram() const {
     return (meta_->num_bin - meta_->offset) * kHistEntrySize;
   }
 
-  int SizeOfInt32Histgram() const {
+  int SizeOfInt32Histogram() const {
     return (meta_->num_bin - meta_->offset) * kInt32HistEntrySize;
   }
 
-  int SizeOfInt16Histgram() const {
+  int SizeOfInt16Histogram() const {
     return (meta_->num_bin - meta_->offset) * kInt16HistEntrySize;
   }
 
@@ -701,7 +703,7 @@ class FeatureHistogram {
   /*!
    * \brief True if this histogram can be splitted
    */
-  bool is_splittable() { return is_splittable_; }
+  bool is_splittable() const { return is_splittable_; }
 
   /*!
    * \brief Set splittable to this histogram
@@ -1594,4 +1596,4 @@ class HistogramPool {
 };
 
 }  // namespace LightGBM
-#endif  // LightGBM_TREELEARNER_FEATURE_HISTOGRAM_HPP_
+#endif  // LIGHTGBM_SRC_TREELEARNER_FEATURE_HISTOGRAM_HPP_
