@@ -964,7 +964,6 @@ def _predict(
         import dask.array  # noqa: PLC0415
         import dask.bag  # noqa: PLC0415
         import dask.dataframe  # noqa: PLC0415
-        from dask import delayed  # noqa: PLC0415
     except _DaskImportErrorTypes as err:
         raise LightGBMError("dask is required for lightgbm.dask") from err
 
@@ -979,7 +978,8 @@ def _predict(
             pred_leaf=pred_leaf,
             pred_contrib=pred_contrib,
             **kwargs,
-        ).values
+        )
+        return data.map_partitions(predict_fn).values
     elif isinstance(data, dask.array.Array):
         data_row = client.compute(data[[0]]).result()
         predict_fn = partial(

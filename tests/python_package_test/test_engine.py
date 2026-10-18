@@ -2086,9 +2086,9 @@ def test_contribs_sparse_multiclass(data_seed):
     # validate using CSC matrix
     X_test_csc = X_test.tocsc()
     contribs_csc = gbm.predict(X_test_csc, pred_contrib=True)
-    assert isspmatrix_csc(perclass_contribs_csc)
+    assert isspmatrix_csc(contribs_csc)
     # validate the values are the same
-    np.testing.assert_allclose(contribs_csc_array.toarray(), contribs_dense)
+    np.testing.assert_allclose(contribs_csc.toarray(), contribs_dense)
 
 
 @pytest.mark.skipif(
