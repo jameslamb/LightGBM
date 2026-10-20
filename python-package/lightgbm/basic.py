@@ -1444,18 +1444,89 @@ class _InnerPredictor:
                 ctypes.byref(out_ptr_data),
             )
         )
-        out_mat = self.__create_sparse_native(
-            cs=csr,
-            out_shape=out_shape,
-            out_ptr_indptr=out_ptr_indptr,
-            out_ptr_indices=out_ptr_indices,
-            out_ptr_data=out_ptr_data,
-            indptr_type=type_ptr_indptr,
-            data_type=type_ptr_data,
-            is_csr=True,
-        )
+        # convert output to 'scipy' sparse array
+
+        #
+        # The C API returns one CSR matrix per class, packed back-to-back into flat arrays,
+        # with each class's 'indptr' block starting over at 0.
+        #
+        # Rearrange that into a single (nrow, num_class * (num_feature + 1)) CSR matrix,
+        # where row i is [class 0 row i | class 1 row i | ...], matching the layout of
+        # predict(X, pred_contrib=True) for dense X.
         nrow = len(csr.indptr) - 1
-        return out_mat, nrow
+        n_cols_per_class = csr.shape[1] + 1
+
+        # get a numpy array of the data
+        nnz = int(out_shape[0])
+        if type_ptr_data == _C_API_DTYPE_FLOAT32:
+            out_data = _cfloat32_array_to_numpy(cptr=out_ptr_data, length=nnz)
+        else:
+            out_data = _cfloat64_array_to_numpy(cptr=out_ptr_data, length=nnz)
+
+        # get a numpy array of the indices
+        out_indices = _cint32_array_to_numpy(cptr=out_ptr_indices, length=nnz)
+
+        # get a numpy array of the indptr
+        indptr_len = int(out_shape[1])
+        if type_ptr_indptr == _C_API_DTYPE_INT32:
+            out_indptr = _cint32_array_to_numpy(cptr=out_ptr_indptr, length=indptr_len)
+        else:
+            out_indptr = _cint64_array_to_numpy(cptr=out_ptr_indptr, length=indptr_len)
+
+        # now that the those outputs have been copied into NumPy arrays,
+        # free the arrays on the C++ side
+        _safe_call(
+            _LIB.LGBM_BoosterFreePredictSparse(
+                out_ptr_indptr,
+                out_ptr_indices,
+                out_ptr_data,
+                ctypes.c_int(type_ptr_indptr),
+                ctypes.c_int(type_ptr_data),
+            )
+        )
+
+        # If LGBM_BoosterPredictSparseOutput() returned an 'indptr' describing a matrix
+        # with the same number of rows as the input 'csr', it must not be for multi-class classification.
+        #
+        # No more re-shaping necessary.
+        if out_indptr.shape[0] == nrow + 1:
+            preds = scipy.sparse.csr_matrix(
+                (out_data, out_indices, out_indptr),
+                shape=(nrow, num_class * n_cols_per_class),
+            )
+            return preds, nrow
+
+        # From this point onwards, assume multiclass classification
+
+        # For multiclass classification, 'indptr' returned by LGBM_BoosterPredictSparseOutput()
+        # is a single array stacked end-to-end for each class.
+        per_class_indptr = out_indptr.astype(np.int64).reshape(-1, nrow + 1)
+        num_models_per_iteration = per_class_indptr.shape[0]
+
+        # position in out_data where each class's elements start
+        class_nnz = per_class_indptr[:, -1]
+        class_starts = np.cumsum(class_nnz) - class_nnz
+
+        # Each (row, class) pair is one contiguous run of elements in out_data.
+        # Arrange those runs in output order (row-major, then class) as arrays of shape (nrow * num_class,).
+        run_lengths = np.diff(per_class_indptr, axis=1).T.ravel()
+        run_src_starts = (class_starts[:, np.newaxis] + per_class_indptr[:, :-1]).T.ravel()
+        run_dst_starts = np.cumsum(run_lengths) - run_lengths
+
+        # column offset for each run, to place class k's features in columns [k * n_cols_per_class, (k + 1) * n_cols_per_class)
+        run_col_offsets = np.tile(np.arange(num_class, dtype=np.int64) * n_cols_per_class, nrow)
+
+        # for every output element, where to find it in out_data / out_indices
+        src_idx = np.repeat(run_src_starts - run_dst_starts, run_lengths) + np.arange(nnz, dtype=np.int64)
+
+        new_indptr = np.zeros(nrow + 1, dtype=np.int64)
+        np.cumsum(run_lengths.reshape(nrow, num_class).sum(axis=1), out=new_indptr[1:])
+        new_indices = out_indices.astype(np.int64)[src_idx] + np.repeat(run_col_offsets, run_lengths)
+        preds = scipy.sparse.csr_matrix(
+            (out_data[src_idx], new_indices, new_indptr),
+            shape=(nrow, num_class * n_cols_per_class),
+        )
+        return preds, nrow
 
     def __pred_for_csr(
         self,
