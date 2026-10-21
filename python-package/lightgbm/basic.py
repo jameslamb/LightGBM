@@ -941,6 +941,15 @@ class _InnerPredictor:
         )
         self.num_class = out_num_class.value
 
+        out_num_model_per_iteration = ctypes.c_int(0)
+        _safe_call(
+            _LIB.LGBM_BoosterNumModelPerIteration(
+                self._handle,
+                ctypes.byref(out_num_model_per_iteration),
+            )
+        )
+        self.num_model_per_iteration = out_num_model_per_iteration.value
+
     @classmethod
     def from_booster(
         cls,
@@ -1281,16 +1290,6 @@ class _InnerPredictor:
                 preds=None,
             )
 
-    def __num_model_per_iteration(self) -> int:
-        out_num_model_per_iteration = ctypes.c_int(0)
-        _safe_call(
-            _LIB.LGBM_BoosterNumModelPerIteration(
-                self._handle,
-                ctypes.byref(out_num_model_per_iteration),
-            )
-        )
-        return out_num_model_per_iteration.value
-
     def __create_sparse_native(
         self,
         *,
@@ -1396,7 +1395,7 @@ class _InnerPredictor:
         predict_type: int,
     ) -> Tuple[scipy.sparse.spmatrix, int]:
         nrow = len(csr.indptr) - 1
-        num_cols_out = self.__num_model_per_iteration() * (csr.shape[1] + 1)
+        num_cols_out = self.num_model_per_iteration * (csr.shape[1] + 1)
         # The output 'indptr' has the same type as the input 'indptr'.
         # If the output might have more non-zero values than int32 can index, use int64.
         csr_indptr = csr.indptr
@@ -1513,7 +1512,7 @@ class _InnerPredictor:
         predict_type: int,
     ) -> Tuple[scipy.sparse.spmatrix, int]:
         nrow = csc.shape[0]
-        num_cols_out = self.__num_model_per_iteration() * (csc.shape[1] + 1)
+        num_cols_out = self.num_model_per_iteration * (csc.shape[1] + 1)
         # The output 'indptr' has the same type as the input 'indptr'.
         # If the output might have more non-zero values than int32 can index, use int64.
         csc_indptr = csc.indptr
