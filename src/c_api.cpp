@@ -567,10 +567,16 @@ class Booster {
                         std::function<std::vector<std::pair<int, double>>(int64_t row_idx)> get_row_fun,
                         const Config& config,
                         int64_t* out_len, void** out_indptr, int indptr_type,
-                        int32_t** out_indices, void** out_data, int data_type) const {
+                        int32_t** out_indices, void** out_data, int data_type,
+                        bool single_output) const {
     SHARED_LOCK(mutex_);
     // Get the number of trees per iteration (for multiclass scenario we output multiple sparse matrices)
     int num_matrices = boosting_->NumModelPerIteration();
+    if (single_output) {
+      PredictSparseCSRSingleOutput(start_iteration, num_iteration, predict_type, nrow, ncol, get_row_fun, config,
+                                   num_matrices, out_len, out_indptr, indptr_type, out_indices, out_data, data_type);
+      return;
+    }
     bool is_indptr_int32 = false;
     bool is_data_float32 = false;
     int64_t indptr_size = (nrow + 1) * num_matrices;
@@ -654,11 +660,101 @@ class Booster {
     out_len[1] = indptr_size;
   }
 
+  /*!
+   * \brief Write sparse predictions for all models in an iteration into a single CSR matrix,
+   *        with shape ``nrow x (num_matrices * (ncol + 1))``.
+   *
+   * Row ``i`` of the output holds row ``i`` of model 0's contributions, then row ``i`` of model 1's
+   * contributions (with column indices shifted by ``ncol + 1``), etc. This matches the layout of
+   * dense feature contributions. Column indices are sorted within each row.
+   */
+  void PredictSparseCSRSingleOutput(int start_iteration, int num_iteration, int predict_type, int64_t nrow, int ncol,
+                                    std::function<std::vector<std::pair<int, double>>(int64_t row_idx)> get_row_fun,
+                                    const Config& config, int num_matrices,
+                                    int64_t* out_len, void** out_indptr, int indptr_type,
+                                    int32_t** out_indices, void** out_data, int data_type) const {
+    const int64_t num_cols_per_matrix = static_cast<int64_t>(ncol) + 1;
+    if (num_cols_per_matrix * num_matrices > INT32_MAX) {
+      Log::Fatal("Feature contributions would have %s columns, which is more than the supported maximum (%d).",
+                 std::to_string(num_cols_per_matrix * num_matrices).c_str(), INT32_MAX);
+    }
+    if (indptr_type != C_API_DTYPE_INT32 && indptr_type != C_API_DTYPE_INT64) {
+      Log::Fatal("Unknown indptr type in PredictSparseCSR");
+    }
+    const bool is_indptr_int32 = indptr_type == C_API_DTYPE_INT32;
+
+    // aggregated per row feature contribution results (this also allocates *out_indices and *out_data)
+    std::vector<std::vector<std::unordered_map<int, double>>> agg(nrow);
+    int64_t elements_size = 0;
+    bool is_data_float32 = false;
+    PredictSparse(start_iteration, num_iteration, predict_type, nrow, ncol, get_row_fun, config, &elements_size, &agg,
+                  out_indices, out_data, data_type, &is_data_float32, num_matrices);
+    if (is_indptr_int32 && elements_size > INT32_MAX) {
+      delete[] *out_indices;
+      if (is_data_float32) {
+        delete[] reinterpret_cast<float*>(*out_data);
+      } else {
+        delete[] reinterpret_cast<double*>(*out_data);
+      }
+      Log::Fatal("Feature contributions have %s non-zero values, too many for int32 indptr. Use int64 indptr instead.",
+                 std::to_string(elements_size).c_str());
+    }
+
+    // row i of the output starts at row_starts[i]
+    std::vector<int64_t> row_starts(nrow + 1, 0);
+    for (int64_t i = 0; i < nrow; ++i) {
+      int64_t row_size = 0;
+      for (int m = 0; m < num_matrices; ++m) {
+        row_size += static_cast<int64_t>(agg[i][m].size());
+      }
+      row_starts[i + 1] = row_starts[i] + row_size;
+    }
+    if (is_indptr_int32) {
+      int32_t* indptr = new int32_t[nrow + 1];
+      for (int64_t i = 0; i <= nrow; ++i) {
+        indptr[i] = static_cast<int32_t>(row_starts[i]);
+      }
+      *out_indptr = indptr;
+    } else {
+      int64_t* indptr = new int64_t[nrow + 1];
+      std::copy(row_starts.begin(), row_starts.end(), indptr);
+      *out_indptr = indptr;
+    }
+
+    OMP_INIT_EX();
+    #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
+    for (int64_t i = 0; i < nrow; ++i) {
+      OMP_LOOP_EX_BEGIN();
+      int64_t element_index = row_starts[i];
+      std::vector<std::pair<int, double>> sorted_row;
+      for (int m = 0; m < num_matrices; ++m) {
+        // std::unordered_map iteration order is arbitrary, so sort by column index
+        sorted_row.assign(agg[i][m].begin(), agg[i][m].end());
+        std::sort(sorted_row.begin(), sorted_row.end());
+        const int32_t col_offset = static_cast<int32_t>(m * num_cols_per_matrix);
+        for (const auto& col_and_value : sorted_row) {
+          (*out_indices)[element_index] = col_offset + col_and_value.first;
+          if (is_data_float32) {
+            (reinterpret_cast<float*>(*out_data))[element_index] = static_cast<float>(col_and_value.second);
+          } else {
+            (reinterpret_cast<double*>(*out_data))[element_index] = col_and_value.second;
+          }
+          ++element_index;
+        }
+      }
+      OMP_LOOP_EX_END();
+    }
+    OMP_THROW_EX();
+    out_len[0] = elements_size;
+    out_len[1] = nrow + 1;
+  }
+
   void PredictSparseCSC(int start_iteration, int num_iteration, int predict_type, int64_t nrow, int ncol,
                         std::function<std::vector<std::pair<int, double>>(int64_t row_idx)> get_row_fun,
                         const Config& config,
                         int64_t* out_len, void** out_col_ptr, int col_ptr_type,
-                        int32_t** out_indices, void** out_data, int data_type) const {
+                        int32_t** out_indices, void** out_data, int data_type,
+                        bool single_output) const {
     SHARED_LOCK(mutex_);
     // Get the number of trees per iteration (for multiclass scenario we output multiple sparse matrices)
     int num_matrices = boosting_->NumModelPerIteration();
@@ -667,7 +763,12 @@ class Booster {
     bool is_col_ptr_int32 = false;
     bool is_data_float32 = false;
     int num_output_cols = ncol + 1;
-    int col_ptr_size = (num_output_cols + 1) * num_matrices;
+    // With single_output, the matrices for each model are placed side by side in one matrix.
+    // Elements are already written matrix-by-matrix and column-by-column, so only col_ptr differs:
+    // one block of (num_matrices * num_output_cols + 1) entries instead of num_matrices blocks that each start at 0.
+    int64_t col_ptr_size = single_output
+      ? static_cast<int64_t>(num_output_cols) * num_matrices + 1
+      : static_cast<int64_t>(num_output_cols + 1) * num_matrices;
     if (col_ptr_type == C_API_DTYPE_INT32) {
       *out_col_ptr = new int32_t[col_ptr_size];
       is_col_ptr_int32 = true;
@@ -682,6 +783,17 @@ class Booster {
     int64_t elements_size = 0;
     PredictSparse(start_iteration, num_iteration, predict_type, nrow, ncol, get_row_fun, config, &elements_size, &agg,
                   out_indices, out_data, data_type, &is_data_float32, num_matrices);
+    if (single_output && is_col_ptr_int32 && elements_size > INT32_MAX) {
+      delete[] reinterpret_cast<int32_t*>(*out_col_ptr);
+      delete[] *out_indices;
+      if (is_data_float32) {
+        delete[] reinterpret_cast<float*>(*out_data);
+      } else {
+        delete[] reinterpret_cast<double*>(*out_data);
+      }
+      Log::Fatal("Feature contributions have %s non-zero values, too many for int32 col_ptr. Use int64 col_ptr instead.",
+                 std::to_string(elements_size).c_str());
+    }
     // calculate number of elements per column to construct
     // the CSC matrix with random access
     std::vector<std::vector<int64_t>> column_sizes(num_matrices);
@@ -700,38 +812,44 @@ class Booster {
     std::vector<std::vector<int64_t>> column_start_indices(num_matrices);
     // keep track of beginning index for each matrix
     std::vector<int64_t> matrix_start_indices(num_matrices, 0);
-    int col_ptr_index = 0;
+    int64_t col_ptr_index = 0;
     for (int m = 0; m < num_matrices; ++m) {
+      // with single_output, col_ptr values are positions in the whole output (not just in matrix m)
+      const int64_t col_ptr_offset = single_output ? matrix_start_indices[m] : 0;
       int64_t col_ptr_value = 0;
       column_start_indices[m] = std::vector<int64_t>(num_output_cols, 0);
       column_counts[m] = std::vector<int64_t>(num_output_cols, 0);
       if (is_col_ptr_int32) {
-        (reinterpret_cast<int32_t*>(*out_col_ptr))[col_ptr_index] = static_cast<int32_t>(col_ptr_value);
+        (reinterpret_cast<int32_t*>(*out_col_ptr))[col_ptr_index] = static_cast<int32_t>(col_ptr_offset + col_ptr_value);
       } else {
-        (reinterpret_cast<int64_t*>(*out_col_ptr))[col_ptr_index] = col_ptr_value;
+        (reinterpret_cast<int64_t*>(*out_col_ptr))[col_ptr_index] = col_ptr_offset + col_ptr_value;
       }
       col_ptr_index++;
       for (int64_t i = 1; i < static_cast<int64_t>(column_sizes[m].size()); ++i) {
         column_start_indices[m][i] = column_sizes[m][i - 1] + column_start_indices[m][i - 1];
         if (is_col_ptr_int32) {
-          (reinterpret_cast<int32_t*>(*out_col_ptr))[col_ptr_index] = static_cast<int32_t>(column_start_indices[m][i]);
+          (reinterpret_cast<int32_t*>(*out_col_ptr))[col_ptr_index] = static_cast<int32_t>(col_ptr_offset + column_start_indices[m][i]);
         } else {
-          (reinterpret_cast<int64_t*>(*out_col_ptr))[col_ptr_index] = column_start_indices[m][i];
+          (reinterpret_cast<int64_t*>(*out_col_ptr))[col_ptr_index] = col_ptr_offset + column_start_indices[m][i];
         }
         col_ptr_index++;
       }
       int64_t last_elem_index = static_cast<int64_t>(column_sizes[m].size()) - 1;
       int64_t last_column_start_index = column_start_indices[m][last_elem_index];
       int64_t last_column_size = column_sizes[m][last_elem_index];
-      if (is_col_ptr_int32) {
-        (reinterpret_cast<int32_t*>(*out_col_ptr))[col_ptr_index] = static_cast<int32_t>(last_column_start_index + last_column_size);
-      } else {
-        (reinterpret_cast<int64_t*>(*out_col_ptr))[col_ptr_index] = last_column_start_index + last_column_size;
-      }
       if (m + 1 < num_matrices) {
         matrix_start_indices[m + 1] = matrix_start_indices[m] + last_column_start_index + last_column_size;
       }
-      col_ptr_index++;
+      // With single_output, the end of matrix m is the start of matrix m + 1 (written in the next iteration),
+      // so only write the end of the last matrix.
+      if (!single_output || m + 1 == num_matrices) {
+        if (is_col_ptr_int32) {
+          (reinterpret_cast<int32_t*>(*out_col_ptr))[col_ptr_index] = static_cast<int32_t>(col_ptr_offset + last_column_start_index + last_column_size);
+        } else {
+          (reinterpret_cast<int64_t*>(*out_col_ptr))[col_ptr_index] = col_ptr_offset + last_column_start_index + last_column_size;
+        }
+        col_ptr_index++;
+      }
     }
     // Note: we parallelize across matrices instead of rows because of the column_counts[m][col_idx] increment inside the loop
     OMP_INIT_EX();
@@ -2352,7 +2470,8 @@ int LGBM_BoosterPredictSparseOutput(BoosterHandle handle,
   Config config;
   config.Set(param);
   OMP_SET_NUM_THREADS(config.num_threads);
-  if (matrix_type == C_API_MATRIX_TYPE_CSR) {
+  const bool single_output = matrix_type == C_API_MATRIX_TYPE_CSR_SINGLE_OUTPUT || matrix_type == C_API_MATRIX_TYPE_CSC_SINGLE_OUTPUT;
+  if (matrix_type == C_API_MATRIX_TYPE_CSR || matrix_type == C_API_MATRIX_TYPE_CSR_SINGLE_OUTPUT) {
     if (num_col_or_row <= 0) {
       Log::Fatal("The number of columns should be greater than zero.");
     } else if (num_col_or_row >= INT32_MAX) {
@@ -2361,8 +2480,8 @@ int LGBM_BoosterPredictSparseOutput(BoosterHandle handle,
     auto get_row_fun = RowFunctionFromCSR<int64_t>(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
     int64_t nrow = nindptr - 1;
     ref_booster->PredictSparseCSR(start_iteration, num_iteration, predict_type, nrow, static_cast<int>(num_col_or_row), get_row_fun,
-                                  config, out_len, out_indptr, indptr_type, out_indices, out_data, data_type);
-  } else if (matrix_type == C_API_MATRIX_TYPE_CSC) {
+                                  config, out_len, out_indptr, indptr_type, out_indices, out_data, data_type, single_output);
+  } else if (matrix_type == C_API_MATRIX_TYPE_CSC || matrix_type == C_API_MATRIX_TYPE_CSC_SINGLE_OUTPUT) {
     int num_threads = OMP_NUM_THREADS();
     int ncol = static_cast<int>(nindptr - 1);
     std::vector<std::vector<CSC_RowIterator>> iterators(num_threads, std::vector<CSC_RowIterator>());
@@ -2385,7 +2504,7 @@ int LGBM_BoosterPredictSparseOutput(BoosterHandle handle,
       return one_row;
     };
     ref_booster->PredictSparseCSC(start_iteration, num_iteration, predict_type, num_col_or_row, ncol, get_row_fun, config,
-                                  out_len, out_indptr, indptr_type, out_indices, out_data, data_type);
+                                  out_len, out_indptr, indptr_type, out_indices, out_data, data_type, single_output);
   } else {
     Log::Fatal("Unknown matrix type in LGBM_BoosterPredictSparseOutput");
   }

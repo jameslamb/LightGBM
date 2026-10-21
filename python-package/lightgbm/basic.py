@@ -120,11 +120,6 @@ _LGBM_PredictDataType = Union[
 _LGBM_PredictReturnType = Union[
     np.ndarray,
     scipy.sparse.spmatrix,
-    List[scipy.sparse.spmatrix],
-]
-_LGBM_PredictSparseReturnType = Union[
-    scipy.sparse.spmatrix,
-    List[scipy.sparse.spmatrix],
 ]
 _LGBM_WeightType = Union[
     List[float],
@@ -630,6 +625,8 @@ _C_API_PREDICT_CONTRIB = 3
 """Macro definition of sparse matrix type"""
 _C_API_MATRIX_TYPE_CSR = 0
 _C_API_MATRIX_TYPE_CSC = 1
+_C_API_MATRIX_TYPE_CSR_SINGLE_OUTPUT = 2
+_C_API_MATRIX_TYPE_CSC_SINGLE_OUTPUT = 3
 
 """Macro definition of feature importance type"""
 _C_API_FEATURE_IMPORTANCE_SPLIT = 0
@@ -944,6 +941,15 @@ class _InnerPredictor:
         )
         self.num_class = out_num_class.value
 
+        out_num_model_per_iteration = ctypes.c_int(0)
+        _safe_call(
+            _LIB.LGBM_BoosterNumModelPerIteration(
+                self._handle,
+                ctypes.byref(out_num_model_per_iteration),
+            )
+        )
+        self.num_model_per_iteration = out_num_model_per_iteration.value
+
     @classmethod
     def from_booster(
         cls,
@@ -1056,9 +1062,9 @@ class _InnerPredictor:
 
         Returns
         -------
-        result : numpy array, scipy.sparse or list of scipy.sparse
+        result : numpy array or scipy.sparse
             Prediction result.
-            Can be sparse or a list of sparse objects (each element represents predictions for one class) for feature contributions (when ``pred_contrib=True``).
+            If ``data`` is a sparse matrix, result will be a sparse matrix.
         """
         if isinstance(data, Dataset):
             raise TypeError("Cannot use Dataset instance for prediction, please use raw data instead")
@@ -1107,16 +1113,14 @@ class _InnerPredictor:
                 preds = np.loadtxt(f.name, dtype=np.float64)
                 nrow = preds.shape[0]
         elif isinstance(data, scipy.sparse.csr_matrix):
-            # TODO: remove 'type: ignore[assignment]' when https://github.com/lightgbm-org/LightGBM/pull/6348 is resolved.
-            preds, nrow = self.__pred_for_csr(  # type: ignore[assignment]
+            preds, nrow = self.__pred_for_csr(
                 csr=data,
                 start_iteration=start_iteration,
                 num_iteration=num_iteration,
                 predict_type=predict_type,
             )
         elif isinstance(data, scipy.sparse.csc_matrix):
-            # TODO: remove 'type: ignore[assignment]' when https://github.com/lightgbm-org/LightGBM/pull/6348 is resolved.
-            preds, nrow = self.__pred_for_csc(  # type: ignore[assignment]
+            preds, nrow = self.__pred_for_csc(
                 csc=data,
                 start_iteration=start_iteration,
                 num_iteration=num_iteration,
@@ -1153,8 +1157,7 @@ class _InnerPredictor:
                 csr = scipy.sparse.csr_matrix(data)
             except BaseException as err:
                 raise TypeError(f"Cannot predict data for type {type(data).__name__}") from err
-            # TODO: remove 'type: ignore[assignment]' when https://github.com/lightgbm-org/LightGBM/pull/6348 is resolved.
-            preds, nrow = self.__pred_for_csr(  # type: ignore[assignment]
+            preds, nrow = self.__pred_for_csr(
                 csr=csr,
                 start_iteration=start_iteration,
                 num_iteration=num_iteration,
@@ -1162,7 +1165,7 @@ class _InnerPredictor:
             )
         if pred_leaf:
             preds = preds.astype(np.int32)
-        is_sparse = isinstance(preds, (list, scipy.sparse.spmatrix))
+        is_sparse = isinstance(preds, scipy.sparse.spmatrix)
         if not is_sparse and (preds.size != nrow or pred_leaf or pred_contrib):
             if preds.size % nrow == 0:
                 preds = preds.reshape(nrow, -1)
@@ -1289,18 +1292,23 @@ class _InnerPredictor:
 
     def __create_sparse_native(
         self,
-        cs: Union[scipy.sparse.csc_matrix, scipy.sparse.csr_matrix],
+        *,
         out_shape: np.ndarray,
         out_ptr_indptr: "ctypes._Pointer",
         out_ptr_indices: "ctypes._Pointer",
         out_ptr_data: "ctypes._Pointer",
         indptr_type: int,
         data_type: int,
+        matrix_shape: Tuple[int, int],
         is_csr: bool,
-    ) -> _LGBM_PredictSparseReturnType:
-        # create numpy array from output arrays
-        data_indices_len = out_shape[0]
-        indptr_len = out_shape[1]
+    ) -> scipy.sparse.spmatrix:
+        """Copy output of ``LGBM_BoosterPredictSparseOutput()`` into a ``scipy`` sparse matrix, then free the native memory.
+
+        Expects output produced with ``_C_API_MATRIX_TYPE_{CSR,CSC}_SINGLE_OUTPUT``, which is already
+        a single matrix in exactly the layout ``scipy`` needs, so no re-shaping is required here.
+        """
+        nnz = int(out_shape[0])
+        indptr_len = int(out_shape[1])
         if indptr_type == _C_API_DTYPE_INT32:
             out_indptr = _cint32_array_to_numpy(cptr=out_ptr_indptr, length=indptr_len)
         elif indptr_type == _C_API_DTYPE_INT64:
@@ -1308,34 +1316,13 @@ class _InnerPredictor:
         else:
             raise TypeError("Expected int32 or int64 type for indptr")
         if data_type == _C_API_DTYPE_FLOAT32:
-            out_data = _cfloat32_array_to_numpy(cptr=out_ptr_data, length=data_indices_len)
+            out_data = _cfloat32_array_to_numpy(cptr=out_ptr_data, length=nnz)
         elif data_type == _C_API_DTYPE_FLOAT64:
-            out_data = _cfloat64_array_to_numpy(cptr=out_ptr_data, length=data_indices_len)
+            out_data = _cfloat64_array_to_numpy(cptr=out_ptr_data, length=nnz)
         else:
             raise TypeError("Expected float32 or float64 type for data")
-        out_indices = _cint32_array_to_numpy(cptr=out_ptr_indices, length=data_indices_len)
-        # break up indptr based on number of rows (note more than one matrix in multiclass case)
-        per_class_indptr_shape = cs.indptr.shape[0]
-        # for CSC there is extra column added
-        if not is_csr:
-            per_class_indptr_shape += 1
-        out_indptr_arrays = np.split(out_indptr, out_indptr.shape[0] / per_class_indptr_shape)
-        # reformat output into a csr or csc matrix or list of csr or csc matrices
-        cs_output_matrices = []
-        offset = 0
-        for cs_indptr in out_indptr_arrays:
-            matrix_indptr_len = cs_indptr[cs_indptr.shape[0] - 1]
-            cs_indices = out_indices[offset + cs_indptr[0] : offset + matrix_indptr_len]
-            cs_data = out_data[offset + cs_indptr[0] : offset + matrix_indptr_len]
-            offset += matrix_indptr_len
-            # same shape as input csr or csc matrix except extra column for expected value
-            cs_shape = [cs.shape[0], cs.shape[1] + 1]
-            # note: make sure we copy data as it will be deallocated next
-            if is_csr:
-                cs_output_matrices.append(scipy.sparse.csr_matrix((cs_data, cs_indices, cs_indptr), cs_shape))
-            else:
-                cs_output_matrices.append(scipy.sparse.csc_matrix((cs_data, cs_indices, cs_indptr), cs_shape))
-        # free the temporary native indptr, indices, and data
+        out_indices = _cint32_array_to_numpy(cptr=out_ptr_indices, length=nnz)
+        # the arrays above are copies, so the native memory can be freed now
         _safe_call(
             _LIB.LGBM_BoosterFreePredictSparse(
                 out_ptr_indptr,
@@ -1345,9 +1332,10 @@ class _InnerPredictor:
                 ctypes.c_int(data_type),
             )
         )
-        if len(cs_output_matrices) == 1:
-            return cs_output_matrices[0]
-        return cs_output_matrices
+        if is_csr:
+            return scipy.sparse.csr_matrix((out_data, out_indices, out_indptr), shape=matrix_shape)
+        else:
+            return scipy.sparse.csc_matrix((out_data, out_indices, out_indptr), shape=matrix_shape)
 
     def __inner_predict_csr(
         self,
@@ -1405,11 +1393,18 @@ class _InnerPredictor:
         start_iteration: int,
         num_iteration: int,
         predict_type: int,
-    ) -> Tuple[_LGBM_PredictSparseReturnType, int]:
-        ptr_indptr, type_ptr_indptr, __ = _c_int_array(csr.indptr)
+    ) -> Tuple[scipy.sparse.spmatrix, int]:
+        nrow = len(csr.indptr) - 1
+        num_cols_out = self.num_model_per_iteration * (csr.shape[1] + 1)
+        # The output 'indptr' has the same type as the input 'indptr'.
+        # If the output might have more non-zero values than int32 can index, use int64.
+        csr_indptr = csr.indptr
+        if nrow * num_cols_out > _MAX_INT32:
+            csr_indptr = csr_indptr.astype(np.int64, copy=False)
+        ptr_indptr, type_ptr_indptr, __ = _c_int_array(csr_indptr)
         ptr_data, type_ptr_data, _ = _c_float_array(csr.data)
         csr_indices = csr.indices.astype(np.int32, copy=False)
-        matrix_type = _C_API_MATRIX_TYPE_CSR
+        matrix_type = _C_API_MATRIX_TYPE_CSR_SINGLE_OUTPUT
         out_ptr_indptr: _ctypes_int_ptr
         if type_ptr_indptr == _C_API_DTYPE_INT32:
             out_ptr_indptr = ctypes.POINTER(ctypes.c_int32)()
@@ -1430,7 +1425,7 @@ class _InnerPredictor:
                 csr_indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
                 ptr_data,
                 ctypes.c_int(type_ptr_data),
-                ctypes.c_int64(len(csr.indptr)),
+                ctypes.c_int64(len(csr_indptr)),
                 ctypes.c_int64(len(csr.data)),
                 ctypes.c_int64(csr.shape[1]),
                 ctypes.c_int(predict_type),
@@ -1444,18 +1439,17 @@ class _InnerPredictor:
                 ctypes.byref(out_ptr_data),
             )
         )
-        matrices = self.__create_sparse_native(
-            cs=csr,
+        preds = self.__create_sparse_native(
             out_shape=out_shape,
             out_ptr_indptr=out_ptr_indptr,
             out_ptr_indices=out_ptr_indices,
             out_ptr_data=out_ptr_data,
             indptr_type=type_ptr_indptr,
             data_type=type_ptr_data,
+            matrix_shape=(nrow, num_cols_out),
             is_csr=True,
         )
-        nrow = len(csr.indptr) - 1
-        return matrices, nrow
+        return preds, nrow
 
     def __pred_for_csr(
         self,
@@ -1463,7 +1457,7 @@ class _InnerPredictor:
         start_iteration: int,
         num_iteration: int,
         predict_type: int,
-    ) -> Tuple[_LGBM_PredictSparseReturnType, int]:
+    ) -> Tuple[scipy.sparse.spmatrix, int]:
         """Predict for a CSR data."""
         if predict_type == _C_API_PREDICT_CONTRIB:
             return self.__inner_predict_csr_sparse(
@@ -1516,11 +1510,18 @@ class _InnerPredictor:
         start_iteration: int,
         num_iteration: int,
         predict_type: int,
-    ) -> Tuple[_LGBM_PredictSparseReturnType, int]:
-        ptr_indptr, type_ptr_indptr, __ = _c_int_array(csc.indptr)
+    ) -> Tuple[scipy.sparse.spmatrix, int]:
+        nrow = csc.shape[0]
+        num_cols_out = self.num_model_per_iteration * (csc.shape[1] + 1)
+        # The output 'indptr' has the same type as the input 'indptr'.
+        # If the output might have more non-zero values than int32 can index, use int64.
+        csc_indptr = csc.indptr
+        if nrow * num_cols_out > _MAX_INT32:
+            csc_indptr = csc_indptr.astype(np.int64, copy=False)
+        ptr_indptr, type_ptr_indptr, __ = _c_int_array(csc_indptr)
         ptr_data, type_ptr_data, _ = _c_float_array(csc.data)
         csc_indices = csc.indices.astype(np.int32, copy=False)
-        matrix_type = _C_API_MATRIX_TYPE_CSC
+        matrix_type = _C_API_MATRIX_TYPE_CSC_SINGLE_OUTPUT
         out_ptr_indptr: _ctypes_int_ptr
         if type_ptr_indptr == _C_API_DTYPE_INT32:
             out_ptr_indptr = ctypes.POINTER(ctypes.c_int32)()
@@ -1541,7 +1542,7 @@ class _InnerPredictor:
                 csc_indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
                 ptr_data,
                 ctypes.c_int(type_ptr_data),
-                ctypes.c_int64(len(csc.indptr)),
+                ctypes.c_int64(len(csc_indptr)),
                 ctypes.c_int64(len(csc.data)),
                 ctypes.c_int64(csc.shape[0]),
                 ctypes.c_int(predict_type),
@@ -1555,18 +1556,17 @@ class _InnerPredictor:
                 ctypes.byref(out_ptr_data),
             )
         )
-        matrices = self.__create_sparse_native(
-            cs=csc,
+        preds = self.__create_sparse_native(
             out_shape=out_shape,
             out_ptr_indptr=out_ptr_indptr,
             out_ptr_indices=out_ptr_indices,
             out_ptr_data=out_ptr_data,
             indptr_type=type_ptr_indptr,
             data_type=type_ptr_data,
+            matrix_shape=(nrow, num_cols_out),
             is_csr=False,
         )
-        nrow = csc.shape[0]
-        return matrices, nrow
+        return preds, nrow
 
     def __pred_for_csc(
         self,
@@ -1574,7 +1574,7 @@ class _InnerPredictor:
         start_iteration: int,
         num_iteration: int,
         predict_type: int,
-    ) -> Tuple[_LGBM_PredictSparseReturnType, int]:
+    ) -> Tuple[scipy.sparse.spmatrix, int]:
         """Predict for a CSC data."""
         nrow = csc.shape[0]
         if nrow > _MAX_INT32:
@@ -4859,9 +4859,9 @@ class Booster:
 
         Returns
         -------
-        result : numpy array, scipy.sparse or list of scipy.sparse
+        result : numpy array or scipy.sparse
             Prediction result.
-            Can be sparse or a list of sparse objects (each element represents predictions for one class) for feature contributions (when ``pred_contrib=True``).
+            If ``data`` is a sparse matrix, result will be a sparse matrix.
         """
         predictor = _InnerPredictor.from_booster(
             booster=self,

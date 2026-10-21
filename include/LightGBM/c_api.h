@@ -45,6 +45,10 @@ typedef void* ByteBufferHandle; /*!< \brief Handle of ByteBuffer. */
 
 #define C_API_MATRIX_TYPE_CSR (0)  /*!< \brief CSR sparse matrix type. */
 #define C_API_MATRIX_TYPE_CSC (1)  /*!< \brief CSC sparse matrix type. */
+/*! \brief CSR sparse matrix type, with ``LGBM_BoosterPredictSparseOutput()`` returning a single output matrix. */
+#define C_API_MATRIX_TYPE_CSR_SINGLE_OUTPUT (2)
+/*! \brief CSC sparse matrix type, with ``LGBM_BoosterPredictSparseOutput()`` returning a single output matrix. */
+#define C_API_MATRIX_TYPE_CSC_SINGLE_OUTPUT (3)
 
 #define C_API_FEATURE_IMPORTANCE_SPLIT (0)  /*!< \brief Split type of feature importance. */
 #define C_API_FEATURE_IMPORTANCE_GAIN  (1)  /*!< \brief Gain type of feature importance. */
@@ -1092,6 +1096,17 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSR(BoosterHandle handle,
  * The outputs are pre-allocated, as they can vary for each invocation, but the shape should be the same:
  *   - for feature contributions, the shape of sparse matrix will be ``num_class * num_data * (num_feature + 1)``.
  * The output indptr_type for the sparse matrix will be the same as the given input indptr_type.
+ *
+ * The layout of the output depends on ``matrix_type``:
+ *   - ``C_API_MATRIX_TYPE_CSR`` and ``C_API_MATRIX_TYPE_CSC``: one ``num_data x (num_feature + 1)`` matrix per model
+ *     in each iteration (e.g. one per class in multiclass classification), concatenated end-to-end.
+ *     ``out_indptr`` holds one block per matrix, and each block starts over at 0.
+ *   - ``C_API_MATRIX_TYPE_CSR_SINGLE_OUTPUT`` and ``C_API_MATRIX_TYPE_CSC_SINGLE_OUTPUT``: a single
+ *     ``num_data x (num_model_per_iteration * (num_feature + 1))`` matrix, where columns
+ *     ``[k * (num_feature + 1), (k + 1) * (num_feature + 1))`` hold the contributions for model ``k``.
+ *     This matches the layout of ``LGBM_BoosterPredictForMat()`` with ``C_API_PREDICT_CONTRIB``.
+ *     Indices are sorted within each row (CSR) or column (CSC).
+ *
  * Call ``LGBM_BoosterFreePredictSparse`` to deallocate resources.
  * \param handle Handle of booster
  * \param indptr Pointer to row headers for CSR or column headers for CSC
@@ -1107,7 +1122,8 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSR(BoosterHandle handle,
  * \param start_iteration Start index of the iteration to predict
  * \param num_iteration Number of iterations for prediction, <= 0 means no limit
  * \param parameter Other parameters for prediction, e.g. early stopping for prediction
- * \param matrix_type Type of matrix input and output, can be ``C_API_MATRIX_TYPE_CSR`` or ``C_API_MATRIX_TYPE_CSC``
+ * \param matrix_type Type of matrix input and output, can be ``C_API_MATRIX_TYPE_CSR``, ``C_API_MATRIX_TYPE_CSC``,
+ *                    ``C_API_MATRIX_TYPE_CSR_SINGLE_OUTPUT`` or ``C_API_MATRIX_TYPE_CSC_SINGLE_OUTPUT``
  * \param[out] out_len Length of output data and output indptr (pointer to an array with two entries where to write them)
  * \param[out] out_indptr Pointer to output row headers for CSR or column headers for CSC
  * \param[out] out_indices Pointer to sparse column indices for CSR or row indices for CSC
