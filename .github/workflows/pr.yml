@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - main
+      - fix/docker-workflows
 
 concurrency:
   group: pr-${{ github.workflow }}-${{ github.ref }}
@@ -19,6 +20,11 @@ jobs:
     uses: ./.github/workflows/build.yml
     permissions:
       contents: write
+  docker:
+    uses: ./.github/workflows/docker.yml
+    permissions:
+      contents: read
+      statuses: read
   static-analysis:
     uses: ./.github/workflows/static_analysis.yml
     permissions:
@@ -46,6 +52,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - build
+      - docker
       - static-analysis
       - swig
       - test-cpp
